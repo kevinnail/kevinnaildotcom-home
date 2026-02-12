@@ -21,7 +21,7 @@ const projects = [
   {
     title: 'Stress Less Glass',
     description:
-      "My own live company website with 65+ users. I am self employed as a glass artist and I built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  ",
+      "My own live company website with 69 users and growing. I am self employed as a glass artist and I built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  ",
     mediaType: 'video',
     mediaSrc: '/images/preview.mp4',
     poster: '/images/logo-sq-poster.png',
