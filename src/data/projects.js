@@ -16,6 +16,31 @@ const projects = [
       },
     ],
   },
+
+
+  {
+    title: 'Stress Less Glass',
+    description:
+      "My own live company website with 65+ users. I am self employed as a glass artist and I built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  ",
+    mediaType: 'video',
+    mediaSrc: '/images/preview.mp4',
+    poster: '/images/logo-sq-poster.png',
+    links: [
+      {
+        label: 'Gallery Page',
+        href: 'https://fs-react-exp-gallery-kn.netlify.app/main-gallery',
+      },
+      {
+        label: 'GitHub (React Front End)',
+        href: 'https://github.com/kevinnail/fs-react-exp-gallery-frontend',
+      },
+      {
+        label: 'GitHub (Node/ Express Back End)',
+        href: 'https://github.com/kevinnail/fs-react-exp-gallery-backend',
+      },
+    ],
+  },
+
   {
     title: 'MCP Server / Local LLM Coding Assistant',
     subtitle: 'MCP Server/ Local LLM Coding Assistant, Email Analyzer & Appointment Setter',
@@ -52,28 +77,9 @@ const projects = [
       },
     ],
   },
-  {
-    title: 'Stress Less Glass',
-    description:
-      "A company created by yours truly: I've been self employed blowing glass for a living for 26 yrs, and I built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express and it has an admin page with a list of posts where I can manage all my content. All images are uploaded to/ hosted on Cloudinary via their SDK on my Express server. A work in progress- V2 will allow video uploads as well as a inventory summary/ detail page, coming soon because I need to sell some glass while looking for development work :)",
-    mediaType: 'video',
-    mediaSrc: '/images/preview.mp4',
-    poster: '/images/logo-sq-poster.png',
-    links: [
-      {
-        label: 'Gallery Page',
-        href: 'https://fs-react-exp-gallery-kn.netlify.app/main-gallery',
-      },
-      {
-        label: 'GitHub (React Front End)',
-        href: 'https://github.com/kevinnail/fs-react-exp-gallery-frontend',
-      },
-      {
-        label: 'GitHub (Node/ Express Back End)',
-        href: 'https://github.com/kevinnail/fs-react-exp-gallery-backend',
-      },
-    ],
-  },
+
+
+  
   {
     title: 'Error Affirmations',
     description:
