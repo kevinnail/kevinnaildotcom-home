@@ -41,10 +41,10 @@ const homeCards = [
   },
   {
     title: 'Astrophotography',
-    image: '/images/eclipse.jpg',
+    image: '/images/eclipse.JPG',
     href: '/astrophotography',
     external: false,
-    hoverBg: '/images/lunar-sm.jpg',
+    hoverBg: '/images/lunar-sm.JPG',
     hoverBgSize: 'cover',
   },
 ];
