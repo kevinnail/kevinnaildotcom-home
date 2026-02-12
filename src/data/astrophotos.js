@@ -60,6 +60,16 @@ const astrophotos = [
     alt: 'Venus Transit',
     caption: '2012 Venus Transit in Bend, OR at sunset',
   },
+  {
+    src: '/images/astro/saturn.JPEG',
+    alt: 'Saturn',
+    caption: 'Best image I have captured of the planet Saturn.',
+  },
+  {
+    src: '/images/astro/jupiter.JPEG',
+    alt: 'Jupiter',
+    caption: 'Best image I have captured of the planet Jupiter.t',
+  },
 ];
 
 export default astrophotos;
