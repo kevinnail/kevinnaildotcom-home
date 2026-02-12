@@ -40,7 +40,7 @@ export default function ProjectsPage() {
       <div className="flex flex-col min-h-screen">
         <Banner />
 
-        <div className="bg-mid-gray w-full">
+        <div className="bg-black w-full">
           <main className="bg-black pb-5 max-w-[1100px] mx-auto w-full">
             <nav
               className="bg-black border-b border-white/10"
