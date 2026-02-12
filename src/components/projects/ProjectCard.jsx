@@ -16,7 +16,7 @@ export default function ProjectCard({ project }) {
       };
 
   return (
-    <section className="border-2 border-white/15 rounded-2xl overflow-hidden bg-mid-gray">
+    <section className="border-2 border-white/15 rounded-2xl overflow-hidden bg-mid-gray flex flex-col h-full">
       <div className="bg-black border-b border-white/10">
         {mediaType === 'video' ? (
           <div className="aspect-video w-full">
@@ -42,7 +42,7 @@ export default function ProjectCard({ project }) {
         )}
       </div>
 
-      <div className="bg-black flex flex-col">
+      <div className="bg-black flex flex-col flex-1">
         <div className="p-4 pb-3 flex-1">
           <h3 className="m-0 text-[1.05rem] font-bold font-display tracking-[1px]">
             {subtitle || title}
@@ -67,7 +67,7 @@ export default function ProjectCard({ project }) {
           </div>
         </div>
 
-        <nav className="flex flex-wrap justify-around items-center gap-1 p-2 border-t border-white/10">
+        <nav className="flex flex-wrap justify-around items-center gap-1 p-2 border-t border-white/10 mt-auto">
           {links.map((link) => (
             <a
               key={link.label}
