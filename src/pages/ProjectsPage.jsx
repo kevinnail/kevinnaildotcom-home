@@ -1,14 +1,22 @@
 import { Helmet } from 'react-helmet-async';
+import { useState } from 'react';
 import Banner from '../components/layout/Banner';
 import ScrollToTop from '../components/layout/ScrollToTop';
-import AnchorNav from '../components/projects/AnchorNav';
 import BioSection from '../components/projects/BioSection';
-import SectionHeader from '../components/projects/SectionHeader';
 import ResumeEmbed from '../components/projects/ResumeEmbed';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
 
 export default function ProjectsPage() {
+  const [activeTab, setActiveTab] = useState('projects');
+
+  const tabs = [
+    { key: 'projects', label: 'Projects' },
+    { key: 'about', label: 'About' },
+    { key: 'resume', label: 'Resume' },
+    { key: 'diagrams', label: 'Diagrams' },
+  ];
+
   return (
     <>
       <Helmet>
@@ -32,22 +40,83 @@ export default function ProjectsPage() {
       <div className="flex flex-col min-h-screen">
         <Banner />
 
-        <div className="bg-[#3d3d3d] w-full">
-          <main className="block bg-black pb-5 lg:max-w-[1100px] lg:mx-auto lg:min-w-[1000px]">
-            <section>
-              <AnchorNav />
+        <div className="bg-mid-gray w-full">
+          <main className="bg-black pb-5 max-w-[1100px] mx-auto w-full">
+            <nav
+              className="bg-black border-b border-white/10"
+              role="tablist"
+              aria-label="Projects page sections"
+            >
+              <div className="flex flex-wrap justify-center gap-2 p-3">
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      id={`tab-${tab.key}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls={`tab-panel-${tab.key}`}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={
+                        "px-4 py-2 rounded-md border font-display tracking-[3px] transition-colors duration-300 " +
+                        (isActive
+                          ? "bg-white text-black border-white"
+                          : "bg-black text-white border-white/20 hover:bg-white hover:text-black hover:border-white")
+                      }
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
 
-              <BioSection />
+            {activeTab === 'projects' && (
+              <section
+                id="tab-panel-projects"
+                role="tabpanel"
+                aria-labelledby="tab-projects"
+              >
+                <p className="m-0 p-5 bg-mid-gray">
+                  Built with React + Vite and styled with Tailwind. Here are a
+                  few projects that highlight UI work, app architecture, and
+                  real-world integrations.
+                </p>
+                <ProjectList />
+              </section>
+            )}
 
-              <SectionHeader id="resume">Resume</SectionHeader>
-              <ResumeEmbed />
-            </section>
+            {activeTab === 'about' && (
+              <section
+                id="tab-panel-about"
+                role="tabpanel"
+                aria-labelledby="tab-about"
+              >
+                <BioSection />
+              </section>
+            )}
 
-            <SectionHeader id="projects">Projects</SectionHeader>
-            <ProjectList />
+            {activeTab === 'resume' && (
+              <section
+                id="tab-panel-resume"
+                role="tabpanel"
+                aria-labelledby="tab-resume"
+              >
+                <ResumeEmbed />
+              </section>
+            )}
 
-            <SectionHeader id="diagrams">Diagrams</SectionHeader>
-            <DiagramsSection />
+            {activeTab === 'diagrams' && (
+              <section
+                id="tab-panel-diagrams"
+                role="tabpanel"
+                aria-labelledby="tab-diagrams"
+              >
+                <DiagramsSection />
+              </section>
+            )}
           </main>
         </div>
 
