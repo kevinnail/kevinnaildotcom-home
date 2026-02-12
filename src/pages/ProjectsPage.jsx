@@ -80,9 +80,12 @@ export default function ProjectsPage() {
                 aria-labelledby="tab-projects"
               >
                 <p className="m-0 p-5 bg-mid-gray">
-                  Built with React + Vite and styled with Tailwind. Here are a
-                  few projects that highlight UI work, app architecture, and
-                  real-world integrations.
+                  This site is built with React + Vite and styled with Tailwind
+                  CSS. The projects below span React front-ends with Node/
+                  Express + Postgres back-ends, including real-time WebSocket
+                  features (real users with auctions + messaging for my business), AWS S3/CloudFront media
+                  pipelines, Redis caching, and AI work like semantic search
+                  with pgvector (via WSL) + Ollama running local LLM's. 
                 </p>
                 <ProjectList />
               </section>
