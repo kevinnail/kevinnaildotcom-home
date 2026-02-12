@@ -26,25 +26,25 @@ export default function BioSection() {
               About
             </h3>
 
-            <p className="m-0">
-              I&apos;m Kevin Nail — a full‑stack developer who likes building
+            <p className="m-0"style={{ marginBottom: '1rem' }}>
+              I&apos;m Kevin Nail- a full‑stack developer who likes building
               practical, reliable tools with clean UX. I got into coding back in
               the early 2000&apos;s while running my glass business: first by
               improving eBay listings, then by building Excel/VBA apps for
               accounting, inventory, and day-to-day workflow.
             </p>
 
-            <p className="m-0">
+            <p className="m-0"style={{ marginBottom: '1rem' }}>
               In 2022 I attended Alchemy Code Lab for web development and worked
-              through a React / Node / Express stack with multiple group
+              through a React / Node / Express/ Postgres stack with multiple group
               projects. When the program shut down unexpectedly, our cohort kept
-              going independently — meeting up, shipping projects, and keeping
+              going independently- meeting up, shipping projects, and keeping
               each other accountable.
             </p>
 
-            <p className="m-0">
+            <p className="m-0"style={{ marginBottom: '1rem' }}>
               For the last ~2.5 years I&apos;ve been building a longer-running
-              product and using it as a deep dive into engineering habits:
+              product (At The Fire, see my projects page) and using it as a deep dive into engineering habits:
               error handling, testing, securing sensitive data, and defensive
               design. I&apos;ve implemented AWS Cognito, S3, and CloudFront,
               plus Redis caching and real-time WebSocket features.

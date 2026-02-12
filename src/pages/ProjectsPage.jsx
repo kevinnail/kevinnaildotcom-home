@@ -60,7 +60,7 @@ export default function ProjectsPage() {
                       aria-controls={`tab-panel-${tab.key}`}
                       onClick={() => setActiveTab(tab.key)}
                       className={
-                        "px-4 py-2 rounded-md border font-display tracking-[3px] transition-colors duration-300 " +
+                        "px-4 py-2 rounded-md border font-display tracking-[3px] cursor-pointer transition-colors duration-300 " +
                         (isActive
                           ? "bg-white text-black border-white"
                           : "bg-black text-white border-white/20 hover:bg-white hover:text-black hover:border-white")
@@ -85,7 +85,7 @@ export default function ProjectsPage() {
                   Express + Postgres back-ends, including real-time WebSocket
                   features (real users with auctions + messaging for my business), AWS S3/CloudFront media
                   pipelines, Redis caching, and AI work like semantic search
-                  with pgvector (via WSL) + Ollama running local LLM's. 
+                  with pgvector (via WSL) + Ollama running LLMs locally. 
                 </p>
                 <ProjectList />
               </section>
