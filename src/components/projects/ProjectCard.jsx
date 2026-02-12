@@ -1,51 +1,85 @@
+import { useState } from 'react';
+
 export default function ProjectCard({ project }) {
   const { title, subtitle, description, mediaType, mediaSrc, poster, links } =
     project;
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const clampStyle = isExpanded
+    ? undefined
+    : {
+        display: '-webkit-box',
+        WebkitBoxOrient: 'vertical',
+        WebkitLineClamp: 5,
+        overflow: 'hidden',
+      };
+
   return (
-    <section className="border-[3px] border-[rgb(165,165,165)] rounded-2xl mx-2 my-6 overflow-hidden bg-black lg:grid lg:grid-cols-[300px_1fr] lg:h-[350px] lg:backdrop-blur-[15px] lg:min-w-[968px] transition-all duration-350">
-      <div className="flex max-h-full">
+    <section className="border-2 border-white/15 rounded-2xl overflow-hidden bg-mid-gray">
+      <div className="bg-black border-b border-white/10">
         {mediaType === 'video' ? (
-          <video
-            className="max-h-full max-w-full w-full"
-            controls
-            poster={poster}
-            preload="none"
-            style={{ boxShadow: 'rgba(255,255,255,0.196) 1px 1px 15px 5px' }}
-          >
-            <source src={mediaSrc} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <div className="aspect-video w-full">
+            <video
+              className="w-full h-full object-contain bg-black"
+              controls
+              poster={poster}
+              preload="none"
+            >
+              <source src={mediaSrc} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         ) : (
-          <img
-            className="max-h-full max-w-full w-full object-cover"
-            src={mediaSrc}
-            alt={title}
-            loading="lazy"
-          />
+          <div className="aspect-video w-full">
+            <img
+              className="w-full h-full object-cover"
+              src={mediaSrc}
+              alt={title}
+              loading="lazy"
+            />
+          </div>
         )}
       </div>
 
-      <div className="bg-black pt-0">
-        <nav className="flex flex-wrap justify-around items-center py-1">
+      <div className="bg-black flex flex-col">
+        <div className="p-4 pb-3 flex-1">
+          <h3 className="m-0 text-[1.05rem] font-bold font-display tracking-[1px]">
+            {subtitle || title}
+          </h3>
+
+          <p
+            className="mt-2 mb-0 text-[0.9rem] opacity-90 leading-6 tracking-[0.5px]"
+            style={clampStyle}
+          >
+            {description}
+          </p>
+
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              className="bg-transparent border-0 p-0 text-neon-blue font-bold text-[0.85rem] underline underline-offset-4 transition-colors duration-300 hover:text-white"
+              aria-expanded={isExpanded}
+            >
+              {isExpanded ? 'Less' : 'More'}
+            </button>
+          </div>
+        </div>
+
+        <nav className="flex flex-wrap justify-around items-center gap-1 p-2 border-t border-white/10">
           {links.map((link) => (
             <a
               key={link.label}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="no-underline text-white font-bold inline-block px-2.5 py-1.5 text-[0.7rem] rounded-md border-2 border-transparent text-center transition-all duration-500 hover:border-neon-blue-50 hover:animate-[ocean_4s_ease-in-out_infinite]"
+              className="no-underline text-white font-bold inline-block px-2.5 py-1.5 text-[0.8rem] rounded-md border border-transparent text-center transition-colors duration-300 hover:border-neon-blue-50"
             >
               {link.label}
             </a>
           ))}
         </nav>
-        <p className="px-4 text-[0.8rem] bg-black opacity-80 m-0 leading-6 tracking-[1px] min-w-[250px]">
-          <span className="text-[1.2rem] font-bold block font-[Gruppo,verdana]">
-            <em>{subtitle || title}</em>
-          </span>{' '}
-          {description}
-        </p>
       </div>
     </section>
   );
