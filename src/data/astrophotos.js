@@ -16,7 +16,7 @@ const astrophotos = [
   },
   {
     src: '/images/astro/jupiter-moons.jpg',
-    alt: "Jupiter and its 4 largest moons",
+    alt: 'Jupiter and its 4 largest moons',
     caption: "Jupiter and it's 4 largest moons",
   },
   {
@@ -32,8 +32,7 @@ const astrophotos = [
   {
     src: '/images/astro/jupiter-saturn-conjunction.jpg',
     alt: 'Jupiter-Saturn Conjunction',
-    caption:
-      "2022 Jupiter-Saturn-Conjunction, Jupiter's largest 4 moons are visible",
+    caption: "2022 Jupiter-Saturn-Conjunction, Jupiter's largest 4 moons are visible",
   },
   {
     src: '/images/astro/moon-closeup.jpg',
@@ -61,7 +60,7 @@ const astrophotos = [
     caption: '2012 Venus Transit in Bend, OR at sunset',
   },
   {
-    src: '/images/astro/saturn.JPEG',
+    src: '/images/astro/saturn-3.JPEG',
     alt: 'Saturn',
     caption: 'Best image I have captured of the planet Saturn.',
   },
