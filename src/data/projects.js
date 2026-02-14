@@ -1,8 +1,19 @@
 const projects = [
   {
     title: 'At The Fire',
-    description:
-      'At The Fire is a subscription-based social media, business software, and gallery site designed for artists to showcase their collections and offer their work for sale. Collectors are welcome to subscribe as well. The platform features a tiered subscription model; basic accounts are free, while a paid subscription unlocks business accounting and sales analysis tools. Artists can create posts, manage inventory, track sales, analyze production, set goals & monitor performance.',
+    description: `
+    Pre-launch full-stack creator platform I’m designing and building 
+    end-to-end (with a small team when time allows), 
+    expanding on the production patterns from Stress Less Glass into a multi-tenant 
+    app with social features and subscriptions. I implemented React-based gallery + 
+    business dashboards (Zustand, Material UI, drag-and-drop uploads, client-side image 
+    compression) and analytics visualizations (Chart.js). On the backend (Node/Express + 
+    Postgres), I integrated AWS Cognito authentication, Stripe subscriptions with 
+    webhooks for entitlement updates, S3 + CloudFront for optimized media delivery,
+     and Socket.IO for real-time messaging. I added Redis caching, CSP/security hardening 
+     (Helmet) and AES-256 encryption for sensitive data, plus unit/integration/UI tests with 
+     Jest, Supertest, and Testing Library (ESLint/Prettier enforced).
+     `,
     mediaType: 'video',
     mediaSrc: 'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/at-the-fire-subscription-2.mp4',
     poster: 'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/logo-icon-6-512+x+911.png',
@@ -17,12 +28,7 @@ const projects = [
 
   {
     title: 'Stress Less Glass',
-    description: `
-      My own live company website with 69 users and growing. I am self employed as a glass artist and I 
-      built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres 
-      and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions 
-      and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  
-      `,
+    description: `Production full-stack web app I built and operate for my glass business (69+ registered users), giving me hands-on experience shipping updates safely while protecting real customer data. Built with React + Node/Express + Postgres and an AWS S3 media pipeline via the AWS SDK. I implemented an admin-first dashboard for managing content (published/hidden/soft-deleted states), maintaining an inventory list with filtering, and tracking sales. I also delivered real-time features with WebSockets (Socket.IO): live auctions with instant bid updates and one-to-one customer messaging (users message the admin; admin can message any user). Integrated opt-in email notifications via a mailer service and built the preference workflow so users can subscribe/unsubscribe from notifications.`,
     mediaType: 'video',
     mediaSrc: '/images/preview.mp4',
     poster: '/images/logo-sq-poster.png',
@@ -44,9 +50,19 @@ const projects = [
 
   {
     title: 'MCP Server / Local LLM Coding Assistant',
-    subtitle: 'MCP Server/ Local LLM Coding Assistant, Email Analyzer & Appointment Setter',
-    description:
-      'This project is a fully local & private AI assistant that runs entirely on your own machine- no internet required and all your data is encrypted. It leverages open-source large language models (LLMs) to provide coding help, analyze emails, and schedule appointments via tool calls facilitated by the MCP server, all while keeping your data private and secure. The app features a user-friendly interface for interacting with the AI, and integrates with local tools for seamless workflow automation. Built with Node.js, Express, WSL & Linux, the mcp server sdk, and a React frontend, it demonstrates how modern AI capabilities can be delivered without relying on cloud services or external APIs.',
+    subtitle: 'Local RAG Assistant + MCP Tooling (Gmail → Calendar)',
+    description: `Full-stack, fully local AI assistant I built to explore production-style
+     agent workflows without sending data to third-party AI services. The app runs 
+     on Ollama for local inference and uses PostgreSQL + pgvector for semantic 
+     memory (embeddings) with a hybrid retrieval strategy (recent + relevant 
+     context) to keep conversations coherent. I implemented an MCP server 
+     (HTTP/SSE transport) that exposes real tools to the model, including Google 
+     Calendar event creation; the agent analyzes emails and triggers tool calls to 
+     schedule appointments automatically. Integrated Gmail via IMAP for local email sync + 
+     vector-based filtering before LLM analysis, added OAuth for Google Calendar, and 
+     used WebSockets for real-time UI progress updates. Built with React + Express/Node 
+     on WSL/Linux, with Jest/Supertest coverage for API + memory/retrieval behavior.
+     `,
     mediaType: 'image',
     mediaSrc: '/images/code-assist.png',
     links: [
