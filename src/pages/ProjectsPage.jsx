@@ -81,7 +81,8 @@ export default function ProjectsPage() {
                   projects, but don't miss the AI related work as well I've learned a lot from
                   building chatbots that run LLM's locally via Ollama, fine tuning system prompts
                   and various parameters (top_p, temperature, etc.). employing agents, building my
-                  own MCP server, and semantic search with Postgres via WSL. Read details below!
+                  own MCP server, and semantic search with Postgres via WSL all with keeping
+                  sensitive data encrypted. Read details below!
                 </p>
                 <ProjectList />
               </section>
