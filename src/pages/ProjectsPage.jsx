@@ -60,10 +60,10 @@ export default function ProjectsPage() {
                       aria-controls={`tab-panel-${tab.key}`}
                       onClick={() => setActiveTab(tab.key)}
                       className={
-                        "px-4 py-2 rounded-md border font-display tracking-[3px] cursor-pointer transition-colors duration-300 " +
+                        'px-4 py-2 rounded-md border font-display tracking-[3px] cursor-pointer transition-colors duration-300 ' +
                         (isActive
-                          ? "bg-white text-black border-white"
-                          : "bg-black text-white border-white/20 hover:bg-white hover:text-black hover:border-white")
+                          ? 'bg-white text-black border-white'
+                          : 'bg-black text-white border-white/20 hover:bg-white hover:text-black hover:border-white')
                       }
                     >
                       {tab.label}
@@ -74,49 +74,33 @@ export default function ProjectsPage() {
             </nav>
 
             {activeTab === 'projects' && (
-              <section
-                id="tab-panel-projects"
-                role="tabpanel"
-                aria-labelledby="tab-projects"
-              >
+              <section id="tab-panel-projects" role="tabpanel" aria-labelledby="tab-projects">
                 <p className="m-0 p-5 bg-mid-gray">
-                  This site is built with React + Vite and styled with Tailwind
-                  CSS. The projects below span React front-ends with Node/
-                  Express + Postgres back-ends, including real-time WebSocket
-                  features (real users with auctions + messaging for my business), AWS S3/CloudFront media
-                  pipelines, Redis caching, and AI work like semantic search
-                  with pgvector (via WSL) + Ollama running LLMs locally. 
+                  The projects below are all a React/ Node/ Express + Postgres stack.{' '}
+                  <strong>At The Fire</strong> and <strong>Stress Less Glass</strong> are my biggest
+                  projects, but don't miss the AI related work as well I've learned a lot from
+                  building chatbots that run LLM's locally via Ollama, fine tuning system prompts
+                  and various parameters (top_p, temperature, etc.). employing agents, building my
+                  own MCP server, and semantic search with Postgres via WSL. Read details below!
                 </p>
                 <ProjectList />
               </section>
             )}
 
             {activeTab === 'about' && (
-              <section
-                id="tab-panel-about"
-                role="tabpanel"
-                aria-labelledby="tab-about"
-              >
+              <section id="tab-panel-about" role="tabpanel" aria-labelledby="tab-about">
                 <BioSection />
               </section>
             )}
 
             {activeTab === 'resume' && (
-              <section
-                id="tab-panel-resume"
-                role="tabpanel"
-                aria-labelledby="tab-resume"
-              >
+              <section id="tab-panel-resume" role="tabpanel" aria-labelledby="tab-resume">
                 <ResumeEmbed />
               </section>
             )}
 
             {activeTab === 'diagrams' && (
-              <section
-                id="tab-panel-diagrams"
-                role="tabpanel"
-                aria-labelledby="tab-diagrams"
-              >
+              <section id="tab-panel-diagrams" role="tabpanel" aria-labelledby="tab-diagrams">
                 <DiagramsSection />
               </section>
             )}

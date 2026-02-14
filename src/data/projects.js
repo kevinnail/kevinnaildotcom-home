@@ -4,10 +4,8 @@ const projects = [
     description:
       'At The Fire is a subscription-based social media, business software, and gallery site designed for artists to showcase their collections and offer their work for sale. Collectors are welcome to subscribe as well. The platform features a tiered subscription model; basic accounts are free, while a paid subscription unlocks business accounting and sales analysis tools. Artists can create posts, manage inventory, track sales, analyze production, set goals & monitor performance.',
     mediaType: 'video',
-    mediaSrc:
-      'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/at-the-fire-subscription-2.mp4',
-    poster:
-      'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/logo-icon-6-512+x+911.png',
+    mediaSrc: 'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/at-the-fire-subscription-2.mp4',
+    poster: 'https://d5fmwpj8iaraa.cloudfront.net/atf-assets/logo-icon-6-512+x+911.png',
     links: [
       { label: 'Website Home', href: 'https://atthefire.com' },
       {
@@ -17,11 +15,14 @@ const projects = [
     ],
   },
 
-
   {
     title: 'Stress Less Glass',
-    description:
-      "My own live company website with 69 users and growing. I am self employed as a glass artist and I built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  ",
+    description: `
+      My own live company website with 69 users and growing. I am self employed as a glass artist and I 
+      built this site to help me display and sell my glass to collectors. This solo project is React/ Node/ Express/ postgres 
+      and it has an admin dashboard page with a list of posts where I can manage all my content including real time auctions 
+      and messaging along with tracking sales. All images are uploaded to/ hosted on AWS S3 via their SDK.  
+      `,
     mediaType: 'video',
     mediaSrc: '/images/preview.mp4',
     poster: '/images/logo-sq-poster.png',
@@ -78,8 +79,6 @@ const projects = [
     ],
   },
 
-
-  
   {
     title: 'Error Affirmations',
     description:
