@@ -47,7 +47,7 @@ export default function ProjectsPage() {
               role="tablist"
               aria-label="Projects page sections"
             >
-              <div className="flex flex-wrap justify-center gap-2 p-3">
+              <div className="grid grid-cols-2 gap-2 p-3 sm:flex sm:flex-wrap sm:justify-center">
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.key;
                   return (
@@ -60,7 +60,7 @@ export default function ProjectsPage() {
                       aria-controls={`tab-panel-${tab.key}`}
                       onClick={() => setActiveTab(tab.key)}
                       className={
-                        'px-4 py-2 rounded-md border font-display tracking-[3px] cursor-pointer transition-colors duration-300 ' +
+                        'px-4 py-2 rounded-md border font-display tracking-[3px] cursor-pointer transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue ' +
                         (isActive
                           ? 'bg-white text-black border-white'
                           : 'bg-black text-white border-white/20 hover:bg-white hover:text-black hover:border-white')

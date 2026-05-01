@@ -18,7 +18,11 @@
       "mcp__plugin_playwright_playwright__browser_close",
       "Bash(cd:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx prettier --check \"src/**/*.{js,jsx}\")"
+      "Bash(npx prettier --check \"src/**/*.{js,jsx}\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kevin\\\\Documents\\\\Work and Projects\\\\Kevin Nail Website\\\\kevinnaildotcom-home\" -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(Head -30)",
+      "WebFetch(domain:apps.apple.com)"
     ]
   }
 }
