@@ -48,6 +48,32 @@ const projects = [
     ],
   },
 
+
+
+  {
+    title: 'Crop Planner',
+    subtitle: 'Crop Planner — iOS App for Growers',
+    description: `Published iOS app (Lifestyle category, on the App Store) for home growers, hobby farmers, and small-scale producers. Plan your entire growing season on a visual timeline grid — each row is a crop, each column is a week, with color-coded lifecycle stages (Seedling, Vegetative, Flowering, Fruiting, Harvest, Pinning, Inoculation, Colonization, Drying, and more). Built features: visualize overlapping crops across a 3-year timeline, drag crops to shift their schedule when plans change, task management built into the timeline, group crops by location, track mushroom grows alongside traditional crops, attach notes and photos. Works fully offline with no login required — built by a grower, for growers.`,
+    mediaType: 'screenshots',
+    mediaSrcs: [
+      '/images/crop-planner-1.png',
+      '/images/crop-planner-2.png',
+      '/images/crop-planner-3.png',
+    ],
+    links: [
+      {
+        label: 'App Store',
+        href: 'https://apps.apple.com/us/app/crop-planner/id6762229774',
+      },
+      {
+        label: 'GitHub',
+        href: 'https://github.com/kevinnail/garden-tracker',
+      },
+    ],
+  },
+
+
+  
   {
     title: 'MCP Server / Local LLM Coding Assistant',
     subtitle: 'Local RAG Assistant + MCP Tooling (Gmail → Calendar)',
