@@ -1,48 +1,55 @@
+import SectionEyebrow from './SectionEyebrow';
+
+const diagrams = [
+  {
+    src: '/images/database-atf.png',
+    alt: 'At The Fire database diagram',
+    caption:
+      "My most complex system: a full social platform designed for many users, wiring together AWS Cognito, AWS S3, CloudFront, Redis, WebSockets, and Stripe API webhooks.",
+  },
+  {
+    src: '/images/database-slg.png',
+    alt: 'Stress Less Glass database diagram',
+    caption:
+      'My business site, live with users — homegrown auth, AWS S3 for image uploads, WebSockets for instant messaging / live auctions / notifications, and a third-party mailer for email.',
+  },
+  {
+    src: '/images/app-flow-1.png',
+    alt: 'App flow diagram',
+    caption:
+      "Front-end program flow for screens and forms. Originally built in VBA inside MS Excel — where I started teaching myself to program.",
+  },
+];
+
 export default function DiagramsSection() {
   return (
-    <section className="flex flex-col items-center">
-      <p className="m-0 p-5 bg-mid-gray w-full">
-        Mapping out complex systems is part of my process and workflow, it's wonderful for OCD'ing
-        down to each piece of data. They also prove to be powerful planning and communication tools
-        for the team. These diagrams below are for a few of my current projects. All are Express/
-        Node servers using Postgres databases, but the diagrams depict complex data relationships
-        and flows as explained below.
+    <section className="px-5 py-6 sm:px-6">
+      <SectionEyebrow label="System Diagrams" />
+
+      <p className="mt-4 mb-0 max-w-[70ch] text-[0.92rem] leading-[1.65] text-white/70">
+        Mapping out complex systems is part of my process — great for OCD&apos;ing down to each
+        piece of data, and a powerful planning and communication tool for the team. These are from a
+        few of my current projects. All are Express/Node servers on Postgres; the diagrams depict
+        the data relationships and flows described below.
       </p>
 
-      <p className="m-0 p-5 bg-mid-gray w-full" style={{ paddingTop: '0' }}>
-        The first one is showing my most complex system I've built that uses AWS Cognito, AWS S3,
-        Cloudfront, Redis, Websockets, and Stripe API webhooks all together- this is a full social
-        media platform designed for many users.
-      </p>
-
-      <img
-        src="/images/database-atf.png"
-        alt="Database diagram"
-        className="block m-2 max-w-[95%] lg:max-w-full rounded-2xl shadow-[0_0_10px_0px_black]"
-        loading="lazy"
-      />
-      <p className="m-0 p-5 bg-mid-gray w-full">
-        The 2nd here is a diagram for my business site that's live with users- it has homegrown auth
-        using AWS S3 for image uploads, websockets for instant messaging/ live auctions/
-        notifications, and a 3rd party mailer for email notifications to users.
-      </p>
-      <img
-        src="/images/database-slg.png"
-        alt="Database diagram"
-        className="block m-2 max-w-[95%] lg:max-w-full rounded-2xl shadow-[0_0_10px_0px_black]"
-        loading="lazy"
-      />
-
-      <p className="m-0 p-5 bg-mid-gray w-full">
-        This final image is more a diagram of the front end program flow for screens/ forms.
-        Originally built in VBA in MS Excel, it's where I started teaching myself programming.
-      </p>
-      <img
-        src="/images/app-flow-1.png"
-        alt="App flow diagram"
-        className="block m-2 max-w-[95%] lg:max-w-full rounded-2xl shadow-[0_0_10px_0px_black]"
-        loading="lazy"
-      />
+      <div className="mt-6 space-y-8">
+        {diagrams.map((diagram) => (
+          <figure key={diagram.src} className="m-0">
+            <figcaption className="mb-3 max-w-[70ch] text-[0.9rem] leading-[1.6] text-white/70">
+              {diagram.caption}
+            </figcaption>
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-neutral-950 p-2 sm:p-3">
+              <img
+                src={diagram.src}
+                alt={diagram.alt}
+                className="block w-full rounded-xl"
+                loading="lazy"
+              />
+            </div>
+          </figure>
+        ))}
+      </div>
     </section>
   );
 }
