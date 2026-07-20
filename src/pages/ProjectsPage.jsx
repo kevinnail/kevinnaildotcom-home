@@ -6,6 +6,7 @@ import BioSection from '../components/projects/BioSection';
 import ResumeEmbed from '../components/projects/ResumeEmbed';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
+import SectionEyebrow from '../components/projects/SectionEyebrow';
 
 export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState('projects');
@@ -75,15 +76,22 @@ export default function ProjectsPage() {
 
             {activeTab === 'projects' && (
               <section id="tab-panel-projects" role="tabpanel" aria-labelledby="tab-projects">
-                <p className="m-0 p-5 bg-mid-gray">
-                  The projects below are all a React/ Node/ Express + Postgres stack.{' '}
-                  <strong>At The Fire</strong> and <strong>Stress Less Glass</strong> are my biggest
-                  projects, but don't miss the AI related work as well I've learned a lot from
-                  building chatbots that run LLM's locally via Ollama, fine tuning system prompts
-                  and various parameters (top_p, temperature, etc.). employing agents, building my
-                  own MCP server, and semantic search with Postgres via WSL all with keeping
-                  sensitive data encrypted. Read details below!
-                </p>
+                <div className="px-5 pt-5 pb-4 sm:px-6">
+                  <SectionEyebrow label="Selected Work" />
+                  <p className="mt-4 mb-0 max-w-[68ch] text-[0.92rem] leading-[1.65] text-white/70">
+                    The bulk of my projects below are all a React / Node / Express + Postgres stack
+                    with the recent addition of SQLite and React Native for my new iOS app{' '}
+                    <strong className="text-white/90 font-semibold">Crop Planner</strong>.{' '}
+                    <strong className="text-white/90 font-semibold">At The Fire</strong> and{' '}
+                    <strong className="text-white/90 font-semibold">Stress Less Glass</strong>{' '}
+                    (shipped- my actual glass business site) are my biggest projects, but don't miss
+                    the AI work too! Took a deep dive on running LLMs locally with Ollama. I've
+                    learned a lot building a RAG system for chatbots fine-tuning system prompts and
+                    parameters (top_p, temperature, etc.), employing agents, building my own MCP
+                    server, and semantic search with Postgres via WSL, all while keeping sensitive
+                    data encrypted. Read details below on everything!
+                  </p>
+                </div>
                 <ProjectList />
               </section>
             )}
