@@ -1,6 +1,8 @@
 const projects = [
   {
     title: 'At The Fire',
+    category: 'Full-Stack Platform',
+    stack: ['React', 'Zustand', 'Node/Express', 'Postgres', 'AWS', 'Stripe', 'Socket.IO', 'Redis'],
     description: `
     Pre-launch full-stack creator platform I’m designing and building 
     end-to-end (with a small team when time allows), 
@@ -28,6 +30,8 @@ const projects = [
 
   {
     title: 'Stress Less Glass',
+    category: 'Full-Stack · Production',
+    stack: ['React', 'Node/Express', 'Postgres', 'AWS S3', 'Socket.IO', 'Mailer'],
     description: `Production full-stack web app I built and operate for my glass business (69+ registered users), giving me hands-on experience shipping updates safely while protecting real customer data. Built with React + Node/Express + Postgres and an AWS S3 media pipeline via the AWS SDK. I implemented an admin-first dashboard for managing content (published/hidden/soft-deleted states), maintaining an inventory list with filtering, and tracking sales. I also delivered real-time features with WebSockets (Socket.IO): live auctions with instant bid updates and one-to-one customer messaging (users message the admin; admin can message any user). Integrated opt-in email notifications via a mailer service and built the preference workflow so users can subscribe/unsubscribe from notifications.`,
     mediaType: 'video',
     mediaSrc: '/images/preview.mp4',
@@ -48,11 +52,11 @@ const projects = [
     ],
   },
 
-
-
   {
     title: 'Crop Planner',
     subtitle: 'Crop Planner — iOS App for Growers',
+    category: 'iOS App',
+    stack: ['React Native', 'SQLite', 'Postgres', 'Offline-first'],
     description: `Published iOS app (Lifestyle category, on the App Store) for home growers, hobby farmers, and small-scale producers. Plan your entire growing season on a visual timeline grid — each row is a crop, each column is a week, with color-coded lifecycle stages (Seedling, Vegetative, Flowering, Fruiting, Harvest, Pinning, Inoculation, Colonization, Drying, and more). Built features: visualize overlapping crops across a 3-year timeline, drag crops to shift their schedule when plans change, task management built into the timeline, group crops by location, track mushroom grows alongside traditional crops, attach notes and photos. Works fully offline with no login required — built by a grower, for growers.`,
     mediaType: 'screenshots',
     mediaSrcs: [
@@ -72,11 +76,11 @@ const projects = [
     ],
   },
 
-
-  
   {
     title: 'MCP Server / Local LLM Coding Assistant',
     subtitle: 'Local RAG Assistant + MCP Tooling (Gmail → Calendar)',
+    category: 'AI · Local RAG',
+    stack: ['React', 'Express/Node', 'Ollama', 'Postgres + pgvector', 'MCP', 'WebSockets'],
     description: `Full-stack, fully local AI assistant I built to explore production-style
      agent workflows without sending data to third-party AI services. The app runs 
      on Ollama for local inference and uses PostgreSQL + pgvector for semantic 
@@ -105,6 +109,8 @@ const projects = [
   {
     title: 'MJ Cheat Sheet',
     subtitle: 'MJ Cheat Sheet: AI-Powered RAG Cannabis Intelligence App',
+    category: 'AI · RAG',
+    stack: ['React', 'Node/Express', 'Postgres', 'RAG', 'Smart Search'],
     description:
       'MJ Cheat Sheet is an advanced AI-driven platform that facilitates finding the right cannabis product for a customer with unique needs. Our smart search and AI assistant, the Big Lebowlski, processes cannabis data to provide intelligent strain analysis, effect predictions, and personalized recommendations. The AI continuously learns from user interactions and new product data, ensuring accurate and up-to-date insights. If a product/ strain is missing, users can create or update the database that all users draw from.',
     mediaType: 'image',
@@ -123,6 +129,8 @@ const projects = [
 
   {
     title: 'Error Affirmations',
+    category: 'Dev Tools · Multi-App',
+    stack: ['Jest Reporter', 'VS Code Extension', 'React', 'Shared DB', 'npm'],
     description:
       'This group project is actually a set of apps that work together and share a database: a custom Jest reporter, a VS Code extension, and a website for users to add to (we are up to 2.8K users and growing!). The Jest reporter adds an affirmation to your terminal upon any failed tests. It is customizable with different themes. The extension has an affirmation presented on opening VS Code, and offers affirmations on command. Users can also log into our website and add to the list of affirmations which will be added to the database all the apps draw from.',
     mediaType: 'image',
