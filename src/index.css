@@ -35,6 +35,143 @@
   }
 }
 
+/* Power-on reveal: as a card enters view it energizes — a brief brightness
+   pop while a blue light traces once around the panel border, then settles.
+   Fires once (useInView adds .energized); stagger via inline animation-delay.
+   Pairs with the title-decode scramble in DecodeText. */
+@property --trace-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes energizeIn {
+  0% {
+    opacity: 0;
+    filter: brightness(2.6) contrast(1.15);
+  }
+  45% {
+    opacity: 1;
+    filter: brightness(1.5);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+@keyframes traceSpin {
+  to {
+    --trace-angle: 360deg;
+  }
+}
+
+@keyframes traceFade {
+  0% {
+    opacity: 0;
+  }
+  15%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.energize {
+  opacity: 0;
+}
+
+.energized {
+  animation: energizeIn 0.6s ease-out forwards;
+}
+
+/* Border trace: a conic gradient rotated once around a border-only mask, so a
+   bright blue arc travels the panel edge as it powers on. */
+.trace {
+  opacity: 0;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--trace-angle),
+    transparent 0deg,
+    transparent 280deg,
+    rgba(47, 0, 255, 0.7) 330deg,
+    #6a4bff 358deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.energized .trace {
+  animation:
+    traceSpin 0.7s ease-out,
+    traceFade 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energize,
+  .energized {
+    opacity: 1;
+    animation: none;
+    filter: none;
+  }
+  .trace {
+    display: none;
+  }
+}
+
+/* Cursor-tracked edge light. --pointer-x/--pointer-y are written per card by
+   the JS pointer handler; the blue is used here as a single light source
+   (a lit border + a faint interior wash) rather than scattered accents. */
+.spotlight::before,
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+/* Lit border: a blue glow that rides the panel edge nearest the cursor. */
+.spotlight::before {
+  z-index: 3;
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--pointer-x, 50%) var(--pointer-y, 0%),
+    rgba(47, 0, 255, 0.9),
+    rgba(47, 0, 255, 0) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Interior wash: a soft pool of light under the cursor. */
+.spotlight::after {
+  z-index: 0;
+  background: radial-gradient(
+    420px circle at var(--pointer-x, 50%) var(--pointer-y, 0%),
+    rgba(47, 0, 255, 0.12),
+    rgba(47, 0, 255, 0) 60%
+  );
+}
+
+@media (hover: hover) {
+  .spotlight:hover::before,
+  .spotlight:hover::after {
+    opacity: 1;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
