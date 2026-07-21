@@ -8,6 +8,7 @@ import {
   buildPhotoEntry,
   addPhoto,
   removePhoto,
+  updatePhoto,
   objectKeyFromUrl,
 } from './lib.mjs';
 
@@ -153,6 +154,71 @@ describe('addPhoto / removePhoto', () => {
     const only = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const manifest = addPhoto([], only);
     expect(removePhoto(manifest, 'no-such-id')).toEqual(manifest);
+  });
+});
+
+describe('updatePhoto', () => {
+  test('updates alt + caption on the matching id, preserving id/url/uploadedAt', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'astro/1.jpg',
+      alt: 'old alt',
+      caption: 'old caption',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { alt: 'new alt', caption: 'new caption' });
+    expect(updated.alt).toBe('new alt');
+    expect(updated.caption).toBe('new caption');
+    expect(updated.id).toBe(entry.id);
+    expect(updated.url).toBe(entry.url);
+    expect(updated.uploadedAt).toBe(entry.uploadedAt);
+  });
+
+  test('leaves other entries untouched', () => {
+    const first = buildPhotoEntry({
+      objectKey: 'astro/1.jpg',
+      caption: 'first',
+      mediaBaseUrl: 'x',
+    });
+    const second = buildPhotoEntry({
+      objectKey: 'astro/2.jpg',
+      caption: 'second',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto(addPhoto([], first), second);
+    const result = updatePhoto(manifest, first.id, { caption: 'edited' });
+    expect(result.find((photo) => photo.id === second.id).caption).toBe('second');
+    expect(result.find((photo) => photo.id === first.id).caption).toBe('edited');
+  });
+
+  test('does not mutate the input array', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'astro/1.jpg',
+      caption: 'original',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    updatePhoto(manifest, entry.id, { caption: 'changed' });
+    expect(manifest[0].caption).toBe('original');
+  });
+
+  test('is a no-op when the id is not present', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
+    const manifest = addPhoto([], entry);
+    expect(updatePhoto(manifest, 'no-such-id', { caption: 'x' })).toEqual(manifest);
+  });
+
+  test('omitting caption keeps the prior caption', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'astro/1.jpg',
+      alt: 'old alt',
+      caption: 'keep me',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { alt: 'new alt' });
+    expect(updated.alt).toBe('new alt');
+    expect(updated.caption).toBe('keep me');
   });
 });
 
