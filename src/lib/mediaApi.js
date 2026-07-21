@@ -65,6 +65,15 @@ export async function savePhoto(token, { objectKey, alt, caption }) {
   return response.json(); // the created entry
 }
 
+export async function updatePhoto(token, id, { alt, caption }) {
+  const response = await authorizedFetch(`/photos/${id}`, token, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ alt, caption }),
+  });
+  return response.json(); // the updated entry
+}
+
 export async function deletePhoto(token, id) {
   await authorizedFetch(`/photos/${id}`, token, { method: 'DELETE' });
 }

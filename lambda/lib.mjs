@@ -93,6 +93,16 @@ export function removePhoto(manifest, id) {
   return manifest.filter((photo) => photo.id !== id);
 }
 
+// Replace alt/caption on the matching entry; other fields and other entries
+// untouched. Pure — returns a new array, does not mutate. Unknown id: unchanged.
+export function updatePhoto(manifest, id, { alt, caption }) {
+  return manifest.map((photo) =>
+    photo.id === id
+      ? { ...photo, alt: alt ?? photo.alt, caption: caption ?? photo.caption }
+      : photo,
+  );
+}
+
 // Derive the S3 object key from an entry's public URL, so deletes don't need a
 // separately stored key.
 export function objectKeyFromUrl(url, mediaBaseUrl) {
