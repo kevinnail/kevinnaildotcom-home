@@ -103,6 +103,24 @@ export function updatePhoto(manifest, id, { alt, caption }) {
   );
 }
 
+// Reorder the manifest so its entries follow `orderedIds`. Returns null when
+// `orderedIds` is not an exact permutation of the manifest's ids (wrong length,
+// an unknown id, or a duplicate), so the caller can reject the request rather
+// than silently drop or duplicate entries. Pure — returns a new array, never
+// mutates. The manifest's array order IS the gallery's display order.
+export function reorderPhotos(manifest, orderedIds) {
+  if (!Array.isArray(orderedIds) || orderedIds.length !== manifest.length) return null;
+  const entryById = new Map(manifest.map((photo) => [photo.id, photo]));
+  const reordered = [];
+  const seenIds = new Set();
+  for (const id of orderedIds) {
+    if (!entryById.has(id) || seenIds.has(id)) return null;
+    seenIds.add(id);
+    reordered.push(entryById.get(id));
+  }
+  return reordered;
+}
+
 // Derive the S3 object key from an entry's public URL, so deletes don't need a
 // separately stored key.
 export function objectKeyFromUrl(url, mediaBaseUrl) {
