@@ -4,7 +4,7 @@ import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
-import { fetchAstroPhotos, deletePhoto, SessionExpiredError } from '../lib/mediaApi';
+import { fetchAstroPhotos, updatePhoto, deletePhoto, SessionExpiredError } from '../lib/mediaApi';
 
 const TOKEN_KEY = 'mediaAdminToken';
 
@@ -42,6 +42,16 @@ export default function DashboardPage() {
   const handleSessionExpired = () => {
     setError('Session expired — please log in again.');
     signOut();
+  };
+
+  const handleEdit = async (id, fields) => {
+    try {
+      const updated = await updatePhoto(token, id, fields);
+      setPhotos((current) => current.map((photo) => (photo.id === id ? updated : photo)));
+    } catch (editError) {
+      if (editError instanceof SessionExpiredError) handleSessionExpired();
+      else setError('Edit failed.');
+    }
   };
 
   const handleDelete = async (id) => {
@@ -84,7 +94,7 @@ export default function DashboardPage() {
                 onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
                 onSessionExpired={handleSessionExpired}
               />
-              <PhotoList photos={photos} onDelete={handleDelete} />
+              <PhotoList photos={photos} onEdit={handleEdit} onDelete={handleDelete} />
             </>
           ) : (
             <LoginForm onAuthenticated={signIn} />
