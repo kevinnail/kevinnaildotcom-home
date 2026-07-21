@@ -3,6 +3,7 @@
 //   POST   /login          { password }                 -> { token }
 //   POST   /presign        { filename, contentType }    -> { uploadUrl, objectKey, publicUrl }   (auth)
 //   POST   /photos         { objectKey, alt, caption }  -> created entry                          (auth)
+//   PATCH  /photos/{id}    { alt, caption }             -> updated entry                          (auth)
 //   DELETE /photos/{id}                                 -> { ok: true }                          (auth)
 //
 // Image bytes never pass through here: /presign returns a URL the browser PUTs
@@ -26,6 +27,7 @@ import {
   buildPhotoEntry,
   addPhoto,
   removePhoto,
+  updatePhoto,
   objectKeyFromUrl,
 } from './lib.mjs';
 
@@ -136,6 +138,18 @@ async function handleAddPhoto(body) {
   return json(201, entry);
 }
 
+async function handleUpdatePhoto(id, body) {
+  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+  if (!manifest.some((photo) => photo.id === id)) return json(404, { error: 'Not found' });
+
+  const updated = updatePhoto(manifest, id, { alt: body.alt, caption: body.caption });
+  await writeManifest(ASTRO_MANIFEST_KEY, updated);
+  return json(
+    200,
+    updated.find((photo) => photo.id === id),
+  );
+}
+
 async function handleDeletePhoto(id) {
   const manifest = await readManifest(ASTRO_MANIFEST_KEY);
   const target = manifest.find((photo) => photo.id === id);
@@ -166,6 +180,14 @@ export async function handler(event) {
     if (method === 'POST' && path === '/photos') {
       requireAuth(event.headers);
       return await handleAddPhoto(parseBody(event));
+    }
+
+    if (method === 'PATCH' && path.startsWith('/photos/')) {
+      requireAuth(event.headers);
+      return await handleUpdatePhoto(
+        decodeURIComponent(path.slice('/photos/'.length)),
+        parseBody(event),
+      );
     }
 
     if (method === 'DELETE' && path.startsWith('/photos/')) {
