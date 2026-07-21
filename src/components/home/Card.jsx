@@ -9,9 +9,7 @@ export default function Card({ card }) {
     <div
       className="bg-black pb-2.5 h-[175px] md:h-[225px] lg:h-[250px] rounded-lg grid min-w-[100px] border-2 border-neon-blue-50 overflow-hidden transition-all duration-500"
       style={{
-        boxShadow: hovered
-          ? '0 0 15px 0 white'
-          : '0 0 5px pink',
+        boxShadow: hovered ? '0 0 15px 0 white' : '0 0 5px pink',
         ...(hovered
           ? {
               height: '300px',
