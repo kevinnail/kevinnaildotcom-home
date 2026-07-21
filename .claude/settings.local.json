@@ -22,7 +22,14 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kevin\\\\Documents\\\\Work and Projects\\\\Kevin Nail Website\\\\kevinnaildotcom-home\" -Depth 2)",
       "Bash(Select-Object FullName)",
       "Bash(Head -30)",
-      "WebFetch(domain:apps.apple.com)"
+      "WebFetch(domain:apps.apple.com)",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(powershell -NoProfile -Command \"Compress-Archive -Path index.mjs,lib.mjs -DestinationPath media-lambda.zip -Force\")",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*vite*'\\\\'' -and $_.CommandLine -notlike '\\\\''*Get-CimInstance*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')",
+      "Bash(npm test *)",
+      "Bash(git *)",
+      "Bash(npm view *)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('4.1.10:', d.get\\('4.1.10'\\)\\); print\\('4.1.9:', d.get\\('4.1.9'\\)\\); print\\('4.1.0:', d.get\\('4.1.0'\\)\\)\")"
     ]
   }
 }
