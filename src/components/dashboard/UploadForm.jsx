@@ -1,0 +1,77 @@
+import { useState } from 'react';
+import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../lib/mediaApi';
+
+const initialFields = { alt: '', caption: '' };
+
+export default function UploadForm({ token, onUploaded, onSessionExpired }) {
+  const [file, setFile] = useState(null);
+  const [fields, setFields] = useState(initialFields);
+  const [status, setStatus] = useState('idle'); // idle | uploading | error
+  const [error, setError] = useState('');
+
+  const updateField = (name) => (event) =>
+    setFields((current) => ({ ...current, [name]: event.target.value }));
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!file) return;
+    setStatus('uploading');
+    setError('');
+    try {
+      const { uploadUrl, objectKey } = await requestUpload(token, file);
+      await uploadToS3(uploadUrl, file);
+      const entry = await savePhoto(token, { objectKey, ...fields });
+      onUploaded(entry);
+      setFile(null);
+      setFields(initialFields);
+      event.target.reset();
+      setStatus('idle');
+    } catch (uploadError) {
+      if (uploadError instanceof SessionExpiredError) {
+        onSessionExpired();
+        return;
+      }
+      setError('Upload failed. Please try again.');
+      setStatus('error');
+    }
+  };
+
+  const uploading = status === 'uploading';
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
+    >
+      <h3 className="text-neon-blue font-display text-xl">Upload astronomy photo</h3>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(event) => setFile(event.target.files[0] ?? null)}
+        className="text-white text-sm"
+      />
+      <input
+        type="text"
+        value={fields.alt}
+        onChange={updateField('alt')}
+        placeholder="Alt text (accessibility)"
+        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none"
+      />
+      <input
+        type="text"
+        value={fields.caption}
+        onChange={updateField('caption')}
+        placeholder="Caption (shown on hover)"
+        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none"
+      />
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <button
+        type="submit"
+        disabled={uploading || !file}
+        className="px-4 py-2 rounded bg-neon-blue-50 text-white font-bold disabled:opacity-50 self-start"
+      >
+        {uploading ? 'Uploading…' : 'Upload'}
+      </button>
+    </form>
+  );
+}

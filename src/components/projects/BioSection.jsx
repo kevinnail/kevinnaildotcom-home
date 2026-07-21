@@ -35,9 +35,9 @@ export default function BioSection() {
 
           <p className="m-0 text-[0.95rem] leading-[1.7] text-white/80">
             In 2022 I attended Alchemy Code Lab for web development and worked through a React /
-            Node / Express / Postgres stack with multiple group projects. When the program shut
-            down unexpectedly, our cohort kept going independently — meeting up, shipping projects,
-            and keeping each other accountable.
+            Node / Express / Postgres stack with multiple group projects. When the program shut down
+            unexpectedly, our cohort kept going independently — meeting up, shipping projects, and
+            keeping each other accountable.
           </p>
 
           <p className="m-0 text-[0.95rem] leading-[1.7] text-white/80">
@@ -48,7 +48,9 @@ export default function BioSection() {
           </p>
 
           <div className="rounded-2xl bg-neutral-950 border border-white/[0.08] p-5">
-            <h3 className="m-0 mb-3 font-display font-bold tracking-[2px] text-base">Focus areas</h3>
+            <h3 className="m-0 mb-3 font-display font-bold tracking-[2px] text-base">
+              Focus areas
+            </h3>
             <ul className="m-0 pl-5 space-y-1.5 list-disc marker:text-neon-blue text-[0.9rem] leading-[1.6] text-white/80">
               <li>React front-ends with component-driven UI</li>
               <li>Node/Express APIs using Postgres and data-backed features</li>

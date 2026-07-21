@@ -1,19 +1,13 @@
 import { useEffect, useCallback } from 'react';
 
-export default function LightboxModal({
-  photos,
-  currentIndex,
-  onClose,
-  onPrev,
-  onNext,
-}) {
+export default function LightboxModal({ photos, currentIndex, onClose, onPrev, onNext }) {
   const handleKeyDown = useCallback(
     (e) => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
     },
-    [onClose, onPrev, onNext]
+    [onClose, onPrev, onNext],
   );
 
   useEffect(() => {
@@ -58,7 +52,7 @@ export default function LightboxModal({
         )}
 
         <img
-          src={photo.src}
+          src={photo.url}
           alt={photo.alt}
           className="max-w-[70%] max-h-[80vh] border border-[#888] block"
           style={{ animation: 'zoom 0.6s' }}
@@ -75,9 +69,7 @@ export default function LightboxModal({
         )}
       </div>
 
-      <div className="text-[#ccc] text-center mt-2.5 py-2.5 max-w-[700px]">
-        {photo.caption}
-      </div>
+      <div className="text-[#ccc] text-center mt-2.5 py-2.5 max-w-[700px]">{photo.caption}</div>
     </div>
   );
 }

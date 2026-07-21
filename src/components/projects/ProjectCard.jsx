@@ -180,9 +180,7 @@ export default function ProjectCard({ project, index = 0, featured = false }) {
       className={
         'spotlight group relative flex flex-col h-full overflow-hidden rounded-2xl bg-neutral-950 ' +
         'border border-white/[0.08] energize motion-safe:hover:-translate-y-1 ' +
-        (featured
-          ? 'lg:col-span-2 shadow-[0_0_60px_-20px_rgba(47,0,255,0.5)] '
-          : '') +
+        (featured ? 'lg:col-span-2 shadow-[0_0_60px_-20px_rgba(47,0,255,0.5)] ' : '') +
         (isInView ? 'energized' : '')
       }
     >
