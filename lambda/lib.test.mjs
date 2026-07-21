@@ -1,0 +1,178 @@
+import { describe, test, expect } from 'vitest';
+import {
+  signToken,
+  verifyToken,
+  hashPassword,
+  verifyPassword,
+  getBearerToken,
+  buildPhotoEntry,
+  addPhoto,
+  removePhoto,
+  objectKeyFromUrl,
+} from './lib.mjs';
+
+const secret = 'test-secret';
+
+describe('signToken / verifyToken', () => {
+  test('round-trips the payload', () => {
+    const token = signToken({ role: 'admin' }, secret, 60);
+    const payload = verifyToken(token, secret);
+    expect(payload.role).toBe('admin');
+  });
+
+  test('stamps iat and exp claims', () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const token = signToken({ role: 'admin' }, secret, 60);
+    const payload = verifyToken(token, secret);
+    // iat within a couple seconds of now; exp exactly 60s past iat.
+    expect(payload.iat).toBeGreaterThanOrEqual(nowSeconds - 2);
+    expect(payload.iat).toBeLessThanOrEqual(nowSeconds + 2);
+    expect(payload.exp).toBe(payload.iat + 60);
+  });
+
+  test('rejects a tampered signature', () => {
+    const token = signToken({ role: 'admin' }, secret, 60);
+    const tampered = token.slice(0, -1) + (token.at(-1) === 'a' ? 'b' : 'a');
+    expect(() => verifyToken(tampered, secret)).toThrow(/signature/i);
+  });
+
+  test('rejects a token signed with a different secret', () => {
+    const token = signToken({ role: 'admin' }, secret, 60);
+    expect(() => verifyToken(token, 'wrong-secret')).toThrow(/signature/i);
+  });
+
+  test('rejects an expired token', () => {
+    const token = signToken({ role: 'admin' }, secret, -1);
+    expect(() => verifyToken(token, secret)).toThrow(/expired/i);
+  });
+
+  test.each([
+    ['empty string', ''],
+    ['single segment', 'abc'],
+    ['two segments', 'abc.def'],
+    ['four segments', 'a.b.c.d'],
+  ])('rejects a malformed token (%s)', (_label, malformed) => {
+    expect(() => verifyToken(malformed, secret)).toThrow(/malformed/i);
+  });
+});
+
+describe('hashPassword / verifyPassword', () => {
+  test('accepts the correct password and rejects a wrong one', () => {
+    const stored = hashPassword('correct horse battery');
+    expect(verifyPassword('correct horse battery', stored)).toBe(true);
+    expect(verifyPassword('wrong password', stored)).toBe(false);
+  });
+
+  test('produces a salted "salt:derived" hash that differs per call', () => {
+    const first = hashPassword('same password');
+    const second = hashPassword('same password');
+    expect(first).toMatch(/^[0-9a-f]{32}:[0-9a-f]{128}$/);
+    // Random salt means the same password hashes to different stored values.
+    expect(first).not.toBe(second);
+    expect(verifyPassword('same password', first)).toBe(true);
+    expect(verifyPassword('same password', second)).toBe(true);
+  });
+
+  test.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['empty string', ''],
+    ['missing derived half', 'abcd'],
+    ['garbage', 'not-a-real-hash'],
+  ])('returns false for a malformed stored hash (%s)', (_label, storedHash) => {
+    expect(verifyPassword('any password', storedHash)).toBe(false);
+  });
+});
+
+describe('getBearerToken', () => {
+  test('extracts the token case-insensitively across header casings', () => {
+    expect(getBearerToken({ authorization: 'Bearer abc.def.ghi' })).toBe('abc.def.ghi');
+    expect(getBearerToken({ Authorization: 'bearer xyz' })).toBe('xyz');
+  });
+
+  test.each([
+    ['no headers', {}],
+    ['null headers', null],
+    ['undefined headers', undefined],
+    ['non-bearer scheme', { authorization: 'Basic abc123' }],
+    ['scheme without token', { authorization: 'Bearer' }],
+  ])('returns null when there is no bearer token (%s)', (_label, headers) => {
+    expect(getBearerToken(headers)).toBeNull();
+  });
+});
+
+describe('buildPhotoEntry', () => {
+  test('produces the expected shape', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'astro/abc.jpg',
+      alt: 'Moon',
+      caption: 'The moon',
+      mediaBaseUrl: 'https://media.example.com',
+    });
+    expect(entry.url).toBe('https://media.example.com/astro/abc.jpg');
+    expect(entry.alt).toBe('Moon');
+    expect(entry.caption).toBe('The moon');
+    expect(entry.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(Number.isNaN(Date.parse(entry.uploadedAt))).toBe(false);
+  });
+
+  test('defaults alt and caption to empty strings when omitted', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/x.jpg', mediaBaseUrl: 'x' });
+    expect(entry.alt).toBe('');
+    expect(entry.caption).toBe('');
+  });
+
+  test('assigns a unique id to each entry', () => {
+    const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
+    const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
+    expect(first.id).not.toBe(second.id);
+  });
+});
+
+describe('addPhoto / removePhoto', () => {
+  test('addPhoto prepends (newest first) without mutating the input', () => {
+    const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
+    const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
+    const afterFirst = addPhoto([], first);
+    const manifest = addPhoto(afterFirst, second);
+    expect(manifest.map((photo) => photo.url)).toEqual(['x/astro/2.jpg', 'x/astro/1.jpg']);
+    // Prior manifest is untouched (transforms are pure).
+    expect(afterFirst).toHaveLength(1);
+  });
+
+  test('removePhoto removes by id and leaves the rest, without mutating', () => {
+    const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
+    const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
+    const manifest = addPhoto(addPhoto([], first), second);
+    const afterRemove = removePhoto(manifest, first.id);
+    expect(afterRemove.map((photo) => photo.id)).toEqual([second.id]);
+    expect(manifest).toHaveLength(2);
+  });
+
+  test('removePhoto is a no-op when the id is not present', () => {
+    const only = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
+    const manifest = addPhoto([], only);
+    expect(removePhoto(manifest, 'no-such-id')).toEqual(manifest);
+  });
+});
+
+describe('objectKeyFromUrl', () => {
+  const base = 'https://media.example.com';
+
+  test('derives the key from a matching url', () => {
+    expect(objectKeyFromUrl(`${base}/astro/abc.jpg`, base)).toBe('astro/abc.jpg');
+  });
+
+  test('returns null for a url on a different host', () => {
+    expect(objectKeyFromUrl('https://elsewhere.com/x.jpg', base)).toBeNull();
+  });
+
+  test('returns null when the url is the base with no trailing key', () => {
+    expect(objectKeyFromUrl(base, base)).toBeNull();
+  });
+
+  test('round-trips with buildPhotoEntry', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/round-trip.jpg', mediaBaseUrl: base });
+    expect(objectKeyFromUrl(entry.url, base)).toBe('astro/round-trip.jpg');
+  });
+});
