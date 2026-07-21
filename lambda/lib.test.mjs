@@ -9,6 +9,7 @@ import {
   addPhoto,
   removePhoto,
   updatePhoto,
+  reorderPhotos,
   objectKeyFromUrl,
 } from './lib.mjs';
 
@@ -219,6 +220,66 @@ describe('updatePhoto', () => {
     const [updated] = updatePhoto(manifest, entry.id, { alt: 'new alt' });
     expect(updated.alt).toBe('new alt');
     expect(updated.caption).toBe('keep me');
+  });
+});
+
+describe('reorderPhotos', () => {
+  const buildThree = () => {
+    const first = buildPhotoEntry({
+      objectKey: 'astro/1.jpg',
+      caption: 'first',
+      mediaBaseUrl: 'x',
+    });
+    const second = buildPhotoEntry({
+      objectKey: 'astro/2.jpg',
+      caption: 'second',
+      mediaBaseUrl: 'x',
+    });
+    const third = buildPhotoEntry({
+      objectKey: 'astro/3.jpg',
+      caption: 'third',
+      mediaBaseUrl: 'x',
+    });
+    return { first, second, third, manifest: [first, second, third] };
+  };
+
+  test('reorders entries to match orderedIds', () => {
+    const { first, second, third, manifest } = buildThree();
+    const result = reorderPhotos(manifest, [third.id, first.id, second.id]);
+    expect(result.map((photo) => photo.caption)).toEqual(['third', 'first', 'second']);
+  });
+
+  test('preserves each entry unchanged (only order changes)', () => {
+    const { first, second, third, manifest } = buildThree();
+    const result = reorderPhotos(manifest, [second.id, third.id, first.id]);
+    expect(result[0]).toEqual(second);
+    expect(result[2]).toEqual(first);
+  });
+
+  test('does not mutate the input array', () => {
+    const { first, second, third, manifest } = buildThree();
+    reorderPhotos(manifest, [third.id, second.id, first.id]);
+    expect(manifest.map((photo) => photo.caption)).toEqual(['first', 'second', 'third']);
+  });
+
+  test('returns null when an id is missing from orderedIds (wrong length)', () => {
+    const { first, second, manifest } = buildThree();
+    expect(reorderPhotos(manifest, [first.id, second.id])).toBeNull();
+  });
+
+  test('returns null when orderedIds contains an unknown id', () => {
+    const { first, second, manifest } = buildThree();
+    expect(reorderPhotos(manifest, [first.id, second.id, 'no-such-id'])).toBeNull();
+  });
+
+  test('returns null when orderedIds duplicates an id', () => {
+    const { first, second, manifest } = buildThree();
+    expect(reorderPhotos(manifest, [first.id, second.id, first.id])).toBeNull();
+  });
+
+  test('returns null when orderedIds is not an array', () => {
+    const { manifest } = buildThree();
+    expect(reorderPhotos(manifest, undefined)).toBeNull();
   });
 });
 

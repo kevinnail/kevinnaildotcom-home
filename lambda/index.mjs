@@ -3,6 +3,7 @@
 //   POST   /login          { password }                 -> { token }
 //   POST   /presign        { filename, contentType }    -> { uploadUrl, objectKey, publicUrl }   (auth)
 //   POST   /photos         { objectKey, alt, caption }  -> created entry                          (auth)
+//   PUT    /photos/order   { order: [id, ...] }         -> reordered manifest                     (auth)
 //   PATCH  /photos/{id}    { alt, caption }             -> updated entry                          (auth)
 //   DELETE /photos/{id}                                 -> { ok: true }                          (auth)
 //
@@ -28,6 +29,7 @@ import {
   addPhoto,
   removePhoto,
   updatePhoto,
+  reorderPhotos,
   objectKeyFromUrl,
 } from './lib.mjs';
 
@@ -150,6 +152,16 @@ async function handleUpdatePhoto(id, body) {
   );
 }
 
+async function handleReorderPhotos(body) {
+  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+  const reordered = reorderPhotos(manifest, body.order);
+  if (reordered === null) {
+    return json(400, { error: 'order must be a permutation of the existing photo ids' });
+  }
+  await writeManifest(ASTRO_MANIFEST_KEY, reordered);
+  return json(200, reordered);
+}
+
 async function handleDeletePhoto(id) {
   const manifest = await readManifest(ASTRO_MANIFEST_KEY);
   const target = manifest.find((photo) => photo.id === id);
@@ -180,6 +192,11 @@ export async function handler(event) {
     if (method === 'POST' && path === '/photos') {
       requireAuth(event.headers);
       return await handleAddPhoto(parseBody(event));
+    }
+
+    if (method === 'PUT' && path === '/photos/order') {
+      requireAuth(event.headers);
+      return await handleReorderPhotos(parseBody(event));
     }
 
     if (method === 'PATCH' && path.startsWith('/photos/')) {

@@ -4,7 +4,13 @@ import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
-import { fetchAstroPhotos, updatePhoto, deletePhoto, SessionExpiredError } from '../lib/mediaApi';
+import {
+  fetchAstroPhotos,
+  updatePhoto,
+  reorderPhotos,
+  deletePhoto,
+  SessionExpiredError,
+} from '../lib/mediaApi';
 
 const TOKEN_KEY = 'mediaAdminToken';
 
@@ -54,6 +60,21 @@ export default function DashboardPage() {
     }
   };
 
+  const handleReorder = async (orderedIds) => {
+    const previous = photos;
+    const entryById = new Map(previous.map((photo) => [photo.id, photo]));
+    // Optimistically show the new order, then reconcile with the server's copy.
+    setPhotos(orderedIds.map((id) => entryById.get(id)));
+    try {
+      const saved = await reorderPhotos(token, orderedIds);
+      setPhotos(saved);
+    } catch (reorderError) {
+      setPhotos(previous);
+      if (reorderError instanceof SessionExpiredError) handleSessionExpired();
+      else setError('Reorder failed.');
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await deletePhoto(token, id);
@@ -94,7 +115,12 @@ export default function DashboardPage() {
                 onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
                 onSessionExpired={handleSessionExpired}
               />
-              <PhotoList photos={photos} onEdit={handleEdit} onDelete={handleDelete} />
+              <PhotoList
+                photos={photos}
+                onEdit={handleEdit}
+                onReorder={handleReorder}
+                onDelete={handleDelete}
+              />
             </>
           ) : (
             <LoginForm onAuthenticated={signIn} />
