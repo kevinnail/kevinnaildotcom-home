@@ -36,6 +36,17 @@ export default [
     },
   },
   {
+    files: ['lambda/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        fetch: 'readonly',
+      },
+    },
+  },
+  {
     ignores: ['dist/'],
   },
 ];
