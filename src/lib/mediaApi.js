@@ -74,6 +74,17 @@ export async function updatePhoto(token, id, { alt, caption }) {
   return response.json(); // the updated entry
 }
 
+// Persist a new gallery order. `orderedIds` must list every existing photo id
+// exactly once; the Lambda rejects anything else with a 400.
+export async function reorderPhotos(token, orderedIds) {
+  const response = await authorizedFetch('/photos/order', token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ order: orderedIds }),
+  });
+  return response.json(); // the reordered manifest
+}
+
 export async function deletePhoto(token, id) {
   await authorizedFetch(`/photos/${id}`, token, { method: 'DELETE' });
 }
