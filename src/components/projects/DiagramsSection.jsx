@@ -5,7 +5,7 @@ const diagrams = [
     src: '/images/database-atf.png',
     alt: 'At The Fire database diagram',
     caption:
-      "My most complex system: a full social platform designed for many users, wiring together AWS Cognito, AWS S3, CloudFront, Redis, WebSockets, and Stripe API webhooks.",
+      'My most complex system: a full social platform designed for many users, wiring together AWS Cognito, AWS S3, CloudFront, Redis, WebSockets, and Stripe API webhooks.',
   },
   {
     src: '/images/database-slg.png',
@@ -17,7 +17,7 @@ const diagrams = [
     src: '/images/app-flow-1.png',
     alt: 'App flow diagram',
     caption:
-      "Front-end program flow for screens and forms. Originally built in VBA inside MS Excel — where I started teaching myself to program.",
+      'Front-end program flow for screens and forms. Originally built in VBA inside MS Excel — where I started teaching myself to program.',
   },
 ];
 
