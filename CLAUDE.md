@@ -23,6 +23,8 @@ Routes are defined in `src/App.jsx`. All routes are wrapped with `PageWrapper` (
 - `/` → HomePage
 - `/projects` → ProjectsPage
 - `/astrophotography` → AstrophotographyPage
+- `/backpacking` → BackpackingPage
+- `/dashboard` → DashboardPage
 - `/*` → NotFoundPage
 
 ### Data Pattern
@@ -36,7 +38,8 @@ Components are grouped by feature under `src/components/`:
 - `layout/` — PageWrapper, Banner, ScrollToTop (shared across pages)
 - `home/` — CardGrid, Card
 - `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, ResumeEmbed, DiagramsSection
-- `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal
+- `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (the gallery grid is reused by the backpacking page via a `fetchPhotos` prop)
+- `dashboard/` — LoginForm, PhotoList, UploadForm (admin gallery management)
 
 ### Styling
 
