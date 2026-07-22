@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
+import BulkUploadForm from '../components/dashboard/BulkUploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
 import {
   fetchAstroPhotos,
@@ -137,12 +138,19 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-              <UploadForm
-                token={token}
-                gallery={gallery}
-                onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
-                onSessionExpired={handleSessionExpired}
-              />
+              {gallery === 'hikes' ? (
+                <BulkUploadForm
+                  token={token}
+                  onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
+                  onSessionExpired={handleSessionExpired}
+                />
+              ) : (
+                <UploadForm
+                  token={token}
+                  onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
+                  onSessionExpired={handleSessionExpired}
+                />
+              )}
               <PhotoList
                 photos={photos}
                 gallery={gallery}

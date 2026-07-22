@@ -72,6 +72,17 @@ export async function savePhoto(token, { objectKey, alt, caption, lat, lng, take
   return response.json(); // the created entry
 }
 
+// Persist many already-uploaded photos in one manifest write (bulk upload). Each
+// item is { objectKey, alt?, caption?, lat?, lng?, takenAt? }.
+export async function savePhotosBatch(token, items, gallery) {
+  const response = await authorizedFetch(`/photos/batch${galleryQuery(gallery)}`, token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ photos: items }),
+  });
+  return response.json(); // the created entries
+}
+
 export async function updatePhoto(token, id, { alt, caption, lat, lng }, gallery) {
   const response = await authorizedFetch(`/photos/${id}${galleryQuery(gallery)}`, token, {
     method: 'PATCH',

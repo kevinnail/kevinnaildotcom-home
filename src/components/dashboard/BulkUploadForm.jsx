@@ -1,0 +1,145 @@
+import { useState } from 'react';
+import {
+  requestUpload,
+  uploadToS3,
+  savePhotosBatch,
+  SessionExpiredError,
+} from '../../lib/mediaApi';
+import { readPhotoMeta } from '../../lib/exif';
+import { mapWithConcurrency } from '../../lib/concurrency';
+
+const MAX_BATCH = 500; // must match the Lambda's per-batch cap
+const UPLOAD_CONCURRENCY = 5;
+
+export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) {
+  const [files, setFiles] = useState([]);
+  const [status, setStatus] = useState('idle'); // idle | uploading | done | error
+  const [completed, setCompleted] = useState(0);
+  const [failedNames, setFailedNames] = useState([]);
+  const [savedCount, setSavedCount] = useState(0);
+  const [error, setError] = useState('');
+
+  const resetSummary = () => {
+    setStatus('idle');
+    setCompleted(0);
+    setFailedNames([]);
+    setSavedCount(0);
+    setError('');
+  };
+
+  const handleFilesChange = (event) => {
+    setFiles(Array.from(event.target.files ?? []));
+    resetSummary();
+  };
+
+  // Read EXIF, get a presigned URL, and PUT the bytes to S3. Resolves to a result
+  // object so one bad file doesn't abort the batch; a session-expiry still throws
+  // so the whole run aborts and forces re-login.
+  const uploadOne = async (file) => {
+    try {
+      const meta = await readPhotoMeta(file);
+      const { uploadUrl, objectKey } = await requestUpload(token, file, 'hikes');
+      await uploadToS3(uploadUrl, file);
+      return { ok: true, item: { objectKey, takenAt: meta.takenAt, lat: meta.lat, lng: meta.lng } };
+    } catch (uploadError) {
+      if (uploadError instanceof SessionExpiredError) throw uploadError;
+      return { ok: false, name: file.name };
+    } finally {
+      setCompleted((current) => current + 1);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (files.length === 0) return;
+    if (files.length > MAX_BATCH) {
+      setError(`Select at most ${MAX_BATCH} photos at once.`);
+      setStatus('error');
+      return;
+    }
+
+    setStatus('uploading');
+    setCompleted(0);
+    setFailedNames([]);
+    setError('');
+
+    try {
+      const results = await mapWithConcurrency(files, UPLOAD_CONCURRENCY, uploadOne);
+      const successfulItems = results.filter((result) => result.ok).map((result) => result.item);
+      const failed = results.filter((result) => !result.ok).map((result) => result.name);
+
+      if (successfulItems.length > 0) {
+        // Orphan risk (accepted for v1): the bytes are already in S3 by this point,
+        // so if this single save fails those objects exist without a manifest entry
+        // and must be cleaned up manually. The upfront MAX_BATCH guard avoids the
+        // most likely cause (a 400 from an oversized batch).
+        const entries = await savePhotosBatch(token, successfulItems, 'hikes');
+        onUploaded(entries);
+        setSavedCount(entries.length);
+      }
+      setFailedNames(failed);
+      setStatus('done');
+      setFiles([]);
+      event.target.reset();
+    } catch (batchError) {
+      if (batchError instanceof SessionExpiredError) {
+        onSessionExpired();
+        return;
+      }
+      setError('Bulk upload failed. Some photos may not have been saved.');
+      setStatus('error');
+    }
+  };
+
+  const uploading = status === 'uploading';
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
+    >
+      <h3 className="text-neon-blue font-display text-xl">Upload backpacking photos</h3>
+      <p className="text-mid-gray text-xs">
+        Select many at once — location and capture time are read from each photo. Add captions or
+        fix coordinates afterward by editing a photo.
+      </p>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFilesChange}
+        className="text-white text-sm"
+      />
+
+      {uploading && (
+        <p className="text-mid-gray text-sm">
+          Uploading {completed}/{files.length}…
+        </p>
+      )}
+
+      {status === 'done' && (
+        <p className="text-sm text-mid-gray">
+          Uploaded {savedCount}
+          {failedNames.length > 0 && ` · failed ${failedNames.length}`}
+        </p>
+      )}
+
+      {failedNames.length > 0 && (
+        <p className="text-red-400 text-xs break-words">Failed: {failedNames.join(', ')}</p>
+      )}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={uploading || files.length === 0}
+        className="px-4 py-2 rounded bg-neon-blue-50 text-white font-bold disabled:opacity-50 self-start"
+      >
+        {uploading
+          ? 'Uploading…'
+          : files.length > 0
+            ? `Upload ${files.length} photo${files.length === 1 ? '' : 's'}`
+            : 'Upload'}
+      </button>
+    </form>
+  );
+}
