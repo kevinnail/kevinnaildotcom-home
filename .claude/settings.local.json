@@ -29,7 +29,8 @@
       "Bash(npm test *)",
       "Bash(git *)",
       "Bash(npm view *)",
-      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('4.1.10:', d.get\\('4.1.10'\\)\\); print\\('4.1.9:', d.get\\('4.1.9'\\)\\); print\\('4.1.0:', d.get\\('4.1.0'\\)\\)\")"
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('4.1.10:', d.get\\('4.1.10'\\)\\); print\\('4.1.9:', d.get\\('4.1.9'\\)\\); print\\('4.1.0:', d.get\\('4.1.0'\\)\\)\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
