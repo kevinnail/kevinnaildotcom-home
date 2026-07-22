@@ -94,6 +94,12 @@ export function addPhoto(manifest, entry) {
   return [entry, ...manifest];
 }
 
+// Prepend many entries at once (bulk upload). Order among `entries` is irrelevant
+// for hikes, which the gallery re-sorts by `takenAt` on read. Pure — new array.
+export function addPhotos(manifest, entries) {
+  return [...entries, ...manifest];
+}
+
 export function removePhoto(manifest, id) {
   return manifest.filter((photo) => photo.id !== id);
 }
