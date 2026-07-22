@@ -17,8 +17,9 @@ const fileInputClass =
 const submitButtonClass =
   'px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed self-start';
 
-export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) {
+export default function BulkUploadForm({ token, trips = [], onUploaded, onSessionExpired }) {
   const [files, setFiles] = useState([]);
+  const [tripId, setTripId] = useState(''); // '' = Unassigned
   const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [completed, setCompleted] = useState(0);
   const [failedNames, setFailedNames] = useState([]);
@@ -75,11 +76,13 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
       const failed = results.filter((result) => !result.ok).map((result) => result.name);
 
       if (successfulItems.length > 0) {
-        // Orphan risk (accepted for v1): the bytes are already in S3 by this point,
-        // so if this single save fails those objects exist without a manifest entry
-        // and must be cleaned up manually. The upfront MAX_BATCH guard avoids the
-        // most likely cause (a 400 from an oversized batch).
-        const entries = await savePhotosBatch(token, successfulItems, 'hikes');
+        // Every photo in the batch is assigned to the one trip picked above ('' =>
+        // null, i.e. unassigned). Orphan risk (accepted for v1): the bytes are
+        // already in S3 by this point, so if this single save fails those objects
+        // exist without a manifest entry and must be cleaned up manually. The
+        // upfront MAX_BATCH guard avoids the most likely cause (an oversized batch).
+        const items = successfulItems.map((item) => ({ ...item, tripId: tripId || null }));
+        const entries = await savePhotosBatch(token, items, 'hikes');
         onUploaded(entries);
         setSavedCount(entries.length);
       }
@@ -116,6 +119,24 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
         onChange={handleFilesChange}
         className={fileInputClass}
       />
+
+      <label className="flex flex-col gap-1 text-neutral-400 text-xs">
+        Trip
+        <select
+          value={tripId}
+          onChange={(event) => setTripId(event.target.value)}
+          disabled={uploading}
+          className="rounded border border-mid-gray bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-neon-blue-bright disabled:cursor-not-allowed disabled:text-neutral-500"
+        >
+          <option value="">Unassigned</option>
+          {trips.map((trip) => (
+            <option key={trip.id} value={trip.id}>
+              {trip.name}
+              {trip.region ? ` — ${trip.region}` : ''}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {uploading && (
         <p className="text-neutral-400 text-sm">
