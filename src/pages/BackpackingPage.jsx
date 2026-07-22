@@ -12,7 +12,7 @@ export default function BackpackingPage() {
           name="description"
           content="Kevin Nail's backpacking gallery — trail and summit photos from the trips."
         />
-        <link rel="canonical" href="https://kevinnail.com/backpacking" />
+        <link rel="canonical" href="https://kevinnail.com/backpacking/gallery" />
       </Helmet>
 
       <div className="bg-black min-h-screen">

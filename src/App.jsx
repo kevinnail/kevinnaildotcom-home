@@ -3,6 +3,7 @@ import PageWrapper from './components/layout/PageWrapper';
 import HomePage from './pages/HomePage';
 import ProjectsPage from './pages/ProjectsPage';
 import AstrophotographyPage from './pages/AstrophotographyPage';
+import HikeMapPage from './pages/HikeMapPage';
 import BackpackingPage from './pages/BackpackingPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -36,6 +37,14 @@ export default function App() {
       />
       <Route
         path="/backpacking"
+        element={
+          <PageWrapper>
+            <HikeMapPage />
+          </PageWrapper>
+        }
+      />
+      <Route
+        path="/backpacking/gallery"
         element={
           <PageWrapper>
             <BackpackingPage />
