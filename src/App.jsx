@@ -3,6 +3,7 @@ import PageWrapper from './components/layout/PageWrapper';
 import HomePage from './pages/HomePage';
 import ProjectsPage from './pages/ProjectsPage';
 import AstrophotographyPage from './pages/AstrophotographyPage';
+import BackpackingPage from './pages/BackpackingPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -30,6 +31,14 @@ export default function App() {
         element={
           <PageWrapper>
             <AstrophotographyPage />
+          </PageWrapper>
+        }
+      />
+      <Route
+        path="/backpacking"
+        element={
+          <PageWrapper>
+            <BackpackingPage />
           </PageWrapper>
         }
       />
