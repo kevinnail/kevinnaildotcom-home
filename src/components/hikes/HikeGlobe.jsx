@@ -52,7 +52,7 @@ export default function HikeGlobe({ selectedTrip }) {
       requestRenderMode
       maximumRenderTimeChange={Infinity}
     >
-      {selectedTrip ? <KmlDataSource data={selectedTrip.kmlUrl} clampToGround /> : null}
+      {selectedTrip ? <KmlDataSource data={selectedTrip.url} clampToGround /> : null}
     </Viewer>
   );
 }

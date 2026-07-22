@@ -5,12 +5,16 @@ import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
 import BulkUploadForm from '../components/dashboard/BulkUploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
+import KmlUploadForm from '../components/dashboard/KmlUploadForm';
+import KmlList from '../components/dashboard/KmlList';
 import {
   fetchAstroPhotos,
   fetchHikePhotos,
+  fetchTrips,
   updatePhoto,
   reorderPhotos,
   deletePhoto,
+  deleteKml,
   SessionExpiredError,
 } from '../lib/mediaApi';
 
@@ -25,6 +29,7 @@ export default function DashboardPage() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY));
   const [gallery, setGallery] = useState('astro');
   const [photos, setPhotos] = useState([]);
+  const [trips, setTrips] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -39,6 +44,23 @@ export default function DashboardPage() {
         if (active) setPhotos(loadedPhotos);
       } catch {
         if (active) setError('Could not load photos.');
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [token, gallery]);
+
+  // KML trips live under the Backpacking tab alongside the hike photos.
+  useEffect(() => {
+    if (!token || gallery !== 'hikes') return undefined;
+    let active = true;
+    (async () => {
+      try {
+        const loadedTrips = await fetchTrips();
+        if (active) setTrips(loadedTrips);
+      } catch {
+        if (active) setError('Could not load trips.');
       }
     })();
     return () => {
@@ -96,6 +118,16 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTripDelete = async (id) => {
+    try {
+      await deleteKml(token, id);
+      setTrips((current) => current.filter((trip) => trip.id !== id));
+    } catch (deleteError) {
+      if (deleteError instanceof SessionExpiredError) handleSessionExpired();
+      else setError('Delete failed.');
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -139,11 +171,21 @@ export default function DashboardPage() {
                 ))}
               </div>
               {gallery === 'hikes' ? (
-                <BulkUploadForm
-                  token={token}
-                  onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
-                  onSessionExpired={handleSessionExpired}
-                />
+                <>
+                  <BulkUploadForm
+                    token={token}
+                    onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
+                    onSessionExpired={handleSessionExpired}
+                  />
+                  <div className="mt-6 flex flex-col gap-3">
+                    <KmlUploadForm
+                      token={token}
+                      onUploaded={(entry) => setTrips((current) => [entry, ...current])}
+                      onSessionExpired={handleSessionExpired}
+                    />
+                    <KmlList trips={trips} onDelete={handleTripDelete} />
+                  </div>
+                </>
               ) : (
                 <UploadForm
                   token={token}

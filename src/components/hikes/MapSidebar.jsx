@@ -1,4 +1,4 @@
-export default function MapSidebar({ trips, selectedTripId, onSelectTrip }) {
+export default function MapSidebar({ trips, selectedTripId, onSelectTrip, emptyMessage }) {
   return (
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-r border-neon-blue-50 bg-black/90 text-white">
       <div className="border-b border-neon-blue-50 px-4 py-4">
@@ -7,6 +7,9 @@ export default function MapSidebar({ trips, selectedTripId, onSelectTrip }) {
       </div>
 
       <nav className="flex-1 px-2 py-2">
+        {trips.length === 0 && (
+          <p className="px-3 py-2 font-body text-sm text-mid-gray">{emptyMessage}</p>
+        )}
         <ul className="space-y-1">
           {trips.map((trip) => {
             const isSelected = trip.id === selectedTripId;

@@ -7,6 +7,7 @@ const MEDIA_URL = import.meta.env.VITE_MEDIA_URL;
 
 export const ASTRO_MANIFEST_URL = `${MEDIA_URL}/manifests/astro.json`;
 export const HIKES_MANIFEST_URL = `${MEDIA_URL}/manifests/hikes.json`;
+export const KML_MANIFEST_URL = `${MEDIA_URL}/manifests/kml.json`;
 
 // Writes target a gallery via `?gallery=`; astro is the Lambda's default, so we
 // only append the param for non-astro galleries (keeps astro URLs unchanged).
@@ -107,6 +108,23 @@ export async function deletePhoto(token, id, gallery) {
   await authorizedFetch(`/photos/${id}${galleryQuery(gallery)}`, token, { method: 'DELETE' });
 }
 
+// --- KML trips (map trails/campsites) ---
+
+// Record an already-uploaded KML object as a trip. The bytes went straight to S3
+// via presign (?gallery=kml) + uploadToS3; this only writes the trip manifest.
+export async function saveKml(token, { objectKey, name, region }) {
+  const response = await authorizedFetch('/kml', token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ objectKey, name, region }),
+  });
+  return response.json(); // the created trip entry
+}
+
+export async function deleteKml(token, id) {
+  await authorizedFetch(`/kml/${id}`, token, { method: 'DELETE' });
+}
+
 // Public read of a manifest. Missing manifest (before the first upload) reads as
 // an empty gallery rather than an error.
 async function fetchManifest(manifestUrl) {
@@ -133,4 +151,10 @@ export function fetchAstroPhotos() {
 
 export async function fetchHikePhotos() {
   return sortByCaptureTime(await fetchManifest(HIKES_MANIFEST_URL));
+}
+
+// Public read of the KML trip manifest (drives the map sidebar). Missing manifest
+// (before the first upload) reads as no trips, like the photo galleries.
+export function fetchTrips() {
+  return fetchManifest(KML_MANIFEST_URL);
 }
