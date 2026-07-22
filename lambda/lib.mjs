@@ -90,6 +90,20 @@ export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, takenAt, me
   };
 }
 
+// A KML trip entry. Same generic `{ id, url, uploadedAt }` skeleton as a photo,
+// but its own metadata (`name`/`region`) instead of `alt`/`caption`/coords — KML
+// is a trail/campsite file, not a gallery image. Trips reuse the generic
+// list transforms below (`addPhoto`/`removePhoto`), which key only on `id`.
+export function buildTripEntry({ objectKey, name, region, mediaBaseUrl }) {
+  return {
+    id: crypto.randomUUID(),
+    name: name ?? '',
+    region: region ?? '',
+    url: `${mediaBaseUrl}/${objectKey}`,
+    uploadedAt: new Date().toISOString(),
+  };
+}
+
 export function addPhoto(manifest, entry) {
   return [entry, ...manifest];
 }
