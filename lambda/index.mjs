@@ -3,10 +3,10 @@
 // defaulting to astro; an unknown gallery returns 400):
 //   POST   /login          { password }                      -> { token }
 //   POST   /presign        { filename, contentType }         -> { uploadUrl, objectKey, publicUrl }   (auth)
-//   POST   /photos         { objectKey, alt, caption, lat, lng } -> created entry                     (auth)
-//   POST   /photos/batch   { photos: [{ objectKey, ... }] }   -> created entries                      (auth)
+//   POST   /photos         { objectKey, alt, caption, lat, lng, tripId } -> created entry             (auth)
+//   POST   /photos/batch   { photos: [{ objectKey, ..., tripId }] } -> created entries               (auth)
 //   PUT    /photos/order   { order: [id, ...] }              -> reordered manifest                    (auth)
-//   PATCH  /photos/{id}    { alt, caption, lat, lng }        -> updated entry                         (auth)
+//   PATCH  /photos/{id}    { alt, caption, lat, lng, tripId } -> updated entry                        (auth)
 //   DELETE /photos/{id}                                      -> { ok: true }                          (auth)
 //   POST   /kml            { objectKey, name, region }       -> created trip entry                    (auth)
 //   DELETE /kml/{id}                                         -> { ok: true }                          (auth)
@@ -167,6 +167,7 @@ async function handleAddPhoto(gallery, body) {
     lat: body.lat,
     lng: body.lng,
     takenAt: body.takenAt,
+    tripId: body.tripId,
     mediaBaseUrl: MEDIA_BASE_URL,
   });
   await writeManifest(gallery.manifestKey, addPhoto(manifest, entry));
@@ -189,6 +190,7 @@ async function handleAddPhotosBatch(gallery, body) {
       lat: photo.lat,
       lng: photo.lng,
       takenAt: photo.takenAt,
+      tripId: photo.tripId,
       mediaBaseUrl: MEDIA_BASE_URL,
     }),
   );
@@ -206,6 +208,7 @@ async function handleUpdatePhoto(gallery, id, body) {
     caption: body.caption,
     lat: body.lat,
     lng: body.lng,
+    tripId: body.tripId,
   });
   await writeManifest(gallery.manifestKey, updated);
   return json(
