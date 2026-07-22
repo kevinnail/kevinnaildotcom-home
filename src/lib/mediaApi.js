@@ -63,11 +63,11 @@ export async function uploadToS3(uploadUrl, file) {
   if (!response.ok) throw new Error('Upload to storage failed');
 }
 
-export async function savePhoto(token, { objectKey, alt, caption, lat, lng }, gallery) {
+export async function savePhoto(token, { objectKey, alt, caption, lat, lng, takenAt }, gallery) {
   const response = await authorizedFetch(`/photos${galleryQuery(gallery)}`, token, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ objectKey, alt, caption, lat, lng }),
+    body: JSON.stringify({ objectKey, alt, caption, lat, lng, takenAt }),
   });
   return response.json(); // the created entry
 }
@@ -105,10 +105,21 @@ async function fetchManifest(manifestUrl) {
   return response.json();
 }
 
+// Hikes read chronologically by EXIF capture time, falling back to upload time
+// when a photo has no timestamp. Ascending (oldest first). Astro keeps its
+// hand-curated manifest order.
+function sortByCaptureTime(photos) {
+  return [...photos].sort(
+    (first, second) =>
+      Date.parse(first.takenAt ?? first.uploadedAt) -
+      Date.parse(second.takenAt ?? second.uploadedAt),
+  );
+}
+
 export function fetchAstroPhotos() {
   return fetchManifest(ASTRO_MANIFEST_URL);
 }
 
-export function fetchHikePhotos() {
-  return fetchManifest(HIKES_MANIFEST_URL);
+export async function fetchHikePhotos() {
+  return sortByCaptureTime(await fetchManifest(HIKES_MANIFEST_URL));
 }
