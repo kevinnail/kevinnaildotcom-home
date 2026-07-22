@@ -7,6 +7,7 @@ import {
   getBearerToken,
   buildPhotoEntry,
   addPhoto,
+  addPhotos,
   removePhoto,
   updatePhoto,
   reorderPhotos,
@@ -186,6 +187,31 @@ describe('addPhoto / removePhoto', () => {
     const only = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const manifest = addPhoto([], only);
     expect(removePhoto(manifest, 'no-such-id')).toEqual(manifest);
+  });
+});
+
+describe('addPhotos (bulk)', () => {
+  test('prepends all new entries ahead of the existing manifest, without mutating', () => {
+    const existing = buildPhotoEntry({ objectKey: 'hikes/0.jpg', mediaBaseUrl: 'x' });
+    const manifest = addPhoto([], existing);
+    const first = buildPhotoEntry({ objectKey: 'hikes/1.jpg', mediaBaseUrl: 'x' });
+    const second = buildPhotoEntry({ objectKey: 'hikes/2.jpg', mediaBaseUrl: 'x' });
+
+    const result = addPhotos(manifest, [first, second]);
+
+    expect(result.map((photo) => photo.url)).toEqual([
+      'x/hikes/1.jpg',
+      'x/hikes/2.jpg',
+      'x/hikes/0.jpg',
+    ]);
+    // Input untouched (pure).
+    expect(manifest).toHaveLength(1);
+  });
+
+  test('is a no-op returning the manifest contents when entries is empty', () => {
+    const only = buildPhotoEntry({ objectKey: 'hikes/0.jpg', mediaBaseUrl: 'x' });
+    const manifest = addPhoto([], only);
+    expect(addPhotos(manifest, [])).toEqual(manifest);
   });
 });
 
