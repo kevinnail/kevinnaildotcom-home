@@ -8,6 +8,11 @@
 //   PUT    /photos/order   { order: [id, ...] }              -> reordered manifest                    (auth)
 //   PATCH  /photos/{id}    { alt, caption, lat, lng }        -> updated entry                         (auth)
 //   DELETE /photos/{id}                                      -> { ok: true }                          (auth)
+//   POST   /kml            { objectKey, name, region }       -> created trip entry                    (auth)
+//   DELETE /kml/{id}                                         -> { ok: true }                          (auth)
+//
+// KML trips reuse /presign (with ?gallery=kml) but have their own metadata
+// endpoints because a trip's shape ({ name, region }) is not a photo's.
 //
 // Image bytes never pass through here: /presign returns a URL the browser PUTs
 // straight to S3. Reads (the gallery) fetch the public manifest directly from S3.
@@ -28,6 +33,7 @@ import {
   verifyPassword,
   getBearerToken,
   buildPhotoEntry,
+  buildTripEntry,
   addPhoto,
   addPhotos,
   removePhoto,
@@ -52,7 +58,12 @@ const MAX_BATCH = 500; // most photos one bulk-upload request may add at once
 const GALLERIES = {
   astro: { prefix: 'astro', manifestKey: 'manifests/astro.json' },
   hikes: { prefix: 'hikes', manifestKey: 'manifests/hikes.json' },
+  // KML is not a photo gallery, but it reuses /presign — `requiredExtension`
+  // makes presign reject anything but a .kml filename for this prefix.
+  kml: { prefix: 'kml', manifestKey: 'manifests/kml.json', requiredExtension: 'kml' },
 };
+
+const KML_GALLERY = GALLERIES.kml;
 
 function resolveGallery(event) {
   const name = event.queryStringParameters?.gallery ?? 'astro';
@@ -131,6 +142,9 @@ async function handleLogin(body) {
 }
 
 async function handlePresign(gallery, body) {
+  if (gallery.requiredExtension && fileExtension(body.filename) !== gallery.requiredExtension) {
+    return json(400, { error: `Filename must end in .${gallery.requiredExtension}` });
+  }
   const objectKey = `${gallery.prefix}/${crypto.randomUUID()}.${fileExtension(body.filename)}`;
   const command = new PutObjectCommand({
     Bucket: MEDIA_BUCKET,
@@ -223,6 +237,34 @@ async function handleDeletePhoto(gallery, id) {
   return json(200, { ok: true });
 }
 
+async function handleAddKml(body) {
+  if (!body.objectKey || !body.name) {
+    return json(400, { error: 'objectKey and name are required' });
+  }
+  const manifest = await readManifest(KML_GALLERY.manifestKey);
+  const entry = buildTripEntry({
+    objectKey: body.objectKey,
+    name: body.name,
+    region: body.region,
+    mediaBaseUrl: MEDIA_BASE_URL,
+  });
+  await writeManifest(KML_GALLERY.manifestKey, addPhoto(manifest, entry));
+  return json(201, entry);
+}
+
+async function handleDeleteKml(id) {
+  const manifest = await readManifest(KML_GALLERY.manifestKey);
+  const target = manifest.find((trip) => trip.id === id);
+  if (!target) return json(404, { error: 'Not found' });
+
+  const objectKey = objectKeyFromUrl(target.url, MEDIA_BASE_URL);
+  if (objectKey) {
+    await s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: objectKey }));
+  }
+  await writeManifest(KML_GALLERY.manifestKey, removePhoto(manifest, id));
+  return json(200, { ok: true });
+}
+
 export async function handler(event) {
   const method = event.requestContext?.http?.method;
   const path = event.rawPath ?? '';
@@ -276,6 +318,16 @@ export async function handler(event) {
       const gallery = resolveGallery(event);
       if (!gallery) return json(400, { error: 'Unknown gallery' });
       return await handleDeletePhoto(gallery, decodeURIComponent(path.slice('/photos/'.length)));
+    }
+
+    if (method === 'POST' && path === '/kml') {
+      requireAuth(event.headers);
+      return await handleAddKml(parseBody(event));
+    }
+
+    if (method === 'DELETE' && path.startsWith('/kml/')) {
+      requireAuth(event.headers);
+      return await handleDeleteKml(decodeURIComponent(path.slice('/kml/'.length)));
     }
 
     return json(404, { error: 'Not found' });
