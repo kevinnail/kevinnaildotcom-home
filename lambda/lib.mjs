@@ -75,15 +75,17 @@ export function getBearerToken(headers) {
 
 // --- Manifest transforms (the manifest is a plain array, newest first) ---
 
-export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, mediaBaseUrl }) {
+export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, takenAt, mediaBaseUrl }) {
   return {
     id: crypto.randomUUID(),
     url: `${mediaBaseUrl}/${objectKey}`,
     alt: alt ?? '',
     caption: caption ?? '',
-    // Backpacking photos carry coordinates; astronomy photos leave these null.
+    // Backpacking photos carry coordinates + EXIF capture time; astronomy photos
+    // leave these null. `takenAt` is the chronological sort key for hikes.
     lat: lat ?? null,
     lng: lng ?? null,
+    takenAt: takenAt ?? null,
     uploadedAt: new Date().toISOString(),
   };
 }

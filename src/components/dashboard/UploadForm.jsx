@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../lib/mediaApi';
+import { readPhotoMeta } from '../../lib/exif';
 
 const initialFields = { alt: '', caption: '', lat: '', lng: '' };
 
@@ -15,6 +16,8 @@ function parseCoordinate(value) {
 export default function UploadForm({ token, gallery, onUploaded, onSessionExpired }) {
   const [file, setFile] = useState(null);
   const [fields, setFields] = useState(initialFields);
+  const [takenAt, setTakenAt] = useState(null); // EXIF capture time (hikes)
+  const [metaNote, setMetaNote] = useState('');
   const [status, setStatus] = useState('idle'); // idle | uploading | error
   const [error, setError] = useState('');
 
@@ -22,6 +25,28 @@ export default function UploadForm({ token, gallery, onUploaded, onSessionExpire
 
   const updateField = (name) => (event) =>
     setFields((current) => ({ ...current, [name]: event.target.value }));
+
+  // For hikes, pull GPS + capture time from EXIF and prefill; manual entry stays
+  // available as the fallback for photos without embedded location.
+  const handleFileChange = async (event) => {
+    const selected = event.target.files[0] ?? null;
+    setFile(selected);
+    setTakenAt(null);
+    setMetaNote('');
+    if (!selected || !isHikes) return;
+
+    const meta = await readPhotoMeta(selected);
+    setTakenAt(meta.takenAt);
+    const hasGps = meta.lat != null && meta.lng != null;
+    if (hasGps) {
+      setFields((current) => ({ ...current, lat: String(meta.lat), lng: String(meta.lng) }));
+    }
+    setMetaNote(
+      hasGps
+        ? `Location read from photo${meta.takenAt ? ' + capture time' : ''}.`
+        : 'No GPS in photo — enter coordinates manually.',
+    );
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -35,11 +60,14 @@ export default function UploadForm({ token, gallery, onUploaded, onSessionExpire
       if (isHikes) {
         metadata.lat = parseCoordinate(fields.lat);
         metadata.lng = parseCoordinate(fields.lng);
+        metadata.takenAt = takenAt;
       }
       const entry = await savePhoto(token, metadata, gallery);
       onUploaded(entry);
       setFile(null);
       setFields(initialFields);
+      setTakenAt(null);
+      setMetaNote('');
       event.target.reset();
       setStatus('idle');
     } catch (uploadError) {
@@ -65,42 +93,45 @@ export default function UploadForm({ token, gallery, onUploaded, onSessionExpire
       <input
         type="file"
         accept="image/*"
-        onChange={(event) => setFile(event.target.files[0] ?? null)}
+        onChange={handleFileChange}
         className="text-white text-sm"
       />
       <input
         type="text"
         value={fields.alt}
         onChange={updateField('alt')}
-        placeholder="Alt text (accessibility)"
+        placeholder={isHikes ? 'Alt text (optional)' : 'Alt text (accessibility)'}
         className={inputClass}
       />
       <input
         type="text"
         value={fields.caption}
         onChange={updateField('caption')}
-        placeholder="Caption (shown on hover)"
+        placeholder={isHikes ? 'Caption (optional)' : 'Caption (shown on hover)'}
         className={inputClass}
       />
       {isHikes && (
-        <div className="flex gap-3">
-          <input
-            type="number"
-            step="any"
-            value={fields.lat}
-            onChange={updateField('lat')}
-            placeholder="Latitude"
-            className={`${inputClass} w-1/2`}
-          />
-          <input
-            type="number"
-            step="any"
-            value={fields.lng}
-            onChange={updateField('lng')}
-            placeholder="Longitude"
-            className={`${inputClass} w-1/2`}
-          />
-        </div>
+        <>
+          <div className="flex gap-3">
+            <input
+              type="number"
+              step="any"
+              value={fields.lat}
+              onChange={updateField('lat')}
+              placeholder="Latitude"
+              className={`${inputClass} w-1/2`}
+            />
+            <input
+              type="number"
+              step="any"
+              value={fields.lng}
+              onChange={updateField('lng')}
+              placeholder="Longitude"
+              className={`${inputClass} w-1/2`}
+            />
+          </div>
+          {metaNote && <p className="text-mid-gray text-xs">{metaNote}</p>}
+        </>
       )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <button

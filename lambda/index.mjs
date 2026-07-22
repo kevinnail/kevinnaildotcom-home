@@ -149,6 +149,7 @@ async function handleAddPhoto(gallery, body) {
     caption: body.caption,
     lat: body.lat,
     lng: body.lng,
+    takenAt: body.takenAt,
     mediaBaseUrl: MEDIA_BASE_URL,
   });
   await writeManifest(gallery.manifestKey, addPhoto(manifest, entry));

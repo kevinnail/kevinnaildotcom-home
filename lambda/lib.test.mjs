@@ -141,6 +141,20 @@ describe('buildPhotoEntry', () => {
     expect(entry.lng).toBeNull();
   });
 
+  test('stores takenAt (EXIF capture time) when provided', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/x.jpg',
+      takenAt: '2015-08-14T10:32:00.000Z',
+      mediaBaseUrl: 'x',
+    });
+    expect(entry.takenAt).toBe('2015-08-14T10:32:00.000Z');
+  });
+
+  test('defaults takenAt to null when omitted', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/x.jpg', mediaBaseUrl: 'x' });
+    expect(entry.takenAt).toBeNull();
+  });
+
   test('assigns a unique id to each entry', () => {
     const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
