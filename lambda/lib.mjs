@@ -75,12 +75,15 @@ export function getBearerToken(headers) {
 
 // --- Manifest transforms (the manifest is a plain array, newest first) ---
 
-export function buildPhotoEntry({ objectKey, alt, caption, mediaBaseUrl }) {
+export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, mediaBaseUrl }) {
   return {
     id: crypto.randomUUID(),
     url: `${mediaBaseUrl}/${objectKey}`,
     alt: alt ?? '',
     caption: caption ?? '',
+    // Backpacking photos carry coordinates; astronomy photos leave these null.
+    lat: lat ?? null,
+    lng: lng ?? null,
     uploadedAt: new Date().toISOString(),
   };
 }
@@ -93,12 +96,20 @@ export function removePhoto(manifest, id) {
   return manifest.filter((photo) => photo.id !== id);
 }
 
-// Replace alt/caption on the matching entry; other fields and other entries
-// untouched. Pure — returns a new array, does not mutate. Unknown id: unchanged.
-export function updatePhoto(manifest, id, { alt, caption }) {
+// Replace alt/caption/lat/lng on the matching entry; other fields and other
+// entries untouched. Pure — returns a new array, does not mutate. Each field is
+// only replaced when provided (`?? photo.<field>`), so a partial patch keeps the
+// prior values. Unknown id: unchanged.
+export function updatePhoto(manifest, id, { alt, caption, lat, lng }) {
   return manifest.map((photo) =>
     photo.id === id
-      ? { ...photo, alt: alt ?? photo.alt, caption: caption ?? photo.caption }
+      ? {
+          ...photo,
+          alt: alt ?? photo.alt,
+          caption: caption ?? photo.caption,
+          lat: lat ?? photo.lat,
+          lng: lng ?? photo.lng,
+        }
       : photo,
   );
 }
