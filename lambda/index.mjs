@@ -4,6 +4,7 @@
 //   POST   /login          { password }                      -> { token }
 //   POST   /presign        { filename, contentType }         -> { uploadUrl, objectKey, publicUrl }   (auth)
 //   POST   /photos         { objectKey, alt, caption, lat, lng } -> created entry                     (auth)
+//   POST   /photos/batch   { photos: [{ objectKey, ... }] }   -> created entries                      (auth)
 //   PUT    /photos/order   { order: [id, ...] }              -> reordered manifest                    (auth)
 //   PATCH  /photos/{id}    { alt, caption, lat, lng }        -> updated entry                         (auth)
 //   DELETE /photos/{id}                                      -> { ok: true }                          (auth)
@@ -28,6 +29,7 @@ import {
   getBearerToken,
   buildPhotoEntry,
   addPhoto,
+  addPhotos,
   removePhoto,
   updatePhoto,
   reorderPhotos,
@@ -41,6 +43,7 @@ const MEDIA_BASE_URL = process.env.MEDIA_BASE_URL;
 
 const TOKEN_TTL_SECONDS = 2 * 60 * 60; // 2 hours
 const UPLOAD_URL_TTL_SECONDS = 5 * 60; // 5 minutes
+const MAX_BATCH = 500; // most photos one bulk-upload request may add at once
 
 // Each gallery is one S3 prefix (for image objects) + one manifest object.
 // Astronomy and backpacking share this Lambda + bucket but stay logically
@@ -156,6 +159,30 @@ async function handleAddPhoto(gallery, body) {
   return json(201, entry);
 }
 
+async function handleAddPhotosBatch(gallery, body) {
+  const photos = body.photos;
+  if (!Array.isArray(photos) || photos.length === 0) {
+    return json(400, { error: 'photos must be a non-empty array' });
+  }
+  if (photos.length > MAX_BATCH) {
+    return json(400, { error: `photos exceeds the ${MAX_BATCH} per-batch limit` });
+  }
+  const entries = photos.map((photo) =>
+    buildPhotoEntry({
+      objectKey: photo.objectKey,
+      alt: photo.alt,
+      caption: photo.caption,
+      lat: photo.lat,
+      lng: photo.lng,
+      takenAt: photo.takenAt,
+      mediaBaseUrl: MEDIA_BASE_URL,
+    }),
+  );
+  const manifest = await readManifest(gallery.manifestKey);
+  await writeManifest(gallery.manifestKey, addPhotos(manifest, entries));
+  return json(201, entries);
+}
+
 async function handleUpdatePhoto(gallery, id, body) {
   const manifest = await readManifest(gallery.manifestKey);
   if (!manifest.some((photo) => photo.id === id)) return json(404, { error: 'Not found' });
@@ -210,6 +237,13 @@ export async function handler(event) {
       const gallery = resolveGallery(event);
       if (!gallery) return json(400, { error: 'Unknown gallery' });
       return await handlePresign(gallery, parseBody(event));
+    }
+
+    if (method === 'POST' && path === '/photos/batch') {
+      requireAuth(event.headers);
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
+      return await handleAddPhotosBatch(gallery, parseBody(event));
     }
 
     if (method === 'POST' && path === '/photos') {
