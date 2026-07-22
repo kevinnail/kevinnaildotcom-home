@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../lib/mediaApi';
 
-const initialFields = { alt: '', caption: '' };
+const initialFields = { alt: '', caption: '', lat: '', lng: '' };
 
-export default function UploadForm({ token, onUploaded, onSessionExpired }) {
+const inputClass =
+  'px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none';
+
+// Parse a coordinate text input into a number, or null when blank/invalid.
+function parseCoordinate(value) {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export default function UploadForm({ token, gallery, onUploaded, onSessionExpired }) {
   const [file, setFile] = useState(null);
   const [fields, setFields] = useState(initialFields);
   const [status, setStatus] = useState('idle'); // idle | uploading | error
   const [error, setError] = useState('');
+
+  const isHikes = gallery === 'hikes';
 
   const updateField = (name) => (event) =>
     setFields((current) => ({ ...current, [name]: event.target.value }));
@@ -18,9 +29,14 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
     setStatus('uploading');
     setError('');
     try {
-      const { uploadUrl, objectKey } = await requestUpload(token, file);
+      const { uploadUrl, objectKey } = await requestUpload(token, file, gallery);
       await uploadToS3(uploadUrl, file);
-      const entry = await savePhoto(token, { objectKey, ...fields });
+      const metadata = { objectKey, alt: fields.alt, caption: fields.caption };
+      if (isHikes) {
+        metadata.lat = parseCoordinate(fields.lat);
+        metadata.lng = parseCoordinate(fields.lng);
+      }
+      const entry = await savePhoto(token, metadata, gallery);
       onUploaded(entry);
       setFile(null);
       setFields(initialFields);
@@ -43,7 +59,9 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
     >
-      <h3 className="text-neon-blue font-display text-xl">Upload astronomy photo</h3>
+      <h3 className="text-neon-blue font-display text-xl">
+        {isHikes ? 'Upload backpacking photo' : 'Upload astronomy photo'}
+      </h3>
       <input
         type="file"
         accept="image/*"
@@ -55,15 +73,35 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
         value={fields.alt}
         onChange={updateField('alt')}
         placeholder="Alt text (accessibility)"
-        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none"
+        className={inputClass}
       />
       <input
         type="text"
         value={fields.caption}
         onChange={updateField('caption')}
         placeholder="Caption (shown on hover)"
-        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none"
+        className={inputClass}
       />
+      {isHikes && (
+        <div className="flex gap-3">
+          <input
+            type="number"
+            step="any"
+            value={fields.lat}
+            onChange={updateField('lat')}
+            placeholder="Latitude"
+            className={`${inputClass} w-1/2`}
+          />
+          <input
+            type="number"
+            step="any"
+            value={fields.lng}
+            onChange={updateField('lng')}
+            placeholder="Longitude"
+            className={`${inputClass} w-1/2`}
+          />
+        </div>
+      )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <button
         type="submit"
