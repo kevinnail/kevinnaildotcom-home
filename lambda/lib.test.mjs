@@ -124,6 +124,23 @@ describe('buildPhotoEntry', () => {
     expect(entry.caption).toBe('');
   });
 
+  test('stores lat/lng when provided (backpacking photos)', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/x.jpg',
+      lat: 44.2706,
+      lng: -71.3033,
+      mediaBaseUrl: 'x',
+    });
+    expect(entry.lat).toBe(44.2706);
+    expect(entry.lng).toBe(-71.3033);
+  });
+
+  test('defaults lat/lng to null when omitted (astronomy photos)', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/x.jpg', mediaBaseUrl: 'x' });
+    expect(entry.lat).toBeNull();
+    expect(entry.lng).toBeNull();
+  });
+
   test('assigns a unique id to each entry', () => {
     const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
@@ -220,6 +237,34 @@ describe('updatePhoto', () => {
     const [updated] = updatePhoto(manifest, entry.id, { alt: 'new alt' });
     expect(updated.alt).toBe('new alt');
     expect(updated.caption).toBe('keep me');
+  });
+
+  test('updates lat/lng on the matching id', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/1.jpg',
+      lat: 44.27,
+      lng: -71.3,
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { lat: 45.9, lng: -68.9 });
+    expect(updated.lat).toBe(45.9);
+    expect(updated.lng).toBe(-68.9);
+  });
+
+  test('omitting lat/lng keeps the prior coordinates', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/1.jpg',
+      caption: 'summit',
+      lat: 44.27,
+      lng: -71.3,
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { caption: 'summit view' });
+    expect(updated.caption).toBe('summit view');
+    expect(updated.lat).toBe(44.27);
+    expect(updated.lng).toBe(-71.3);
   });
 });
 

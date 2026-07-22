@@ -6,6 +6,7 @@ import UploadForm from '../components/dashboard/UploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
 import {
   fetchAstroPhotos,
+  fetchHikePhotos,
   updatePhoto,
   reorderPhotos,
   deletePhoto,
@@ -14,17 +15,26 @@ import {
 
 const TOKEN_KEY = 'mediaAdminToken';
 
+const GALLERY_TABS = [
+  { id: 'astro', label: 'Astronomy', fetchPhotos: fetchAstroPhotos },
+  { id: 'hikes', label: 'Backpacking', fetchPhotos: fetchHikePhotos },
+];
+
 export default function DashboardPage() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY));
+  const [gallery, setGallery] = useState('astro');
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!token) return undefined;
     let active = true;
+    const loadPhotos = GALLERY_TABS.find((tab) => tab.id === gallery).fetchPhotos;
     (async () => {
+      // Clear any previous gallery's photos before the new set arrives.
+      setPhotos([]);
       try {
-        const loadedPhotos = await fetchAstroPhotos();
+        const loadedPhotos = await loadPhotos();
         if (active) setPhotos(loadedPhotos);
       } catch {
         if (active) setError('Could not load photos.');
@@ -33,7 +43,7 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, gallery]);
 
   const signIn = (newToken) => {
     sessionStorage.setItem(TOKEN_KEY, newToken);
@@ -52,7 +62,7 @@ export default function DashboardPage() {
 
   const handleEdit = async (id, fields) => {
     try {
-      const updated = await updatePhoto(token, id, fields);
+      const updated = await updatePhoto(token, id, fields, gallery);
       setPhotos((current) => current.map((photo) => (photo.id === id ? updated : photo)));
     } catch (editError) {
       if (editError instanceof SessionExpiredError) handleSessionExpired();
@@ -66,7 +76,7 @@ export default function DashboardPage() {
     // Optimistically show the new order, then reconcile with the server's copy.
     setPhotos(orderedIds.map((id) => entryById.get(id)));
     try {
-      const saved = await reorderPhotos(token, orderedIds);
+      const saved = await reorderPhotos(token, orderedIds, gallery);
       setPhotos(saved);
     } catch (reorderError) {
       setPhotos(previous);
@@ -77,7 +87,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (id) => {
     try {
-      await deletePhoto(token, id);
+      await deletePhoto(token, id, gallery);
       setPhotos((current) => current.filter((photo) => photo.id !== id));
     } catch (deleteError) {
       if (deleteError instanceof SessionExpiredError) handleSessionExpired();
@@ -110,13 +120,32 @@ export default function DashboardPage() {
 
           {token ? (
             <>
+              <div className="flex gap-2 mb-4" role="tablist" aria-label="Gallery">
+                {GALLERY_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={gallery === tab.id}
+                    onClick={() => setGallery(tab.id)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold ${
+                      gallery === tab.id
+                        ? 'bg-neon-blue-50 text-white'
+                        : 'bg-neutral-900 text-mid-gray hover:text-white border border-mid-gray'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
               <UploadForm
                 token={token}
+                gallery={gallery}
                 onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
                 onSessionExpired={handleSessionExpired}
               />
               <PhotoList
                 photos={photos}
+                gallery={gallery}
                 onEdit={handleEdit}
                 onReorder={handleReorder}
                 onDelete={handleDelete}

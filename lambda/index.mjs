@@ -1,11 +1,12 @@
 // Media Lambda — one function behind a Function URL.
-// Endpoints:
-//   POST   /login          { password }                 -> { token }
-//   POST   /presign        { filename, contentType }    -> { uploadUrl, objectKey, publicUrl }   (auth)
-//   POST   /photos         { objectKey, alt, caption }  -> created entry                          (auth)
-//   PUT    /photos/order   { order: [id, ...] }         -> reordered manifest                     (auth)
-//   PATCH  /photos/{id}    { alt, caption }             -> updated entry                          (auth)
-//   DELETE /photos/{id}                                 -> { ok: true }                          (auth)
+// Endpoints (all photo routes accept an optional `?gallery=astro|hikes`,
+// defaulting to astro; an unknown gallery returns 400):
+//   POST   /login          { password }                      -> { token }
+//   POST   /presign        { filename, contentType }         -> { uploadUrl, objectKey, publicUrl }   (auth)
+//   POST   /photos         { objectKey, alt, caption, lat, lng } -> created entry                     (auth)
+//   PUT    /photos/order   { order: [id, ...] }              -> reordered manifest                    (auth)
+//   PATCH  /photos/{id}    { alt, caption, lat, lng }        -> updated entry                         (auth)
+//   DELETE /photos/{id}                                      -> { ok: true }                          (auth)
 //
 // Image bytes never pass through here: /presign returns a URL the browser PUTs
 // straight to S3. Reads (the gallery) fetch the public manifest directly from S3.
@@ -40,8 +41,20 @@ const MEDIA_BASE_URL = process.env.MEDIA_BASE_URL;
 
 const TOKEN_TTL_SECONDS = 2 * 60 * 60; // 2 hours
 const UPLOAD_URL_TTL_SECONDS = 5 * 60; // 5 minutes
-const ASTRO_PREFIX = 'astro';
-const ASTRO_MANIFEST_KEY = 'manifests/astro.json';
+
+// Each gallery is one S3 prefix (for image objects) + one manifest object.
+// Astronomy and backpacking share this Lambda + bucket but stay logically
+// separate. `?gallery=` selects one; missing/absent defaults to astro so the
+// existing astronomy frontend keeps working unchanged.
+const GALLERIES = {
+  astro: { prefix: 'astro', manifestKey: 'manifests/astro.json' },
+  hikes: { prefix: 'hikes', manifestKey: 'manifests/hikes.json' },
+};
+
+function resolveGallery(event) {
+  const name = event.queryStringParameters?.gallery ?? 'astro';
+  return GALLERIES[name] ?? null;
+}
 
 const s3 = new S3Client({});
 
@@ -114,8 +127,8 @@ async function handleLogin(body) {
   return json(200, { token });
 }
 
-async function handlePresign(body) {
-  const objectKey = `${ASTRO_PREFIX}/${crypto.randomUUID()}.${fileExtension(body.filename)}`;
+async function handlePresign(gallery, body) {
+  const objectKey = `${gallery.prefix}/${crypto.randomUUID()}.${fileExtension(body.filename)}`;
   const command = new PutObjectCommand({
     Bucket: MEDIA_BUCKET,
     Key: objectKey,
@@ -128,42 +141,49 @@ async function handlePresign(body) {
   return json(200, { uploadUrl, objectKey, publicUrl: `${MEDIA_BASE_URL}/${objectKey}` });
 }
 
-async function handleAddPhoto(body) {
-  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+async function handleAddPhoto(gallery, body) {
+  const manifest = await readManifest(gallery.manifestKey);
   const entry = buildPhotoEntry({
     objectKey: body.objectKey,
     alt: body.alt,
     caption: body.caption,
+    lat: body.lat,
+    lng: body.lng,
     mediaBaseUrl: MEDIA_BASE_URL,
   });
-  await writeManifest(ASTRO_MANIFEST_KEY, addPhoto(manifest, entry));
+  await writeManifest(gallery.manifestKey, addPhoto(manifest, entry));
   return json(201, entry);
 }
 
-async function handleUpdatePhoto(id, body) {
-  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+async function handleUpdatePhoto(gallery, id, body) {
+  const manifest = await readManifest(gallery.manifestKey);
   if (!manifest.some((photo) => photo.id === id)) return json(404, { error: 'Not found' });
 
-  const updated = updatePhoto(manifest, id, { alt: body.alt, caption: body.caption });
-  await writeManifest(ASTRO_MANIFEST_KEY, updated);
+  const updated = updatePhoto(manifest, id, {
+    alt: body.alt,
+    caption: body.caption,
+    lat: body.lat,
+    lng: body.lng,
+  });
+  await writeManifest(gallery.manifestKey, updated);
   return json(
     200,
     updated.find((photo) => photo.id === id),
   );
 }
 
-async function handleReorderPhotos(body) {
-  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+async function handleReorderPhotos(gallery, body) {
+  const manifest = await readManifest(gallery.manifestKey);
   const reordered = reorderPhotos(manifest, body.order);
   if (reordered === null) {
     return json(400, { error: 'order must be a permutation of the existing photo ids' });
   }
-  await writeManifest(ASTRO_MANIFEST_KEY, reordered);
+  await writeManifest(gallery.manifestKey, reordered);
   return json(200, reordered);
 }
 
-async function handleDeletePhoto(id) {
-  const manifest = await readManifest(ASTRO_MANIFEST_KEY);
+async function handleDeletePhoto(gallery, id) {
+  const manifest = await readManifest(gallery.manifestKey);
   const target = manifest.find((photo) => photo.id === id);
   if (!target) return json(404, { error: 'Not found' });
 
@@ -171,7 +191,7 @@ async function handleDeletePhoto(id) {
   if (objectKey) {
     await s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: objectKey }));
   }
-  await writeManifest(ASTRO_MANIFEST_KEY, removePhoto(manifest, id));
+  await writeManifest(gallery.manifestKey, removePhoto(manifest, id));
   return json(200, { ok: true });
 }
 
@@ -186,22 +206,31 @@ export async function handler(event) {
 
     if (method === 'POST' && path === '/presign') {
       requireAuth(event.headers);
-      return await handlePresign(parseBody(event));
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
+      return await handlePresign(gallery, parseBody(event));
     }
 
     if (method === 'POST' && path === '/photos') {
       requireAuth(event.headers);
-      return await handleAddPhoto(parseBody(event));
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
+      return await handleAddPhoto(gallery, parseBody(event));
     }
 
     if (method === 'PUT' && path === '/photos/order') {
       requireAuth(event.headers);
-      return await handleReorderPhotos(parseBody(event));
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
+      return await handleReorderPhotos(gallery, parseBody(event));
     }
 
     if (method === 'PATCH' && path.startsWith('/photos/')) {
       requireAuth(event.headers);
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
       return await handleUpdatePhoto(
+        gallery,
         decodeURIComponent(path.slice('/photos/'.length)),
         parseBody(event),
       );
@@ -209,7 +238,9 @@ export async function handler(event) {
 
     if (method === 'DELETE' && path.startsWith('/photos/')) {
       requireAuth(event.headers);
-      return await handleDeletePhoto(decodeURIComponent(path.slice('/photos/'.length)));
+      const gallery = resolveGallery(event);
+      if (!gallery) return json(400, { error: 'Unknown gallery' });
+      return await handleDeletePhoto(gallery, decodeURIComponent(path.slice('/photos/'.length)));
     }
 
     return json(404, { error: 'Not found' });

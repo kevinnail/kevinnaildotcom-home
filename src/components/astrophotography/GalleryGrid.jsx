@@ -3,14 +3,14 @@ import { fetchAstroPhotos } from '../../lib/mediaApi';
 import GalleryItem from './GalleryItem';
 import LightboxModal from './LightboxModal';
 
-export default function GalleryGrid() {
+export default function GalleryGrid({ fetchPhotos = fetchAstroPhotos }) {
   const [photos, setPhotos] = useState([]);
   const [loadState, setLoadState] = useState('loading'); // loading | ready | error
   const [lightbox, setLightbox] = useState({ isOpen: false, currentIndex: 0 });
 
   useEffect(() => {
     let active = true;
-    fetchAstroPhotos()
+    fetchPhotos()
       .then((data) => {
         if (!active) return;
         setPhotos(data);
@@ -22,7 +22,7 @@ export default function GalleryGrid() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchPhotos]);
 
   const openLightbox = (index) => {
     if (window.innerWidth < 768) return;
