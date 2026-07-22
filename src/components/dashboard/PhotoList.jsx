@@ -29,6 +29,9 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
   const [dragOverId, setDragOverId] = useState(null);
 
   const isHikes = gallery === 'hikes';
+  // Hikes read chronologically by EXIF capture time, so manual drag-reorder is
+  // meaningless there; only astro is hand-ordered.
+  const canReorder = !isHikes;
 
   if (photos.length === 0) {
     return <p className="text-mid-gray text-center mt-6">No photos yet.</p>;
@@ -80,20 +83,30 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
         return (
           <div
             key={photo.id}
-            draggable={!isEditing}
-            onDragStart={() => setDraggingId(photo.id)}
-            onDragEnd={resetDrag}
-            onDragOver={(event) => {
-              event.preventDefault();
-              if (draggingId) setDragOverId(photo.id);
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              handleDrop(photo.id);
-            }}
+            draggable={canReorder && !isEditing}
+            onDragStart={canReorder ? () => setDraggingId(photo.id) : undefined}
+            onDragEnd={canReorder ? resetDrag : undefined}
+            onDragOver={
+              canReorder
+                ? (event) => {
+                    event.preventDefault();
+                    if (draggingId) setDragOverId(photo.id);
+                  }
+                : undefined
+            }
+            onDrop={
+              canReorder
+                ? (event) => {
+                    event.preventDefault();
+                    handleDrop(photo.id);
+                  }
+                : undefined
+            }
             className={`relative rounded-lg overflow-hidden border bg-neutral-900 ${
               isDropTarget ? 'border-neon-blue ring-2 ring-neon-blue' : 'border-mid-gray'
-            } ${draggingId === photo.id ? 'opacity-50' : ''} ${isEditing ? '' : 'cursor-move'}`}
+            } ${draggingId === photo.id ? 'opacity-50' : ''} ${
+              canReorder && !isEditing ? 'cursor-move' : ''
+            }`}
           >
             <img src={photo.url} alt={photo.alt} className="w-full h-32 object-cover" />
 
@@ -172,9 +185,11 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
                     Delete
                   </button>
                 </div>
-                <div className="absolute top-1 left-1 bg-black/70 text-mid-gray rounded px-1 text-xs select-none">
-                  ⠿
-                </div>
+                {canReorder && (
+                  <div className="absolute top-1 left-1 bg-black/70 text-mid-gray rounded px-1 text-xs select-none">
+                    ⠿
+                  </div>
+                )}
               </>
             )}
           </div>
