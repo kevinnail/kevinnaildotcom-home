@@ -6,6 +6,7 @@ import {
   verifyPassword,
   getBearerToken,
   buildPhotoEntry,
+  buildTripEntry,
   addPhoto,
   addPhotos,
   removePhoto,
@@ -160,6 +161,56 @@ describe('buildPhotoEntry', () => {
     const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
     expect(first.id).not.toBe(second.id);
+  });
+});
+
+describe('buildTripEntry', () => {
+  test('sets name, region, and url, with a uuid id and iso uploadedAt', () => {
+    const entry = buildTripEntry({
+      objectKey: 'kml/abc.kml',
+      name: 'Cascade Ridge',
+      region: 'Cascades, WA',
+      mediaBaseUrl: 'https://media.example.com',
+    });
+    expect(entry.name).toBe('Cascade Ridge');
+    expect(entry.region).toBe('Cascades, WA');
+    expect(entry.url).toBe('https://media.example.com/kml/abc.kml');
+    expect(entry.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(Number.isNaN(Date.parse(entry.uploadedAt))).toBe(false);
+  });
+
+  test('defaults name and region to empty strings when omitted', () => {
+    const entry = buildTripEntry({ objectKey: 'kml/x.kml', mediaBaseUrl: 'x' });
+    expect(entry.name).toBe('');
+    expect(entry.region).toBe('');
+  });
+
+  test('assigns a unique id to each entry', () => {
+    const first = buildTripEntry({ objectKey: 'kml/1.kml', mediaBaseUrl: 'x' });
+    const second = buildTripEntry({ objectKey: 'kml/2.kml', mediaBaseUrl: 'x' });
+    expect(first.id).not.toBe(second.id);
+  });
+
+  test('round-trips its url back to the object key (delete path)', () => {
+    const base = 'https://media.example.com';
+    const entry = buildTripEntry({ objectKey: 'kml/trip.kml', name: 'T', mediaBaseUrl: base });
+    expect(objectKeyFromUrl(entry.url, base)).toBe('kml/trip.kml');
+  });
+});
+
+// The KML routes reuse the generic list transforms; this covers them on trip
+// entries (deleting the matching trip, leaving the rest) as slice 5 relies on.
+describe('trip manifest transforms (addPhoto / removePhoto on trips)', () => {
+  test('addPhoto prepends a trip; removePhoto drops the matching id only', () => {
+    const first = buildTripEntry({ objectKey: 'kml/1.kml', name: 'First', mediaBaseUrl: 'x' });
+    const second = buildTripEntry({ objectKey: 'kml/2.kml', name: 'Second', mediaBaseUrl: 'x' });
+    const manifest = addPhoto(addPhoto([], first), second);
+    expect(manifest.map((trip) => trip.name)).toEqual(['Second', 'First']);
+
+    const afterRemove = removePhoto(manifest, second.id);
+    expect(afterRemove.map((trip) => trip.name)).toEqual(['First']);
+    // Input untouched (pure).
+    expect(manifest).toHaveLength(2);
   });
 });
 
