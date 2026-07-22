@@ -11,8 +11,15 @@ import { mapWithConcurrency } from '../../lib/concurrency';
 const MAX_BATCH = 500; // must match the Lambda's per-batch cap
 const UPLOAD_CONCURRENCY = 5;
 
-export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) {
+const fileInputClass =
+  'text-white text-sm cursor-pointer file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-neon-blue file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-neon-blue-bright hover:file:text-black';
+
+const submitButtonClass =
+  'px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed self-start';
+
+export default function BulkUploadForm({ token, trips = [], onUploaded, onSessionExpired }) {
   const [files, setFiles] = useState([]);
+  const [tripId, setTripId] = useState(''); // '' = Unassigned
   const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [completed, setCompleted] = useState(0);
   const [failedNames, setFailedNames] = useState([]);
@@ -69,11 +76,13 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
       const failed = results.filter((result) => !result.ok).map((result) => result.name);
 
       if (successfulItems.length > 0) {
-        // Orphan risk (accepted for v1): the bytes are already in S3 by this point,
-        // so if this single save fails those objects exist without a manifest entry
-        // and must be cleaned up manually. The upfront MAX_BATCH guard avoids the
-        // most likely cause (a 400 from an oversized batch).
-        const entries = await savePhotosBatch(token, successfulItems, 'hikes');
+        // Every photo in the batch is assigned to the one trip picked above ('' =>
+        // null, i.e. unassigned). Orphan risk (accepted for v1): the bytes are
+        // already in S3 by this point, so if this single save fails those objects
+        // exist without a manifest entry and must be cleaned up manually. The
+        // upfront MAX_BATCH guard avoids the most likely cause (an oversized batch).
+        const items = successfulItems.map((item) => ({ ...item, tripId: tripId || null }));
+        const entries = await savePhotosBatch(token, items, 'hikes');
         onUploaded(entries);
         setSavedCount(entries.length);
       }
@@ -98,8 +107,8 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
     >
-      <h3 className="text-neon-blue font-display text-xl">Upload backpacking photos</h3>
-      <p className="text-mid-gray text-xs">
+      <h3 className="text-neon-blue-bright font-display text-xl">Upload backpacking photos</h3>
+      <p className="text-neutral-400 text-xs">
         Select many at once — location and capture time are read from each photo. Add captions or
         fix coordinates afterward by editing a photo.
       </p>
@@ -108,17 +117,35 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
         accept="image/*"
         multiple
         onChange={handleFilesChange}
-        className="text-white text-sm"
+        className={fileInputClass}
       />
 
+      <label className="flex flex-col gap-1 text-neutral-400 text-xs">
+        Trip
+        <select
+          value={tripId}
+          onChange={(event) => setTripId(event.target.value)}
+          disabled={uploading}
+          className="rounded border border-mid-gray bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-neon-blue-bright disabled:cursor-not-allowed disabled:text-neutral-500"
+        >
+          <option value="">Unassigned</option>
+          {trips.map((trip) => (
+            <option key={trip.id} value={trip.id}>
+              {trip.name}
+              {trip.region ? ` — ${trip.region}` : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+
       {uploading && (
-        <p className="text-mid-gray text-sm">
+        <p className="text-neutral-400 text-sm">
           Uploading {completed}/{files.length}…
         </p>
       )}
 
       {status === 'done' && (
-        <p className="text-sm text-mid-gray">
+        <p className="text-sm text-neutral-400">
           Uploaded {savedCount}
           {failedNames.length > 0 && ` · failed ${failedNames.length}`}
         </p>
@@ -132,7 +159,7 @@ export default function BulkUploadForm({ token, onUploaded, onSessionExpired }) 
       <button
         type="submit"
         disabled={uploading || files.length === 0}
-        className="px-4 py-2 rounded bg-neon-blue-50 text-white font-bold disabled:opacity-50 self-start"
+        className={submitButtonClass}
       >
         {uploading
           ? 'Uploading…'

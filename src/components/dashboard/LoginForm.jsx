@@ -25,20 +25,20 @@ export default function LoginForm({ onAuthenticated }) {
       onSubmit={handleSubmit}
       className="max-w-sm mx-auto mt-16 flex flex-col gap-4 bg-neutral-900 p-6 rounded-lg border border-neon-blue-50"
     >
-      <h2 className="text-neon-blue font-display text-2xl text-center">Admin Login</h2>
+      <h2 className="text-neon-blue-bright font-display text-2xl text-center">Admin Login</h2>
       <input
         type="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         placeholder="Password"
         autoFocus
-        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none"
+        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none"
       />
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
       <button
         type="submit"
         disabled={busy || !password}
-        className="px-4 py-2 rounded bg-neon-blue-50 text-white font-bold disabled:opacity-50"
+        className="px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed"
       >
         {busy ? 'Signing in…' : 'Sign in'}
       </button>

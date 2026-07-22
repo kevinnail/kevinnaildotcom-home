@@ -157,6 +157,20 @@ describe('buildPhotoEntry', () => {
     expect(entry.takenAt).toBeNull();
   });
 
+  test('stores tripId when provided (hike photo assigned to a trip)', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/x.jpg',
+      tripId: 'trip-123',
+      mediaBaseUrl: 'x',
+    });
+    expect(entry.tripId).toBe('trip-123');
+  });
+
+  test('defaults tripId to null when omitted (unassigned / astronomy)', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/x.jpg', mediaBaseUrl: 'x' });
+    expect(entry.tripId).toBeNull();
+  });
+
   test('assigns a unique id to each entry', () => {
     const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
@@ -356,6 +370,39 @@ describe('updatePhoto', () => {
     expect(updated.caption).toBe('summit view');
     expect(updated.lat).toBe(44.27);
     expect(updated.lng).toBe(-71.3);
+  });
+
+  test('reassigns tripId to a new trip', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/1.jpg',
+      tripId: 'trip-old',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { tripId: 'trip-new' });
+    expect(updated.tripId).toBe('trip-new');
+  });
+
+  test('clears tripId to null when passed an explicit null (unassign)', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/1.jpg',
+      tripId: 'trip-old',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { tripId: null });
+    expect(updated.tripId).toBeNull();
+  });
+
+  test('omitting tripId keeps the prior trip', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/1.jpg',
+      tripId: 'trip-keep',
+      mediaBaseUrl: 'x',
+    });
+    const manifest = addPhoto([], entry);
+    const [updated] = updatePhoto(manifest, entry.id, { caption: 'edited' });
+    expect(updated.tripId).toBe('trip-keep');
   });
 });
 

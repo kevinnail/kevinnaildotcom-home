@@ -4,7 +4,13 @@ import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../..
 const initialFields = { alt: '', caption: '' };
 
 const inputClass =
-  'px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none';
+  'px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none';
+
+const fileInputClass =
+  'text-white text-sm cursor-pointer file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-neon-blue file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-neon-blue-bright hover:file:text-black';
+
+const submitButtonClass =
+  'px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed self-start';
 
 // Single-file upload for the astronomy gallery. Backpacking uses BulkUploadForm
 // (multi-file + EXIF), so this form has no gallery/coordinate handling.
@@ -48,12 +54,12 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
     >
-      <h3 className="text-neon-blue font-display text-xl">Upload astronomy photo</h3>
+      <h3 className="text-neon-blue-bright font-display text-xl">Upload astronomy photo</h3>
       <input
         type="file"
         accept="image/*"
         onChange={(event) => setFile(event.target.files[0] ?? null)}
-        className="text-white text-sm"
+        className={fileInputClass}
       />
       <input
         type="text"
@@ -70,11 +76,7 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
         className={inputClass}
       />
       {error && <p className="text-red-400 text-sm">{error}</p>}
-      <button
-        type="submit"
-        disabled={uploading || !file}
-        className="px-4 py-2 rounded bg-neon-blue-50 text-white font-bold disabled:opacity-50 self-start"
-      >
+      <button type="submit" disabled={uploading || !file} className={submitButtonClass}>
         {uploading ? 'Uploading…' : 'Upload'}
       </button>
     </form>

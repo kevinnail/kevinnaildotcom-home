@@ -75,7 +75,16 @@ export function getBearerToken(headers) {
 
 // --- Manifest transforms (the manifest is a plain array, newest first) ---
 
-export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, takenAt, mediaBaseUrl }) {
+export function buildPhotoEntry({
+  objectKey,
+  alt,
+  caption,
+  lat,
+  lng,
+  takenAt,
+  tripId,
+  mediaBaseUrl,
+}) {
   return {
     id: crypto.randomUUID(),
     url: `${mediaBaseUrl}/${objectKey}`,
@@ -86,6 +95,9 @@ export function buildPhotoEntry({ objectKey, alt, caption, lat, lng, takenAt, me
     lat: lat ?? null,
     lng: lng ?? null,
     takenAt: takenAt ?? null,
+    // Which KML trip (slice 5) a hike photo belongs to; drives the map's per-trip
+    // photo strip (slice 6b). Null for astronomy and for unassigned hike photos.
+    tripId: tripId ?? null,
     uploadedAt: new Date().toISOString(),
   };
 }
@@ -122,7 +134,7 @@ export function removePhoto(manifest, id) {
 // entries untouched. Pure — returns a new array, does not mutate. Each field is
 // only replaced when provided (`?? photo.<field>`), so a partial patch keeps the
 // prior values. Unknown id: unchanged.
-export function updatePhoto(manifest, id, { alt, caption, lat, lng }) {
+export function updatePhoto(manifest, id, { alt, caption, lat, lng, tripId }) {
   return manifest.map((photo) =>
     photo.id === id
       ? {
@@ -131,6 +143,11 @@ export function updatePhoto(manifest, id, { alt, caption, lat, lng }) {
           caption: caption ?? photo.caption,
           lat: lat ?? photo.lat,
           lng: lng ?? photo.lng,
+          // Unlike the fields above, a photo must be able to be UN-assigned from a
+          // trip, so an explicit `null` has to overwrite (the `?? prior` idiom
+          // can't clear a value). Only an absent field (`undefined`) preserves the
+          // prior trip; a supplied value — including `null` — replaces it.
+          tripId: tripId === undefined ? (photo.tripId ?? null) : tripId,
         }
       : photo,
   );

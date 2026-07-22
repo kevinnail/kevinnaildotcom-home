@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const inputClass =
-  'px-2 py-1 rounded bg-black text-white text-xs border border-mid-gray focus:border-neon-blue outline-none';
+  'px-2 py-1 rounded bg-black text-white text-xs border border-mid-gray focus:border-neon-blue-bright outline-none';
 
 // Parse a coordinate text input into a number, or null when blank/invalid.
 function parseCoordinate(value) {
@@ -22,19 +22,20 @@ function movePhoto(photos, fromId, toId) {
   return reordered;
 }
 
-export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete }) {
+export default function PhotoList({ photos, gallery, trips = [], onEdit, onReorder, onDelete }) {
   const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({ alt: '', caption: '', lat: '', lng: '' });
+  const [draft, setDraft] = useState({ alt: '', caption: '', lat: '', lng: '', tripId: '' });
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
   const isHikes = gallery === 'hikes';
+  const tripNameById = new Map(trips.map((trip) => [trip.id, trip.name]));
   // Hikes read chronologically by EXIF capture time, so manual drag-reorder is
   // meaningless there; only astro is hand-ordered.
   const canReorder = !isHikes;
 
   if (photos.length === 0) {
-    return <p className="text-mid-gray text-center mt-6">No photos yet.</p>;
+    return <p className="text-neutral-400 text-center mt-6">No photos yet.</p>;
   }
 
   const startEditing = (photo) => {
@@ -44,6 +45,7 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
       caption: photo.caption ?? '',
       lat: photo.lat ?? '',
       lng: photo.lng ?? '',
+      tripId: photo.tripId ?? '',
     });
   };
 
@@ -57,6 +59,8 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
     if (isHikes) {
       fields.lat = parseCoordinate(draft.lat);
       fields.lng = parseCoordinate(draft.lng);
+      // '' => null unassigns the photo; the Lambda treats an explicit null as a clear.
+      fields.tripId = draft.tripId || null;
     }
     onEdit(id, fields);
     setEditingId(null);
@@ -127,35 +131,50 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
                   className={inputClass}
                 />
                 {isHikes && (
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.lat}
-                      onChange={updateDraft('lat')}
-                      placeholder="Lat"
-                      className={`${inputClass} w-1/2`}
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.lng}
-                      onChange={updateDraft('lng')}
-                      placeholder="Lng"
-                      className={`${inputClass} w-1/2`}
-                    />
-                  </div>
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.lat}
+                        onChange={updateDraft('lat')}
+                        placeholder="Lat"
+                        className={`${inputClass} w-1/2`}
+                      />
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.lng}
+                        onChange={updateDraft('lng')}
+                        placeholder="Lng"
+                        className={`${inputClass} w-1/2`}
+                      />
+                    </div>
+                    <select
+                      value={draft.tripId}
+                      onChange={updateDraft('tripId')}
+                      className={inputClass}
+                      aria-label="Trip"
+                    >
+                      <option value="">Unassigned</option>
+                      {trips.map((trip) => (
+                        <option key={trip.id} value={trip.id}>
+                          {trip.name}
+                        </option>
+                      ))}
+                    </select>
+                  </>
                 )}
                 <div className="flex gap-2">
                   <button
                     onClick={() => saveEditing(photo.id)}
-                    className="bg-neon-blue-50 text-white rounded px-2 py-0.5 text-xs font-bold hover:bg-neon-blue"
+                    className="bg-neon-blue text-white rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black"
                   >
                     Save
                   </button>
                   <button
                     onClick={cancelEditing}
-                    className="text-mid-gray hover:text-white rounded px-2 py-0.5 text-xs"
+                    className="text-neutral-400 hover:text-white rounded px-2 py-0.5 text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -163,23 +182,31 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
               </div>
             ) : (
               <>
-                <div className="p-2 text-xs text-mid-gray truncate">{photo.caption || '—'}</div>
+                <div className="p-2 text-xs text-neutral-400 truncate">{photo.caption || '—'}</div>
                 {isHikes && photo.lat != null && photo.lng != null && (
-                  <div className="px-2 pb-2 text-xs text-mid-gray truncate">
+                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
                     📍 {photo.lat}, {photo.lng}
+                  </div>
+                )}
+                {isHikes && (
+                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
+                    🥾{' '}
+                    {photo.tripId
+                      ? (tripNameById.get(photo.tripId) ?? 'Unknown trip')
+                      : 'Unassigned'}
                   </div>
                 )}
                 <div className="absolute top-1 right-1 flex gap-1">
                   <button
                     onClick={() => startEditing(photo)}
-                    className="bg-black/70 text-neon-blue rounded px-2 py-0.5 text-xs font-bold hover:bg-black"
+                    className="bg-black/70 text-neon-blue-bright rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
                     aria-label={`Edit ${photo.alt || 'photo'}`}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onDelete(photo.id)}
-                    className="bg-black/70 text-red-400 rounded px-2 py-0.5 text-xs font-bold hover:bg-black"
+                    className="bg-black/70 text-red-400 rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
                     aria-label={`Delete ${photo.alt || 'photo'}`}
                   >
                     Delete
