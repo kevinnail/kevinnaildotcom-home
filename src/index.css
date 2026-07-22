@@ -3,6 +3,7 @@
 @theme {
   --color-neon-blue: #2f00ff;
   --color-neon-blue-50: #2f00ff83;
+  --color-neon-blue-bright: #8ea1ff;
   --color-mid-gray: rgb(74, 74, 74);
   --font-display: 'Josefin Slab', serif;
   --font-body: 'Open Sans', sans-serif;

@@ -138,11 +138,11 @@ export default function DashboardPage() {
         <Banner />
         <div className="max-w-3xl mx-auto p-5">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-neon-blue font-display text-3xl">Media Dashboard</h1>
+            <h1 className="text-neon-blue-bright font-display text-3xl">Media Dashboard</h1>
             {token && (
               <button
                 onClick={signOut}
-                className="text-sm text-mid-gray hover:text-white underline"
+                className="text-sm text-neutral-400 hover:text-white underline cursor-pointer"
               >
                 Sign out
               </button>
@@ -160,10 +160,10 @@ export default function DashboardPage() {
                     role="tab"
                     aria-selected={gallery === tab.id}
                     onClick={() => setGallery(tab.id)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-bold ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold cursor-pointer ${
                       gallery === tab.id
-                        ? 'bg-neon-blue-50 text-white'
-                        : 'bg-neutral-900 text-mid-gray hover:text-white border border-mid-gray'
+                        ? 'bg-neon-blue text-white'
+                        : 'bg-neutral-900 text-neutral-400 hover:text-white border border-mid-gray'
                     }`}
                   >
                     {tab.label}

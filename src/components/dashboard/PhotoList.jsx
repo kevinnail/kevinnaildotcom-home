@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const inputClass =
-  'px-2 py-1 rounded bg-black text-white text-xs border border-mid-gray focus:border-neon-blue outline-none';
+  'px-2 py-1 rounded bg-black text-white text-xs border border-mid-gray focus:border-neon-blue-bright outline-none';
 
 // Parse a coordinate text input into a number, or null when blank/invalid.
 function parseCoordinate(value) {
@@ -34,7 +34,7 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
   const canReorder = !isHikes;
 
   if (photos.length === 0) {
-    return <p className="text-mid-gray text-center mt-6">No photos yet.</p>;
+    return <p className="text-neutral-400 text-center mt-6">No photos yet.</p>;
   }
 
   const startEditing = (photo) => {
@@ -149,13 +149,13 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
                 <div className="flex gap-2">
                   <button
                     onClick={() => saveEditing(photo.id)}
-                    className="bg-neon-blue-50 text-white rounded px-2 py-0.5 text-xs font-bold hover:bg-neon-blue"
+                    className="bg-neon-blue text-white rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black"
                   >
                     Save
                   </button>
                   <button
                     onClick={cancelEditing}
-                    className="text-mid-gray hover:text-white rounded px-2 py-0.5 text-xs"
+                    className="text-neutral-400 hover:text-white rounded px-2 py-0.5 text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -163,23 +163,23 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
               </div>
             ) : (
               <>
-                <div className="p-2 text-xs text-mid-gray truncate">{photo.caption || '—'}</div>
+                <div className="p-2 text-xs text-neutral-400 truncate">{photo.caption || '—'}</div>
                 {isHikes && photo.lat != null && photo.lng != null && (
-                  <div className="px-2 pb-2 text-xs text-mid-gray truncate">
+                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
                     📍 {photo.lat}, {photo.lng}
                   </div>
                 )}
                 <div className="absolute top-1 right-1 flex gap-1">
                   <button
                     onClick={() => startEditing(photo)}
-                    className="bg-black/70 text-neon-blue rounded px-2 py-0.5 text-xs font-bold hover:bg-black"
+                    className="bg-black/70 text-neon-blue-bright rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
                     aria-label={`Edit ${photo.alt || 'photo'}`}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onDelete(photo.id)}
-                    className="bg-black/70 text-red-400 rounded px-2 py-0.5 text-xs font-bold hover:bg-black"
+                    className="bg-black/70 text-red-400 rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
                     aria-label={`Delete ${photo.alt || 'photo'}`}
                   >
                     Delete
