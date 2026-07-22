@@ -1,52 +1,21 @@
 import { useState } from 'react';
 import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../lib/mediaApi';
-import { readPhotoMeta } from '../../lib/exif';
 
-const initialFields = { alt: '', caption: '', lat: '', lng: '' };
+const initialFields = { alt: '', caption: '' };
 
 const inputClass =
   'px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue outline-none';
 
-// Parse a coordinate text input into a number, or null when blank/invalid.
-function parseCoordinate(value) {
-  const parsed = parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-export default function UploadForm({ token, gallery, onUploaded, onSessionExpired }) {
+// Single-file upload for the astronomy gallery. Backpacking uses BulkUploadForm
+// (multi-file + EXIF), so this form has no gallery/coordinate handling.
+export default function UploadForm({ token, onUploaded, onSessionExpired }) {
   const [file, setFile] = useState(null);
   const [fields, setFields] = useState(initialFields);
-  const [takenAt, setTakenAt] = useState(null); // EXIF capture time (hikes)
-  const [metaNote, setMetaNote] = useState('');
   const [status, setStatus] = useState('idle'); // idle | uploading | error
   const [error, setError] = useState('');
 
-  const isHikes = gallery === 'hikes';
-
   const updateField = (name) => (event) =>
     setFields((current) => ({ ...current, [name]: event.target.value }));
-
-  // For hikes, pull GPS + capture time from EXIF and prefill; manual entry stays
-  // available as the fallback for photos without embedded location.
-  const handleFileChange = async (event) => {
-    const selected = event.target.files[0] ?? null;
-    setFile(selected);
-    setTakenAt(null);
-    setMetaNote('');
-    if (!selected || !isHikes) return;
-
-    const meta = await readPhotoMeta(selected);
-    setTakenAt(meta.takenAt);
-    const hasGps = meta.lat != null && meta.lng != null;
-    if (hasGps) {
-      setFields((current) => ({ ...current, lat: String(meta.lat), lng: String(meta.lng) }));
-    }
-    setMetaNote(
-      hasGps
-        ? `Location read from photo${meta.takenAt ? ' + capture time' : ''}.`
-        : 'No GPS in photo — enter coordinates manually.',
-    );
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -54,20 +23,12 @@ export default function UploadForm({ token, gallery, onUploaded, onSessionExpire
     setStatus('uploading');
     setError('');
     try {
-      const { uploadUrl, objectKey } = await requestUpload(token, file, gallery);
+      const { uploadUrl, objectKey } = await requestUpload(token, file);
       await uploadToS3(uploadUrl, file);
-      const metadata = { objectKey, alt: fields.alt, caption: fields.caption };
-      if (isHikes) {
-        metadata.lat = parseCoordinate(fields.lat);
-        metadata.lng = parseCoordinate(fields.lng);
-        metadata.takenAt = takenAt;
-      }
-      const entry = await savePhoto(token, metadata, gallery);
+      const entry = await savePhoto(token, { objectKey, ...fields });
       onUploaded(entry);
       setFile(null);
       setFields(initialFields);
-      setTakenAt(null);
-      setMetaNote('');
       event.target.reset();
       setStatus('idle');
     } catch (uploadError) {
@@ -87,52 +48,27 @@ export default function UploadForm({ token, gallery, onUploaded, onSessionExpire
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
     >
-      <h3 className="text-neon-blue font-display text-xl">
-        {isHikes ? 'Upload backpacking photo' : 'Upload astronomy photo'}
-      </h3>
+      <h3 className="text-neon-blue font-display text-xl">Upload astronomy photo</h3>
       <input
         type="file"
         accept="image/*"
-        onChange={handleFileChange}
+        onChange={(event) => setFile(event.target.files[0] ?? null)}
         className="text-white text-sm"
       />
       <input
         type="text"
         value={fields.alt}
         onChange={updateField('alt')}
-        placeholder={isHikes ? 'Alt text (optional)' : 'Alt text (accessibility)'}
+        placeholder="Alt text (accessibility)"
         className={inputClass}
       />
       <input
         type="text"
         value={fields.caption}
         onChange={updateField('caption')}
-        placeholder={isHikes ? 'Caption (optional)' : 'Caption (shown on hover)'}
+        placeholder="Caption (shown on hover)"
         className={inputClass}
       />
-      {isHikes && (
-        <>
-          <div className="flex gap-3">
-            <input
-              type="number"
-              step="any"
-              value={fields.lat}
-              onChange={updateField('lat')}
-              placeholder="Latitude"
-              className={`${inputClass} w-1/2`}
-            />
-            <input
-              type="number"
-              step="any"
-              value={fields.lng}
-              onChange={updateField('lng')}
-              placeholder="Longitude"
-              className={`${inputClass} w-1/2`}
-            />
-          </div>
-          {metaNote && <p className="text-mid-gray text-xs">{metaNote}</p>}
-        </>
-      )}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <button
         type="submit"
