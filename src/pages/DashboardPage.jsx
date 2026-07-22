@@ -174,6 +174,7 @@ export default function DashboardPage() {
                 <>
                   <BulkUploadForm
                     token={token}
+                    trips={trips}
                     onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
                     onSessionExpired={handleSessionExpired}
                   />
@@ -196,6 +197,7 @@ export default function DashboardPage() {
               <PhotoList
                 photos={photos}
                 gallery={gallery}
+                trips={trips}
                 onEdit={handleEdit}
                 onReorder={handleReorder}
                 onDelete={handleDelete}
