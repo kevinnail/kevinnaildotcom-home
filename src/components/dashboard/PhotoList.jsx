@@ -22,13 +22,14 @@ function movePhoto(photos, fromId, toId) {
   return reordered;
 }
 
-export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete }) {
+export default function PhotoList({ photos, gallery, trips = [], onEdit, onReorder, onDelete }) {
   const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({ alt: '', caption: '', lat: '', lng: '' });
+  const [draft, setDraft] = useState({ alt: '', caption: '', lat: '', lng: '', tripId: '' });
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
   const isHikes = gallery === 'hikes';
+  const tripNameById = new Map(trips.map((trip) => [trip.id, trip.name]));
   // Hikes read chronologically by EXIF capture time, so manual drag-reorder is
   // meaningless there; only astro is hand-ordered.
   const canReorder = !isHikes;
@@ -44,6 +45,7 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
       caption: photo.caption ?? '',
       lat: photo.lat ?? '',
       lng: photo.lng ?? '',
+      tripId: photo.tripId ?? '',
     });
   };
 
@@ -57,6 +59,8 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
     if (isHikes) {
       fields.lat = parseCoordinate(draft.lat);
       fields.lng = parseCoordinate(draft.lng);
+      // '' => null unassigns the photo; the Lambda treats an explicit null as a clear.
+      fields.tripId = draft.tripId || null;
     }
     onEdit(id, fields);
     setEditingId(null);
@@ -127,24 +131,39 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
                   className={inputClass}
                 />
                 {isHikes && (
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.lat}
-                      onChange={updateDraft('lat')}
-                      placeholder="Lat"
-                      className={`${inputClass} w-1/2`}
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.lng}
-                      onChange={updateDraft('lng')}
-                      placeholder="Lng"
-                      className={`${inputClass} w-1/2`}
-                    />
-                  </div>
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.lat}
+                        onChange={updateDraft('lat')}
+                        placeholder="Lat"
+                        className={`${inputClass} w-1/2`}
+                      />
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.lng}
+                        onChange={updateDraft('lng')}
+                        placeholder="Lng"
+                        className={`${inputClass} w-1/2`}
+                      />
+                    </div>
+                    <select
+                      value={draft.tripId}
+                      onChange={updateDraft('tripId')}
+                      className={inputClass}
+                      aria-label="Trip"
+                    >
+                      <option value="">Unassigned</option>
+                      {trips.map((trip) => (
+                        <option key={trip.id} value={trip.id}>
+                          {trip.name}
+                        </option>
+                      ))}
+                    </select>
+                  </>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -167,6 +186,14 @@ export default function PhotoList({ photos, gallery, onEdit, onReorder, onDelete
                 {isHikes && photo.lat != null && photo.lng != null && (
                   <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
                     📍 {photo.lat}, {photo.lng}
+                  </div>
+                )}
+                {isHikes && (
+                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
+                    🥾{' '}
+                    {photo.tripId
+                      ? (tripNameById.get(photo.tripId) ?? 'Unknown trip')
+                      : 'Unassigned'}
                   </div>
                 )}
                 <div className="absolute top-1 right-1 flex gap-1">
