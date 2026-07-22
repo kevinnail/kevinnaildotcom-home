@@ -64,11 +64,15 @@ export async function uploadToS3(uploadUrl, file) {
   if (!response.ok) throw new Error('Upload to storage failed');
 }
 
-export async function savePhoto(token, { objectKey, alt, caption, lat, lng, takenAt }, gallery) {
+export async function savePhoto(
+  token,
+  { objectKey, alt, caption, lat, lng, takenAt, tripId },
+  gallery,
+) {
   const response = await authorizedFetch(`/photos${galleryQuery(gallery)}`, token, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ objectKey, alt, caption, lat, lng, takenAt }),
+    body: JSON.stringify({ objectKey, alt, caption, lat, lng, takenAt, tripId }),
   });
   return response.json(); // the created entry
 }
@@ -84,11 +88,14 @@ export async function savePhotosBatch(token, items, gallery) {
   return response.json(); // the created entries
 }
 
-export async function updatePhoto(token, id, { alt, caption, lat, lng }, gallery) {
+// `tripId` is only sent when the field is present in `fields` (JSON.stringify
+// drops `undefined`), so astro edits never touch it. A hike edit sends the id or
+// an explicit `null` to unassign.
+export async function updatePhoto(token, id, { alt, caption, lat, lng, tripId }, gallery) {
   const response = await authorizedFetch(`/photos/${id}${galleryQuery(gallery)}`, token, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ alt, caption, lat, lng }),
+    body: JSON.stringify({ alt, caption, lat, lng, tripId }),
   });
   return response.json(); // the updated entry
 }
