@@ -54,11 +54,16 @@ export async function requestUpload(token, file, gallery) {
   return response.json(); // { uploadUrl, objectKey, publicUrl }
 }
 
-// Upload bytes straight to S3 — does NOT go through the Lambda.
-export async function uploadToS3(uploadUrl, file) {
+// Upload bytes straight to S3 — does NOT go through the Lambda. `cacheControl`
+// comes from the presign response and MUST be sent verbatim: the Lambda signed
+// it into the URL, so omitting or altering it fails the signature.
+export async function uploadToS3(uploadUrl, file, cacheControl) {
   const response = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'content-type': file.type },
+    headers: {
+      'content-type': file.type,
+      ...(cacheControl ? { 'cache-control': cacheControl } : {}),
+    },
     body: file,
   });
   if (!response.ok) throw new Error('Upload to storage failed');
@@ -128,8 +133,11 @@ export async function saveKml(token, { objectKey, name, region }) {
   return response.json(); // the created trip entry
 }
 
+// Deleting a trip cascades to its photos on the server. Returns
+// { ok, deletedPhotoIds } so the dashboard can drop those photos from state too.
 export async function deleteKml(token, id) {
-  await authorizedFetch(`/kml/${id}`, token, { method: 'DELETE' });
+  const response = await authorizedFetch(`/kml/${id}`, token, { method: 'DELETE' });
+  return response.json();
 }
 
 // Public read of a manifest. Missing manifest (before the first upload) reads as
