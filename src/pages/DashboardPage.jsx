@@ -6,7 +6,7 @@ import UploadForm from '../components/dashboard/UploadForm';
 import BulkUploadForm from '../components/dashboard/BulkUploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
 import KmlUploadForm from '../components/dashboard/KmlUploadForm';
-import KmlList from '../components/dashboard/KmlList';
+import HikeTripList from '../components/dashboard/HikeTripList';
 import {
   fetchAstroPhotos,
   fetchHikePhotos,
@@ -118,10 +118,17 @@ export default function DashboardPage() {
     }
   };
 
+  // Hike photos with no trip assigned get their own dashboard section; assigned
+  // ones are managed inside each trip's modal (HikeTripList).
+  const unassignedPhotos = photos.filter((photo) => !photo.tripId);
+
   const handleTripDelete = async (id) => {
     try {
       await deleteKml(token, id);
       setTrips((current) => current.filter((trip) => trip.id !== id));
+      // The server cascade-deleted this trip's photos; drop them from state so the
+      // trip's modal and the counts update without a reload.
+      setPhotos((current) => current.filter((photo) => photo.tripId !== id));
     } catch (deleteError) {
       if (deleteError instanceof SessionExpiredError) handleSessionExpired();
       else setError('Delete failed.');
@@ -172,36 +179,57 @@ export default function DashboardPage() {
               </div>
               {gallery === 'hikes' ? (
                 <>
-                  <BulkUploadForm
+                  <KmlUploadForm
                     token={token}
-                    trips={trips}
-                    onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
+                    onUploaded={(entry) => setTrips((current) => [entry, ...current])}
                     onSessionExpired={handleSessionExpired}
                   />
                   <div className="mt-6 flex flex-col gap-3">
-                    <KmlUploadForm
+                    <BulkUploadForm
                       token={token}
-                      onUploaded={(entry) => setTrips((current) => [entry, ...current])}
+                      trips={trips}
+                      onUploaded={(entries) => setPhotos((current) => [...entries, ...current])}
                       onSessionExpired={handleSessionExpired}
                     />
-                    <KmlList trips={trips} onDelete={handleTripDelete} />
                   </div>
+                  <HikeTripList
+                    trips={trips}
+                    photos={photos}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onDeleteTrip={handleTripDelete}
+                  />
+                  <section className="mt-8">
+                    <h2 className="font-display text-xl text-neon-blue-bright">
+                      Unassigned photos
+                    </h2>
+                    <PhotoList
+                      photos={unassignedPhotos}
+                      gallery="hikes"
+                      trips={trips}
+                      onEdit={handleEdit}
+                      onReorder={handleReorder}
+                      onDelete={handleDelete}
+                    />
+                  </section>
                 </>
               ) : (
-                <UploadForm
-                  token={token}
-                  onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
-                  onSessionExpired={handleSessionExpired}
-                />
+                <>
+                  <UploadForm
+                    token={token}
+                    onUploaded={(entry) => setPhotos((current) => [entry, ...current])}
+                    onSessionExpired={handleSessionExpired}
+                  />
+                  <PhotoList
+                    photos={photos}
+                    gallery={gallery}
+                    trips={trips}
+                    onEdit={handleEdit}
+                    onReorder={handleReorder}
+                    onDelete={handleDelete}
+                  />
+                </>
               )}
-              <PhotoList
-                photos={photos}
-                gallery={gallery}
-                trips={trips}
-                onEdit={handleEdit}
-                onReorder={handleReorder}
-                onDelete={handleDelete}
-              />
             </>
           ) : (
             <LoginForm onAuthenticated={signIn} />
