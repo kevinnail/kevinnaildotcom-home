@@ -25,6 +25,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
@@ -37,6 +38,7 @@ import {
   addPhoto,
   addPhotos,
   removePhoto,
+  partitionPhotosByTrip,
   updatePhoto,
   reorderPhotos,
   objectKeyFromUrl,
@@ -50,6 +52,14 @@ const MEDIA_BASE_URL = process.env.MEDIA_BASE_URL;
 const TOKEN_TTL_SECONDS = 2 * 60 * 60; // 2 hours
 const UPLOAD_URL_TTL_SECONDS = 5 * 60; // 5 minutes
 const MAX_BATCH = 500; // most photos one bulk-upload request may add at once
+
+// Object keys are content-immutable UUIDs, so the bytes at a key never change.
+// Bake a one-year immutable Cache-Control into every upload so browsers serve
+// repeat views (dashboard revisits, map thumbnails) from disk without
+// revalidating. Set at upload time because the browser PUTs straight to S3 — the
+// Lambda never touches the bytes. The client must echo this exact value on the
+// PUT (see /presign response + uploadToS3), since it's part of the signature.
+const UPLOAD_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 // Each gallery is one S3 prefix (for image objects) + one manifest object.
 // Astronomy and backpacking share this Lambda + bucket but stay logically
@@ -150,12 +160,20 @@ async function handlePresign(gallery, body) {
     Bucket: MEDIA_BUCKET,
     Key: objectKey,
     ContentType: body.contentType,
+    CacheControl: UPLOAD_CACHE_CONTROL,
   });
   const uploadUrl = await getSignedUrl(s3, command, {
     expiresIn: UPLOAD_URL_TTL_SECONDS,
-    signableHeaders: new Set(['content-type']),
+    signableHeaders: new Set(['content-type', 'cache-control']),
   });
-  return json(200, { uploadUrl, objectKey, publicUrl: `${MEDIA_BASE_URL}/${objectKey}` });
+  // `cacheControl` is echoed back so the client sends the identical value on the
+  // PUT — a mismatch (or omission) fails the signature.
+  return json(200, {
+    uploadUrl,
+    objectKey,
+    publicUrl: `${MEDIA_BASE_URL}/${objectKey}`,
+    cacheControl: UPLOAD_CACHE_CONTROL,
+  });
 }
 
 async function handleAddPhoto(gallery, body) {
@@ -255,17 +273,45 @@ async function handleAddKml(body) {
   return json(201, entry);
 }
 
+// Delete many S3 objects in as few requests as possible. DeleteObjectsCommand
+// takes up to 1000 keys at a time, so a trip with hundreds of photos is one or a
+// handful of calls instead of one DeleteObjectCommand per object.
+const S3_DELETE_BATCH = 1000;
+async function deleteObjects(keys) {
+  for (let start = 0; start < keys.length; start += S3_DELETE_BATCH) {
+    const chunk = keys.slice(start, start + S3_DELETE_BATCH);
+    await s3.send(
+      new DeleteObjectsCommand({
+        Bucket: MEDIA_BUCKET,
+        Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
+      }),
+    );
+  }
+}
+
 async function handleDeleteKml(id) {
-  const manifest = await readManifest(KML_GALLERY.manifestKey);
-  const target = manifest.find((trip) => trip.id === id);
+  const tripManifest = await readManifest(KML_GALLERY.manifestKey);
+  const target = tripManifest.find((trip) => trip.id === id);
   if (!target) return json(404, { error: 'Not found' });
 
-  const objectKey = objectKeyFromUrl(target.url, MEDIA_BASE_URL);
-  if (objectKey) {
-    await s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: objectKey }));
+  // Cascade: hike photos belong to a trip via photo.tripId. Deleting the trip
+  // must delete its photos too — otherwise their S3 objects and manifest entries
+  // are orphaned (invisible in the UI, still stored, still billed).
+  const photoManifest = await readManifest(GALLERIES.hikes.manifestKey);
+  const { assigned, remaining } = partitionPhotosByTrip(photoManifest, id);
+
+  // Delete the KML object plus every assigned photo's object in one pass.
+  const objectKeys = [target, ...assigned]
+    .map((entry) => objectKeyFromUrl(entry.url, MEDIA_BASE_URL))
+    .filter(Boolean);
+  await deleteObjects(objectKeys);
+
+  await writeManifest(KML_GALLERY.manifestKey, removePhoto(tripManifest, id));
+  if (assigned.length > 0) {
+    await writeManifest(GALLERIES.hikes.manifestKey, remaining);
   }
-  await writeManifest(KML_GALLERY.manifestKey, removePhoto(manifest, id));
-  return json(200, { ok: true });
+
+  return json(200, { ok: true, deletedPhotoIds: assigned.map((photo) => photo.id) });
 }
 
 export async function handler(event) {
