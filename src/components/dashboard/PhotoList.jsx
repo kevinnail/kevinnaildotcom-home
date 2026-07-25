@@ -112,7 +112,13 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
               canReorder && !isEditing ? 'cursor-move' : ''
             }`}
           >
-            <img src={photo.url} alt={photo.alt} className="w-full h-32 object-cover" />
+            <img
+              src={photo.url}
+              alt={photo.alt}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-32 object-cover"
+            />
 
             {isEditing ? (
               <div className="flex flex-col gap-2 p-2">
