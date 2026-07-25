@@ -29,8 +29,8 @@ export default function UploadForm({ token, onUploaded, onSessionExpired }) {
     setStatus('uploading');
     setError('');
     try {
-      const { uploadUrl, objectKey } = await requestUpload(token, file);
-      await uploadToS3(uploadUrl, file);
+      const { uploadUrl, objectKey, cacheControl } = await requestUpload(token, file);
+      await uploadToS3(uploadUrl, file, cacheControl);
       const entry = await savePhoto(token, { objectKey, ...fields });
       onUploaded(entry);
       setFile(null);
