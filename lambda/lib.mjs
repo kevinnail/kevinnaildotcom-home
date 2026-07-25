@@ -130,6 +130,20 @@ export function removePhoto(manifest, id) {
   return manifest.filter((photo) => photo.id !== id);
 }
 
+// Split a photo manifest into the photos belonging to `tripId` and everything
+// else. A trip delete uses `assigned` to purge those photos' S3 objects and
+// `remaining` to persist the rest, so deleting a trail cascades to its photos
+// instead of orphaning them. Pure — returns two new arrays, never mutates.
+export function partitionPhotosByTrip(manifest, tripId) {
+  const assigned = [];
+  const remaining = [];
+  for (const photo of manifest) {
+    if (photo.tripId === tripId) assigned.push(photo);
+    else remaining.push(photo);
+  }
+  return { assigned, remaining };
+}
+
 // Replace alt/caption/lat/lng on the matching entry; other fields and other
 // entries untouched. Pure — returns a new array, does not mutate. Each field is
 // only replaced when provided (`?? photo.<field>`), so a partial patch keeps the
