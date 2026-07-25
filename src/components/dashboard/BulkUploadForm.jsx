@@ -45,8 +45,8 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
   const uploadOne = async (file) => {
     try {
       const meta = await readPhotoMeta(file);
-      const { uploadUrl, objectKey } = await requestUpload(token, file, 'hikes');
-      await uploadToS3(uploadUrl, file);
+      const { uploadUrl, objectKey, cacheControl } = await requestUpload(token, file, 'hikes');
+      await uploadToS3(uploadUrl, file, cacheControl);
       return { ok: true, item: { objectKey, takenAt: meta.takenAt, lat: meta.lat, lng: meta.lng } };
     } catch (uploadError) {
       if (uploadError instanceof SessionExpiredError) throw uploadError;

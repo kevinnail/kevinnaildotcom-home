@@ -10,6 +10,7 @@ import {
   addPhoto,
   addPhotos,
   removePhoto,
+  partitionPhotosByTrip,
   updatePhoto,
   reorderPhotos,
   objectKeyFromUrl,
@@ -252,6 +253,39 @@ describe('addPhoto / removePhoto', () => {
     const only = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const manifest = addPhoto([], only);
     expect(removePhoto(manifest, 'no-such-id')).toEqual(manifest);
+  });
+});
+
+describe('partitionPhotosByTrip', () => {
+  const manifest = [
+    buildPhotoEntry({ objectKey: 'hikes/a.jpg', tripId: 'trip-1', mediaBaseUrl: 'x' }),
+    buildPhotoEntry({ objectKey: 'hikes/b.jpg', tripId: 'trip-2', mediaBaseUrl: 'x' }),
+    buildPhotoEntry({ objectKey: 'hikes/c.jpg', tripId: 'trip-1', mediaBaseUrl: 'x' }),
+    buildPhotoEntry({ objectKey: 'hikes/d.jpg', mediaBaseUrl: 'x' }), // unassigned (tripId null)
+  ];
+
+  test('splits the trip’s photos into assigned, everything else into remaining', () => {
+    const { assigned, remaining } = partitionPhotosByTrip(manifest, 'trip-1');
+    expect(assigned.map((photo) => photo.url)).toEqual(['x/hikes/a.jpg', 'x/hikes/c.jpg']);
+    expect(remaining.map((photo) => photo.url)).toEqual(['x/hikes/b.jpg', 'x/hikes/d.jpg']);
+  });
+
+  test('leaves unassigned (null tripId) photos in remaining, never assigned', () => {
+    const { assigned, remaining } = partitionPhotosByTrip(manifest, 'trip-2');
+    expect(assigned.map((photo) => photo.url)).toEqual(['x/hikes/b.jpg']);
+    // The null-tripId photo must not match any real trip id.
+    expect(remaining.some((photo) => photo.url === 'x/hikes/d.jpg')).toBe(true);
+  });
+
+  test('unknown trip id assigns nothing and keeps every photo in remaining', () => {
+    const { assigned, remaining } = partitionPhotosByTrip(manifest, 'trip-none');
+    expect(assigned).toEqual([]);
+    expect(remaining).toHaveLength(manifest.length);
+  });
+
+  test('does not mutate the input manifest', () => {
+    partitionPhotosByTrip(manifest, 'trip-1');
+    expect(manifest).toHaveLength(4);
   });
 });
 

@@ -43,8 +43,8 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
       // Browsers often report an empty MIME type for .kml. Re-wrap the file with a
       // correct type so the presigned PUT and the stored object both carry it.
       const typedFile = new File([file], file.name, { type: KML_CONTENT_TYPE });
-      const { uploadUrl, objectKey } = await requestUpload(token, typedFile, 'kml');
-      await uploadToS3(uploadUrl, typedFile);
+      const { uploadUrl, objectKey, cacheControl } = await requestUpload(token, typedFile, 'kml');
+      await uploadToS3(uploadUrl, typedFile, cacheControl);
       const entry = await saveKml(token, {
         objectKey,
         name: fields.name.trim(),
