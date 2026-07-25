@@ -172,6 +172,20 @@ describe('buildPhotoEntry', () => {
     expect(entry.tripId).toBeNull();
   });
 
+  test('builds thumbUrl from thumbObjectKey when provided (backpacking photos)', () => {
+    const entry = buildPhotoEntry({
+      objectKey: 'hikes/abc.jpg',
+      thumbObjectKey: 'hikes/abc-thumb.jpg',
+      mediaBaseUrl: 'https://media.example.com',
+    });
+    expect(entry.thumbUrl).toBe('https://media.example.com/hikes/abc-thumb.jpg');
+  });
+
+  test('defaults thumbUrl to null when no thumbObjectKey (astronomy photos)', () => {
+    const entry = buildPhotoEntry({ objectKey: 'astro/x.jpg', mediaBaseUrl: 'x' });
+    expect(entry.thumbUrl).toBeNull();
+  });
+
   test('assigns a unique id to each entry', () => {
     const first = buildPhotoEntry({ objectKey: 'astro/1.jpg', mediaBaseUrl: 'x' });
     const second = buildPhotoEntry({ objectKey: 'astro/2.jpg', mediaBaseUrl: 'x' });
