@@ -24,7 +24,6 @@ import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
-  DeleteObjectCommand,
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -203,6 +202,7 @@ async function handleAddPhotosBatch(gallery, body) {
   const entries = photos.map((photo) =>
     buildPhotoEntry({
       objectKey: photo.objectKey,
+      thumbObjectKey: photo.thumbObjectKey,
       alt: photo.alt,
       caption: photo.caption,
       lat: photo.lat,
@@ -250,9 +250,13 @@ async function handleDeletePhoto(gallery, id) {
   const target = manifest.find((photo) => photo.id === id);
   if (!target) return json(404, { error: 'Not found' });
 
-  const objectKey = objectKeyFromUrl(target.url, MEDIA_BASE_URL);
-  if (objectKey) {
-    await s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: objectKey }));
+  // Remove the original and its thumbnail (backpacking photos have both; astronomy
+  // has a null thumbUrl). One DeleteObjects call covers both keys.
+  const objectKeys = [target.url, target.thumbUrl]
+    .map((url) => objectKeyFromUrl(url ?? '', MEDIA_BASE_URL))
+    .filter(Boolean);
+  if (objectKeys.length > 0) {
+    await deleteObjects(objectKeys);
   }
   await writeManifest(gallery.manifestKey, removePhoto(manifest, id));
   return json(200, { ok: true });
@@ -300,9 +304,12 @@ async function handleDeleteKml(id) {
   const photoManifest = await readManifest(GALLERIES.hikes.manifestKey);
   const { assigned, remaining } = partitionPhotosByTrip(photoManifest, id);
 
-  // Delete the KML object plus every assigned photo's object in one pass.
+  // Delete the KML object plus every assigned photo's object AND thumbnail in one
+  // pass. The trip itself has no thumbUrl; each photo has both a full-res and a
+  // thumbnail object to purge.
   const objectKeys = [target, ...assigned]
-    .map((entry) => objectKeyFromUrl(entry.url, MEDIA_BASE_URL))
+    .flatMap((entry) => [entry.url, entry.thumbUrl])
+    .map((url) => objectKeyFromUrl(url ?? '', MEDIA_BASE_URL))
     .filter(Boolean);
   await deleteObjects(objectKeys);
 
