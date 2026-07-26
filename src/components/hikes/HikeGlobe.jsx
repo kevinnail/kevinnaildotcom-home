@@ -77,7 +77,7 @@ export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
 
   if (terrainProvider === 'pending') {
     return (
-      <div className="grid h-full w-full place-items-center bg-black font-body text-mid-gray">
+      <div className="grid h-full w-full place-items-center bg-black font-body text-gray-300">
         Loading terrain…
       </div>
     );
