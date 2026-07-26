@@ -45,7 +45,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
       onClick={onPrev}
       disabled={!hasPrev}
       aria-label="Previous photo"
-      className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/70 px-3 py-2 font-body text-xl leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue disabled:pointer-events-none disabled:opacity-30"
+      className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/70 px-3 py-2 font-body text-xl leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue-bright disabled:pointer-events-none disabled:opacity-30"
     >
       ‹
     </button>
@@ -57,7 +57,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
       onClick={onNext}
       disabled={!hasNext}
       aria-label="Next photo"
-      className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/70 px-3 py-2 font-body text-xl leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue disabled:pointer-events-none disabled:opacity-30"
+      className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/70 px-3 py-2 font-body text-xl leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue-bright disabled:pointer-events-none disabled:opacity-30"
     >
       ›
     </button>
@@ -76,7 +76,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
           type="button"
           onClick={() => setIsFullscreen(false)}
           aria-label="Exit fullscreen"
-          className="absolute right-3 top-3 z-10 rounded-full bg-black/70 px-4 py-2 font-body text-sm leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue"
+          className="absolute right-3 top-3 z-10 rounded-full bg-black/70 px-4 py-2 font-body text-sm leading-none text-white transition-colors hover:bg-neon-blue-50 hover:text-neon-blue-bright"
         >
           Minimize
         </button>
@@ -101,7 +101,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
             type="button"
             onClick={() => setIsFullscreen(true)}
             aria-label="View fullscreen"
-            className="rounded-full bg-black/70 px-3 py-1 font-body text-lg leading-none text-white hover:bg-neon-blue-50 hover:text-neon-blue"
+            className="rounded-full bg-black/70 px-3 py-1 font-body text-lg leading-none text-white hover:bg-neon-blue-50 hover:text-neon-blue-bright"
           >
             ⤢
           </button>
@@ -109,7 +109,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
             type="button"
             onClick={onClose}
             aria-label="Close photo"
-            className="rounded-full bg-black/70 px-3 py-1 font-body text-lg leading-none text-white hover:bg-neon-blue-50 hover:text-neon-blue"
+            className="rounded-full bg-black/70 px-3 py-1 font-body text-lg leading-none text-white hover:bg-neon-blue-50 hover:text-neon-blue-bright"
           >
             ×
           </button>
