@@ -1,4 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+// Swipe thresholds. The distance keeps a sloppy tap from counting as a swipe, and
+// the off-axis ratio rejects gestures that are really vertical — a diagonal drag
+// shouldn't quietly change the photo.
+const SWIPE_MIN_DISTANCE_PX = 48;
+const SWIPE_MAX_OFF_AXIS_RATIO = 0.8;
+
+// Horizontal swipe → prev/next, so the gesture people already expect from a photo
+// viewer works alongside the arrows. Pointer events cover touch and pen; mouse is
+// excluded because a click-drag on the image shouldn't advance anything on desktop,
+// where the arrow buttons and arrow keys already exist. No explicit pointer capture:
+// touch pointers get implicit capture from the browser, so the release always comes
+// back to the element that started the gesture — and capturing here on the panel
+// would retarget pointerup away from the close/fullscreen buttons and kill their taps.
+function useSwipeNavigation({ onSwipeLeft, onSwipeRight }) {
+  const gestureStartRef = useRef(null);
+
+  function handlePointerDown(event) {
+    if (event.pointerType === 'mouse') return;
+    gestureStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }
+
+  function handlePointerUp(event) {
+    const gestureStart = gestureStartRef.current;
+    gestureStartRef.current = null;
+    if (!gestureStart || gestureStart.pointerId !== event.pointerId) return;
+
+    const horizontalDistance = event.clientX - gestureStart.x;
+    const verticalDistance = event.clientY - gestureStart.y;
+    if (Math.abs(horizontalDistance) < SWIPE_MIN_DISTANCE_PX) return;
+    if (Math.abs(verticalDistance) > Math.abs(horizontalDistance) * SWIPE_MAX_OFF_AXIS_RATIO)
+      return;
+
+    if (horizontalDistance < 0) onSwipeLeft();
+    else onSwipeRight();
+  }
+
+  function handlePointerCancel() {
+    gestureStartRef.current = null;
+  }
+
+  return {
+    onPointerDown: handlePointerDown,
+    onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerCancel,
+    // Leave vertical panning to the browser and claim the horizontal axis, so the
+    // gesture isn't stolen by scroll or back-navigation before we see it.
+    className: '[touch-action:pan-y]',
+  };
+}
 
 // Bottom dock over the globe showing the one expanded, selected photo. Absolutely
 // positioned inside the `relative` <main>; `pointer-events` are enabled only on
@@ -8,6 +62,10 @@ import { useEffect, useState } from 'react';
 // A fullscreen toggle blows the image up to a viewport-filling overlay for detail.
 export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev, hasNext }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { className: swipeClassName, ...swipeHandlers } = useSwipeNavigation({
+    onSwipeLeft: () => hasNext && onNext(),
+    onSwipeRight: () => hasPrev && onPrev(),
+  });
 
   // Fullscreen persists as you step between photos, but if the dock closes
   // entirely the next open should start docked. Reset by comparing open/closed
@@ -71,7 +129,10 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
 
   if (isFullscreen) {
     return (
-      <figure className="fixed inset-0 z-50 flex flex-col bg-black/95">
+      <figure
+        className={`fixed inset-0 z-50 flex flex-col bg-black/95 ${swipeClassName}`}
+        {...swipeHandlers}
+      >
         <button
           type="button"
           onClick={() => setIsFullscreen(false)}
@@ -95,7 +156,10 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4">
-      <figure className="pointer-events-auto relative flex max-h-[40vh] max-w-3xl flex-col overflow-hidden rounded-lg border border-neon-blue-50 bg-black/85 shadow-lg backdrop-blur">
+      <figure
+        className={`pointer-events-auto relative flex max-h-[40vh] max-w-3xl flex-col overflow-hidden rounded-lg border border-neon-blue-50 bg-black/85 shadow-lg backdrop-blur ${swipeClassName}`}
+        {...swipeHandlers}
+      >
         <div className="absolute right-2 top-2 z-10 flex gap-2">
           <button
             type="button"
