@@ -4,6 +4,7 @@ import Banner from '../components/layout/Banner';
 import MapSidebar from '../components/hikes/MapSidebar';
 import HikeGlobe from '../components/hikes/HikeGlobe';
 import HikePhotoDock from '../components/hikes/HikePhotoDock';
+import HikeCoachMarks from '../components/hikes/HikeCoachMarks';
 import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
 import { selectTripPhotos } from '../lib/hikePhotos';
 import useIsDesktop from '../lib/useIsDesktop';
@@ -19,7 +20,13 @@ export default function HikeMapPage() {
   // globe there), but manual on mobile, where the dock would cover the globe —
   // so the user taps a "View photo" pill to open it after seeing the location.
   const [isPhotoViewOpen, setIsPhotoViewOpen] = useState(false);
+  // Desktop-only overview: every route on screen at once so the visitor can see
+  // where the hikes are and click one to open it.
+  const [hasRequestedAllRoutes, setHasRequestedAllRoutes] = useState(false);
   const isDesktop = useIsDesktop();
+  // Derived rather than stored, so narrowing the window to phone width can't leave
+  // the overview running with its only exit — the desktop sidebar button — gone.
+  const isShowingAllRoutes = isDesktop && hasRequestedAllRoutes;
 
   useEffect(() => {
     let active = true;
@@ -46,8 +53,19 @@ export default function HikeMapPage() {
   const selectedPhoto = selectedIndex >= 0 ? tripPhotos[selectedIndex] : null;
 
   // Switching hikes clears the expanded photo so the new hike starts with no pin.
+  // Choosing a hike is also the natural way out of the all-routes overview,
+  // whether the pick came from the sidebar or from clicking the route itself.
   function handleSelectTrip(tripId) {
     setSelectedTripId(tripId);
+    setSelectedPhotoId(null);
+    setIsPhotoViewOpen(false);
+    setHasRequestedAllRoutes(false);
+  }
+
+  // Entering the overview drops the pin and dock: it's about where the hikes are,
+  // not about any one photo.
+  function handleToggleAllRoutes() {
+    setHasRequestedAllRoutes((hasRequested) => !hasRequested);
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
   }
@@ -107,9 +125,17 @@ export default function HikeMapPage() {
             selectedPhotoId={selectedPhotoId}
             onSelectPhoto={handleSelectPhoto}
             photoMessage={photoMessage}
+            isShowingAllRoutes={isShowingAllRoutes}
+            onToggleAllRoutes={handleToggleAllRoutes}
           />
           <main className="relative min-h-0 flex-1">
-            <HikeGlobe selectedTrip={selectedTrip} selectedPhoto={selectedPhoto} />
+            <HikeGlobe
+              selectedTrip={selectedTrip}
+              selectedPhoto={selectedPhoto}
+              trips={trips}
+              isShowingAllRoutes={isShowingAllRoutes}
+              onSelectTrip={handleSelectTrip}
+            />
             {/* Mobile: a photo is located on the globe but its dock is closed —
                 offer to open it without covering the pin until the user chooses. */}
             {selectedPhoto && !isPhotoViewOpen && (
@@ -129,6 +155,10 @@ export default function HikeMapPage() {
               hasPrev={selectedIndex > 0}
               hasNext={selectedIndex >= 0 && selectedIndex < tripPhotos.length - 1}
             />
+            {/* Mounted only while a photo is open — the walkthrough explains the
+                zoom control and the dock, and both are on screen only then. It
+                renders nothing once the visitor has dismissed it. */}
+            {isPhotoViewOpen && selectedPhoto && <HikeCoachMarks />}
           </main>
         </div>
       </div>
