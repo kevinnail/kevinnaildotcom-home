@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Viewer, KmlDataSource, Entity } from 'resium';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Viewer, KmlDataSource, Entity, ScreenSpaceEventHandler, ScreenSpaceEvent } from 'resium';
 import {
   Ion,
   createWorldTerrainAsync,
@@ -9,6 +9,7 @@ import {
   BoundingSphere,
   HeadingPitchRange,
   HeightReference,
+  ScreenSpaceEventType,
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
@@ -36,16 +37,43 @@ const ZOOM_LEVELS = [
 ];
 const DEFAULT_ZOOM_LEVEL_INDEX = ZOOM_LEVELS.findIndex((level) => level.rangeMeters === 13000);
 
+// Framing for the route overview flown on trip select. Heading 0 is north-up so
+// every hike is introduced from the same orientation, and range 0 tells Cesium to
+// derive the distance from the route's own bounding sphere — the whole trail
+// fills the view whether it's a two-mile loop or a fifty-mile traverse.
+const TRIP_OVERVIEW_PITCH_DEGREES = -50;
+const TRIP_OVERVIEW_DURATION_SECONDS = 2;
+
+// "All hikes" overview: pitched near straight-down so widely separated ranges sit
+// in one frame without the near ones hiding the far ones behind terrain.
+const ALL_ROUTES_PITCH_DEGREES = -75;
+const ALL_ROUTES_DURATION_SECONDS = 2.5;
+
+// Picking a trail is picking a line a few pixels wide, so widen the pick rectangle
+// — a cursor that has to land exactly on the stroke makes the routes feel inert.
+const ROUTE_PICK_TOLERANCE_PIXELS = 12;
+
 function formatRange(rangeMeters) {
   return rangeMeters >= 1000 ? `${(rangeMeters / 1000).toFixed(1)} km` : `${rangeMeters} m`;
 }
 
-export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
+export default function HikeGlobe({
+  selectedTrip,
+  selectedPhoto,
+  trips,
+  isShowingAllRoutes,
+  onSelectTrip,
+}) {
   const viewerRef = useRef(null);
+  // Which trip each loaded overview route belongs to, keyed by its Cesium
+  // DataSource. A click gives us an Entity; its collection's owner is the data
+  // source, so this map is what turns a picked trail back into a trip id.
+  const routeTripIdsRef = useRef(new Map());
   // 'pending' until the async terrain resolves; then the provider (3D relief) or
   // null (fall back to the flat ellipsoid if terrain fails, e.g. missing token).
   const [terrainProvider, setTerrainProvider] = useState('pending');
   const [zoomLevelIndex, setZoomLevelIndex] = useState(DEFAULT_ZOOM_LEVEL_INDEX);
+  const [isHoveringRoute, setIsHoveringRoute] = useState(false);
   const { rangeMeters, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
 
   // World terrain loads asynchronously (createWorldTerrain was removed in Cesium
@@ -66,8 +94,84 @@ export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
     };
   }, []);
 
+  // Frame the whole route once its KML finishes loading. Selecting a hike while
+  // zoomed into a previous one otherwise leaves the camera pointed at unrelated
+  // terrain with no clue where the new trail went. Driven by onLoad rather than a
+  // selectedTrip effect because the entities don't exist — and so have no bounding
+  // sphere to fly to — until the KML resolves.
+  const handleTripRouteLoad = useCallback((dataSource) => {
+    const viewer = viewerRef.current?.cesiumElement;
+    if (!viewer) return;
+    viewer.flyTo(dataSource, {
+      duration: TRIP_OVERVIEW_DURATION_SECONDS,
+      offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
+    });
+  }, []);
+
+  // Overview mode loads every route at once. Each KML resolves on its own, so we
+  // wait until the last one lands and then fly to all of their entities together —
+  // Viewer.flyTo unions the bounding spheres for us. Flying on each load instead
+  // would yank the camera once per hike as they trickle in.
+  const handleAllRoutesLoad = useCallback(
+    (tripId, dataSource) => {
+      const viewer = viewerRef.current?.cesiumElement;
+      if (!viewer) return;
+      routeTripIdsRef.current.set(dataSource, tripId);
+      if (routeTripIdsRef.current.size < trips.length) return;
+
+      const allRouteEntities = [...routeTripIdsRef.current.keys()].flatMap(
+        (loadedSource) => loadedSource.entities.values,
+      );
+      if (allRouteEntities.length === 0) return;
+      viewer.flyTo(allRouteEntities, {
+        duration: ALL_ROUTES_DURATION_SECONDS,
+        offset: new HeadingPitchRange(0, CesiumMath.toRadians(ALL_ROUTES_PITCH_DEGREES), 0),
+      });
+    },
+    [trips.length],
+  );
+
+  // The map is only stale once the routes it describes are unmounted, which is
+  // exactly when the mode flips.
+  useEffect(() => {
+    routeTripIdsRef.current = new Map();
+  }, [isShowingAllRoutes]);
+
+  function tripIdForPickedObject(pickedObject) {
+    const owningDataSource = pickedObject?.id?.entityCollection?.owner;
+    if (!owningDataSource) return null;
+    return routeTripIdsRef.current.get(owningDataSource) ?? null;
+  }
+
+  function handleOverviewClick(movement) {
+    const viewer = viewerRef.current?.cesiumElement;
+    if (!viewer) return;
+    const picked = viewer.scene.pick(
+      movement.position,
+      ROUTE_PICK_TOLERANCE_PIXELS,
+      ROUTE_PICK_TOLERANCE_PIXELS,
+    );
+    const tripId = tripIdForPickedObject(picked);
+    if (tripId != null) onSelectTrip(tripId);
+  }
+
+  // Without a cursor change the trails give no sign they're clickable. The cursor
+  // rides on the wrapper element rather than the canvas so it stays React state
+  // instead of a manual DOM mutation.
+  function handleOverviewHover(movement) {
+    const viewer = viewerRef.current?.cesiumElement;
+    if (!viewer) return;
+    const picked = viewer.scene.pick(
+      movement.endPosition,
+      ROUTE_PICK_TOLERANCE_PIXELS,
+      ROUTE_PICK_TOLERANCE_PIXELS,
+    );
+    setIsHoveringRoute(tripIdForPickedObject(picked) != null);
+  }
+
   // Recenter the camera on the selected photo — a deliberate response to a photo
-  // click (not trip select; slices 4–5 keep the camera still on trip select).
+  // click. Selecting a trip clears the photo, so this never races the route
+  // overview flight above.
   // Framing is the chosen zoom level's range + pitch; we keep only the user's
   // current heading so the pin stays on whatever side they were facing. Keyed on
   // id/coords/level so unrelated re-renders don't re-trigger the flight, while a
@@ -134,7 +238,13 @@ export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
   const canZoomOut = zoomLevelIndex > 0;
 
   return (
-    <div className="relative h-full w-full">
+    // Gating on the mode as well as the hover means a hover left over from a
+    // previous overview session can't strand the pointer cursor.
+    <div
+      className={`relative h-full w-full ${
+        isShowingAllRoutes && isHoveringRoute ? 'cursor-pointer' : ''
+      }`}
+    >
       {/* The zoom level only drives the photo fly-to, so the control is dead
           weight until a photo is selected — hide it until then. */}
       {selectedPhoto ? (
@@ -168,6 +278,11 @@ export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
         terrainProvider={terrainProvider ?? undefined}
         timeline={false}
         animation={false}
+        // Clicking a route selects the hike and nothing else — Cesium's default
+        // response of popping the KML's description panel and a crosshair over the
+        // entity is not what a click means here.
+        infoBox={false}
+        selectionIndicator={false}
         // Only render when the scene changes (camera move, data load, tile stream-in)
         // instead of every animation frame. Without this Cesium pins a CPU core at
         // idle. maximumRenderTimeChange caps how long a static scene goes without a
@@ -175,8 +290,30 @@ export default function HikeGlobe({ selectedTrip, selectedPhoto }) {
         requestRenderMode
         maximumRenderTimeChange={Infinity}
       >
-        {selectedTrip ? <KmlDataSource data={selectedTrip.url} clampToGround /> : null}
-        {selectedPhoto ? (
+        {isShowingAllRoutes
+          ? trips.map((trip) => (
+              <KmlDataSource
+                key={trip.id}
+                data={trip.url}
+                clampToGround
+                onLoad={(dataSource) => handleAllRoutesLoad(trip.id, dataSource)}
+              />
+            ))
+          : selectedTrip && (
+              <KmlDataSource
+                key={selectedTrip.id}
+                data={selectedTrip.url}
+                clampToGround
+                onLoad={handleTripRouteLoad}
+              />
+            )}
+        {isShowingAllRoutes ? (
+          <ScreenSpaceEventHandler>
+            <ScreenSpaceEvent action={handleOverviewClick} type={ScreenSpaceEventType.LEFT_CLICK} />
+            <ScreenSpaceEvent action={handleOverviewHover} type={ScreenSpaceEventType.MOUSE_MOVE} />
+          </ScreenSpaceEventHandler>
+        ) : null}
+        {selectedPhoto && !isShowingAllRoutes ? (
           <Entity
             position={Cartesian3.fromDegrees(selectedPhoto.lng, selectedPhoto.lat)}
             point={{

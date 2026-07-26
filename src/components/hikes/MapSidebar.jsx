@@ -1,19 +1,51 @@
 import { useState } from 'react';
 
 // One hike row, shared by the desktop list and the mobile picker sheet so both
-// stay visually identical and in sync.
+// stay visually identical and in sync. Each row reads as its own card: a hairline
+// border defines the list at a glance, and the selected row brightens its border,
+// fill, and type while picking up a blue glow so the active hike is unmistakable.
 function TripOption({ trip, isSelected, onSelect }) {
   return (
     <button
       type="button"
       onClick={() => onSelect(trip.id)}
       aria-current={isSelected ? 'true' : undefined}
-      className={`w-full rounded px-3 py-2 text-left font-body transition-colors ${
-        isSelected ? 'bg-neon-blue-50 text-white' : 'text-white hover:bg-neon-blue-50/40'
+      className={`group relative flex w-full touch-manipulation items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left font-body transition-all duration-200 [-webkit-tap-highlight-color:transparent] active:scale-[0.98] active:border-neon-blue-bright active:bg-neon-blue-bright/30 active:text-white active:duration-75 ${
+        isSelected
+          ? 'border-neon-blue-bright bg-neon-blue-50/35 text-white shadow-[0_0_20px_-5px_var(--color-neon-blue-bright)]'
+          : 'border-white/10 bg-white/[0.03] text-gray-200 hover:-translate-y-px hover:border-neon-blue-bright/45 hover:bg-white/[0.07] hover:text-white'
       }`}
     >
-      <span className="block font-display text-lg">{trip.name}</span>
-      <span className="block text-sm text-gray-300">{trip.region}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-lg leading-tight">{trip.name}</span>
+        {trip.region && (
+          <span
+            className={`mt-0.5 block truncate text-[0.7rem] uppercase tracking-[0.14em] transition-colors ${
+              isSelected ? 'text-neon-blue-bright' : 'text-gray-400 group-hover:text-gray-300'
+            }`}
+          >
+            {trip.region}
+          </span>
+        )}
+      </span>
+
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`h-4 w-4 shrink-0 transition-all duration-200 ${
+          isSelected
+            ? 'text-neon-blue-bright opacity-100'
+            : '-translate-x-1 text-gray-400 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+        }`}
+      >
+        {/* Check once chosen, chevron while it's still just an option. */}
+        {isSelected ? <path d="m5 13 4 4L19 7" /> : <path d="m9 18 6-6-6-6" />}
+      </svg>
     </button>
   );
 }
@@ -27,45 +59,64 @@ export default function MapSidebar({
   selectedPhotoId,
   onSelectPhoto,
   photoMessage,
+  isShowingAllRoutes,
+  onToggleAllRoutes,
 }) {
   // Mobile-only: the full hike list lives in a bottom sheet instead of a
   // sideways-scrolling strip, which is awkward to browse on a phone.
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId) ?? null;
 
-  function handlePickTrip(tripId) {
-    onSelectTrip(tripId);
-    setIsPickerOpen(false);
-  }
-
   return (
     <aside className="flex max-h-[55vh] w-full shrink-0 flex-col overflow-hidden border-t border-neon-blue-50 bg-black/90 text-white md:max-h-none md:w-72 md:border-r md:border-t-0">
-      {/* Desktop header */}
+      {/* Desktop header. The overview toggle lives here rather than over the globe:
+          it's a selection control like the list below it, and floating it on the
+          map crowded Cesium's own buttons. Desktop only — clicking a trail is a
+          cursor job, so phones select from the picker sheet instead. */}
+
       <div className="hidden shrink-0 border-b border-neon-blue-50 px-4 py-4 md:block">
         <h1 className="font-display text-2xl text-white">Hikes</h1>
-        <p className="font-body text-sm text-gray-300">Select a hike to view its route.</p>
+        <p className="font-body text-sm text-gray-300">
+          {isShowingAllRoutes
+            ? 'Click a route on the map to open that hike.'
+            : 'Select a hike to view its route.'}
+        </p>
+        {trips.length > 1 && (
+          <button
+            type="button"
+            onClick={onToggleAllRoutes}
+            aria-pressed={isShowingAllRoutes}
+            className={`mt-3 w-full rounded-lg border px-3 py-2 font-body text-sm transition-colors ${
+              isShowingAllRoutes
+                ? 'border-neon-blue-bright bg-neon-blue-50/35 text-white shadow-[0_0_20px_-5px_var(--color-neon-blue-bright)]'
+                : 'border-white/10 bg-white/[0.03] text-gray-200 hover:border-neon-blue-bright/45 hover:bg-white/[0.07] hover:text-white'
+            }`}
+          >
+            {isShowingAllRoutes ? 'Exit overview' : 'Show all hikes'}
+          </button>
+        )}
       </div>
 
-      {/* Mobile current-hike bar: shows the active hike and opens the picker */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-neon-blue-50 px-4 py-2 md:hidden">
-        <div className="min-w-0">
-          <span className="block truncate font-display text-lg text-white">
-            {selectedTrip ? selectedTrip.name : 'Hikes'}
+      {/* Mobile current-hike bar: the title owns the full width so long names stay
+          readable, and the button shares the shorter region line beneath it. */}
+      <div className="shrink-0 border-b border-neon-blue-50 px-4 py-2 md:hidden">
+        {/* Sized and lit to out-rank the Cesium credit sitting just above it. */}
+        <span className="line-clamp-2 block font-display text-xl leading-tight text-white [text-shadow:0_0_12px_var(--color-neon-blue-bright)]">
+          {selectedTrip ? selectedTrip.name : 'Hikes'}
+        </span>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <span className="min-w-0 flex-1 truncate font-body text-[0.7rem] uppercase tracking-[0.14em] text-neon-blue-bright">
+            {selectedTrip?.region}
           </span>
-          {selectedTrip?.region && (
-            <span className="block truncate font-body text-sm text-gray-300">
-              {selectedTrip.region}
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsPickerOpen(true)}
+            disabled={trips.length === 0}
+            className="shrink-0 touch-manipulation rounded border border-neon-blue-50 px-3 py-1 font-body text-sm text-black transition-all [-webkit-tap-highlight-color:transparent] hover:bg-neon-blue-50/40 active:scale-[0.97] active:duration-75 disabled:opacity-40 bg-[#50d71e] hover:text-white"
+          >
+            Change hike
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsPickerOpen(true)}
-          disabled={trips.length === 0}
-          className="shrink-0 rounded border border-neon-blue-50 px-3 py-1.5 font-body text-sm text-black transition-colors hover:bg-neon-blue-50/40 disabled:opacity-40 bg-[#50d71e] hover:text-white"
-        >
-          Change hike
-        </button>
       </div>
 
       {/* Desktop hike list */}
@@ -73,7 +124,7 @@ export default function MapSidebar({
         {trips.length === 0 && (
           <p className="px-3 py-2 font-body text-sm text-gray-300">{emptyMessage}</p>
         )}
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {trips.map((trip) => (
             <li key={trip.id}>
               <TripOption
@@ -88,7 +139,9 @@ export default function MapSidebar({
 
       {selectedTripId != null && (
         <div className="flex max-h-[45vh] shrink-0 flex-col border-t border-neon-blue-50 px-2 py-3">
-          <h2 className="shrink-0 px-2 pb-2 font-display text-sm uppercase tracking-wide text-gray-300">
+          {/* Thumbnails read as photos on sight, so the label only earns its row on
+              desktop; on mobile it stays for screen readers only. */}
+          <h2 className="sr-only shrink-0 font-display text-sm uppercase tracking-wide text-gray-300 md:not-sr-only md:px-2 md:pb-2">
             Photos
           </h2>
           {tripPhotos.length === 0 ? (
@@ -161,18 +214,29 @@ export default function MapSidebar({
             {trips.length === 0 ? (
               <p className="px-4 py-3 font-body text-sm text-gray-300">{emptyMessage}</p>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+              <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
                 {trips.map((trip) => (
                   <li key={trip.id}>
                     <TripOption
                       trip={trip}
                       isSelected={trip.id === selectedTripId}
-                      onSelect={handlePickTrip}
+                      onSelect={onSelectTrip}
                     />
                   </li>
                 ))}
               </ul>
             )}
+            {/* Selecting keeps the sheet open so the lit row confirms the tap; the
+                user dismisses deliberately. */}
+            <div className="shrink-0 border-t border-neon-blue-50 p-3">
+              <button
+                type="button"
+                onClick={() => setIsPickerOpen(false)}
+                className="w-full touch-manipulation rounded-lg border border-neon-blue-bright bg-neon-blue-50/35 py-2.5 font-display text-lg text-white transition-all [-webkit-tap-highlight-color:transparent] active:scale-[0.98] active:bg-neon-blue-bright/30 active:duration-75"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
