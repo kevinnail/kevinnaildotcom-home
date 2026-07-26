@@ -6,9 +6,7 @@ export default function Banner({ compact = false }) {
       <Link to="/">
         <img
           className={
-            compact
-              ? 'h-[48px] md:h-[64px] block mx-auto'
-              : 'h-[90px] md:h-[150px] block mx-auto'
+            compact ? 'h-[48px] md:h-[64px] block mx-auto' : 'h-[90px] md:h-[150px] block mx-auto'
           }
           src="/images/knBanner.png"
           alt="Kevin Nail"

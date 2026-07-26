@@ -6,6 +6,7 @@ import HikeGlobe from '../components/hikes/HikeGlobe';
 import HikePhotoDock from '../components/hikes/HikePhotoDock';
 import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
 import { selectTripPhotos } from '../lib/hikePhotos';
+import useIsDesktop from '../lib/useIsDesktop';
 
 export default function HikeMapPage() {
   const [trips, setTrips] = useState([]);
@@ -13,6 +14,12 @@ export default function HikeMapPage() {
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
+  // Selecting a photo always flies the globe + drops the pin. Whether the photo
+  // dock opens is a separate step: immediate on desktop (it doesn't obscure the
+  // globe there), but manual on mobile, where the dock would cover the globe —
+  // so the user taps a "View photo" pill to open it after seeing the location.
+  const [isPhotoViewOpen, setIsPhotoViewOpen] = useState(false);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     let active = true;
@@ -42,6 +49,21 @@ export default function HikeMapPage() {
   function handleSelectTrip(tripId) {
     setSelectedTripId(tripId);
     setSelectedPhotoId(null);
+    setIsPhotoViewOpen(false);
+  }
+
+  // A thumbnail tap flies the globe on every device; on desktop it also opens the
+  // dock immediately, on mobile it defers to the "View photo" pill.
+  function handleSelectPhoto(photoId) {
+    setSelectedPhotoId(photoId);
+    setIsPhotoViewOpen(isDesktop);
+  }
+
+  // Desktop matches the prior behaviour (closing clears the pin). Mobile keeps the
+  // pin/selection so the globe stays put and the "View photo" pill reappears.
+  function handleCloseDock() {
+    setIsPhotoViewOpen(false);
+    if (isDesktop) setSelectedPhotoId(null);
   }
 
   // Stepping the selected photo drives both the dock image and the globe pin,
@@ -83,14 +105,25 @@ export default function HikeMapPage() {
             emptyMessage={sidebarMessage}
             tripPhotos={tripPhotos}
             selectedPhotoId={selectedPhotoId}
-            onSelectPhoto={setSelectedPhotoId}
+            onSelectPhoto={handleSelectPhoto}
             photoMessage={photoMessage}
           />
           <main className="relative min-h-0 flex-1">
             <HikeGlobe selectedTrip={selectedTrip} selectedPhoto={selectedPhoto} />
+            {/* Mobile: a photo is located on the globe but its dock is closed —
+                offer to open it without covering the pin until the user chooses. */}
+            {selectedPhoto && !isPhotoViewOpen && (
+              <button
+                type="button"
+                onClick={() => setIsPhotoViewOpen(true)}
+                className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neon-blue-50 bg-black/85 px-5 py-2.5 font-body text-white shadow-lg backdrop-blur transition-colors hover:bg-neon-blue-50 hover:text-neon-blue-bright md:hidden"
+              >
+                <span aria-hidden="true">⤢</span> View photo
+              </button>
+            )}
             <HikePhotoDock
-              photo={selectedPhoto}
-              onClose={() => setSelectedPhotoId(null)}
+              photo={isPhotoViewOpen ? selectedPhoto : null}
+              onClose={handleCloseDock}
               onPrev={() => stepPhoto(-1)}
               onNext={() => stepPhoto(1)}
               hasPrev={selectedIndex > 0}
