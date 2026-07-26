@@ -6,10 +6,18 @@ import {
   SessionExpiredError,
 } from '../../lib/mediaApi';
 import { readPhotoMeta } from '../../lib/exif';
+import { createThumbnail } from '../../lib/thumbnail';
 import { mapWithConcurrency } from '../../lib/concurrency';
 
 const MAX_BATCH = 500; // must match the Lambda's per-batch cap
 const UPLOAD_CONCURRENCY = 5;
+
+// Trip dropdown sentinels. The default is NO_TRIP_SELECTED (a disabled placeholder)
+// so submit stays locked until the uploader makes a deliberate choice — this stops
+// accidental unassigned uploads. UNASSIGNED is a real, chosen value that maps to a
+// null tripId, so leaving photos unassigned is possible but only on purpose.
+const NO_TRIP_SELECTED = '';
+const UNASSIGNED = 'unassigned';
 
 const fileInputClass =
   'text-white text-sm cursor-pointer file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-neon-blue file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-neon-blue-bright hover:file:text-black';
@@ -19,7 +27,7 @@ const submitButtonClass =
 
 export default function BulkUploadForm({ token, trips = [], onUploaded, onSessionExpired }) {
   const [files, setFiles] = useState([]);
-  const [tripId, setTripId] = useState(''); // '' = Unassigned
+  const [tripId, setTripId] = useState(NO_TRIP_SELECTED);
   const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [completed, setCompleted] = useState(0);
   const [failedNames, setFailedNames] = useState([]);
@@ -39,15 +47,31 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
     resetSummary();
   };
 
-  // Read EXIF, get a presigned URL, and PUT the bytes to S3. Resolves to a result
-  // object so one bad file doesn't abort the batch; a session-expiry still throws
-  // so the whole run aborts and forces re-login.
+  // Read EXIF, generate a sidebar thumbnail, and PUT both the original and the
+  // thumbnail to S3. Resolves to a result object so one bad file doesn't abort the
+  // batch; a session-expiry still throws so the whole run aborts and forces
+  // re-login. A photo whose thumbnail can't be built fails here, so every saved
+  // entry has a real thumbUrl — the sidebar never falls back to a full-res image.
   const uploadOne = async (file) => {
     try {
       const meta = await readPhotoMeta(file);
-      const { uploadUrl, objectKey, cacheControl } = await requestUpload(token, file, 'hikes');
-      await uploadToS3(uploadUrl, file, cacheControl);
-      return { ok: true, item: { objectKey, takenAt: meta.takenAt, lat: meta.lat, lng: meta.lng } };
+      const thumbnail = await createThumbnail(file);
+
+      const original = await requestUpload(token, file, 'hikes');
+      const thumb = await requestUpload(token, thumbnail, 'hikes');
+      await uploadToS3(original.uploadUrl, file, original.cacheControl);
+      await uploadToS3(thumb.uploadUrl, thumbnail, thumb.cacheControl);
+
+      return {
+        ok: true,
+        item: {
+          objectKey: original.objectKey,
+          thumbObjectKey: thumb.objectKey,
+          takenAt: meta.takenAt,
+          lat: meta.lat,
+          lng: meta.lng,
+        },
+      };
     } catch (uploadError) {
       if (uploadError instanceof SessionExpiredError) throw uploadError;
       return { ok: false, name: file.name };
@@ -81,7 +105,10 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
         // already in S3 by this point, so if this single save fails those objects
         // exist without a manifest entry and must be cleaned up manually. The
         // upfront MAX_BATCH guard avoids the most likely cause (an oversized batch).
-        const items = successfulItems.map((item) => ({ ...item, tripId: tripId || null }));
+        const items = successfulItems.map((item) => ({
+          ...item,
+          tripId: tripId === UNASSIGNED ? null : tripId,
+        }));
         const entries = await savePhotosBatch(token, items, 'hikes');
         onUploaded(entries);
         setSavedCount(entries.length);
@@ -128,7 +155,10 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
           disabled={uploading}
           className="rounded border border-mid-gray bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-neon-blue-bright disabled:cursor-not-allowed disabled:text-neutral-500"
         >
-          <option value="">Unassigned</option>
+          <option value={NO_TRIP_SELECTED} disabled>
+            Choose a trip…
+          </option>
+          <option value={UNASSIGNED}>Unassigned</option>
           {trips.map((trip) => (
             <option key={trip.id} value={trip.id}>
               {trip.name}
@@ -158,7 +188,7 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
 
       <button
         type="submit"
-        disabled={uploading || files.length === 0}
+        disabled={uploading || files.length === 0 || tripId === NO_TRIP_SELECTED}
         className={submitButtonClass}
       >
         {uploading

@@ -74,8 +74,8 @@ export default function HikeMapPage() {
       </Helmet>
 
       <div className="flex h-dvh w-screen flex-col overflow-hidden bg-black">
-        <Banner />
-        <div className="flex flex-1 overflow-hidden">
+        <Banner compact />
+        <div className="flex flex-1 flex-col-reverse overflow-hidden md:flex-row">
           <MapSidebar
             trips={trips}
             selectedTripId={selectedTripId}
@@ -86,7 +86,7 @@ export default function HikeMapPage() {
             onSelectPhoto={setSelectedPhotoId}
             photoMessage={photoMessage}
           />
-          <main className="relative flex-1">
+          <main className="relative min-h-0 flex-1">
             <HikeGlobe selectedTrip={selectedTrip} selectedPhoto={selectedPhoto} />
             <HikePhotoDock
               photo={selectedPhoto}

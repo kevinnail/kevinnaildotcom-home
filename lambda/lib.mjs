@@ -77,6 +77,7 @@ export function getBearerToken(headers) {
 
 export function buildPhotoEntry({
   objectKey,
+  thumbObjectKey,
   alt,
   caption,
   lat,
@@ -88,6 +89,10 @@ export function buildPhotoEntry({
   return {
     id: crypto.randomUUID(),
     url: `${mediaBaseUrl}/${objectKey}`,
+    // A small sidebar thumbnail generated at upload time. Present for backpacking
+    // photos (the map strip renders it instead of the full-res original); null for
+    // astronomy, which has no thumbnail step and shows `url` directly.
+    thumbUrl: thumbObjectKey ? `${mediaBaseUrl}/${thumbObjectKey}` : null,
     alt: alt ?? '',
     caption: caption ?? '',
     // Backpacking photos carry coordinates + EXIF capture time; astronomy photos
