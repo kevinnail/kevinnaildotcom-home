@@ -13,6 +13,7 @@ import {
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
+import { isGeotagged } from '../../lib/hikePhotos';
 
 // Non-secret, client-side token (Ion free tier). Empty token still renders a
 // globe, but base imagery + world terrain won't load until it's set in .env.
@@ -185,7 +186,9 @@ export default function HikeGlobe({
   // depth test off) but the view is buried. sampleTerrainMostDetailed resolves the
   // real height first; if it fails we fall back to sea level, which is the old
   // behaviour and still fine at the wide levels.
-  const photoId = selectedPhoto?.id ?? null;
+  // Null unless the photo can actually be placed, so a non-geotagged selection
+  // never triggers a fly-to (its coords would be undefined).
+  const photoId = isGeotagged(selectedPhoto) ? selectedPhoto.id : null;
   const photoLng = selectedPhoto?.lng;
   const photoLat = selectedPhoto?.lat;
   useEffect(() => {
@@ -236,6 +239,9 @@ export default function HikeGlobe({
   // Lower index = wider range, so "+" (zoom in) steps the index up.
   const canZoomIn = zoomLevelIndex < ZOOM_LEVELS.length - 1;
   const canZoomOut = zoomLevelIndex > 0;
+  // Only a geotagged photo has a spot on the globe, so the pin and the zoom
+  // control (which only reframes that spot) appear solely for those.
+  const hasPhotoLocation = isGeotagged(selectedPhoto);
 
   return (
     // Gating on the mode as well as the hover means a hover left over from a
@@ -247,7 +253,7 @@ export default function HikeGlobe({
     >
       {/* The zoom level only drives the photo fly-to, so the control is dead
           weight until a photo is selected — hide it until then. */}
-      {selectedPhoto ? (
+      {hasPhotoLocation ? (
         <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-neon-blue-50 bg-black/80 px-2 py-1 font-body text-white shadow-lg backdrop-blur">
           <button
             type="button"
@@ -313,7 +319,7 @@ export default function HikeGlobe({
             <ScreenSpaceEvent action={handleOverviewHover} type={ScreenSpaceEventType.MOUSE_MOVE} />
           </ScreenSpaceEventHandler>
         ) : null}
-        {selectedPhoto && !isShowingAllRoutes ? (
+        {hasPhotoLocation && !isShowingAllRoutes ? (
           <Entity
             position={Cartesian3.fromDegrees(selectedPhoto.lng, selectedPhoto.lat)}
             point={{
