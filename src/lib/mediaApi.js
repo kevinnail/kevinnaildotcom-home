@@ -23,13 +23,50 @@ export class SessionExpiredError extends Error {
   }
 }
 
+// A rejected password is the only login failure the user can act on, and the
+// Lambda signals it with a 401 (handleLogin). Everything else — the API URL
+// missing, CORS, a 5xx — is our problem, not theirs, and must not be reported
+// as a bad password.
+export class InvalidPasswordError extends Error {
+  constructor() {
+    super('Invalid password');
+    this.name = 'InvalidPasswordError';
+  }
+}
+
+// The request never got a verdict: offline, DNS/CORS failure, or no API_URL.
+// The browser deliberately hides *why* a cross-origin request was blocked —
+// fetch rejects with a bare "Failed to fetch" and the real reason is printed
+// only to the console — so the one useful detail we can still relay is which
+// URL we called. A wrong VITE_API_URL (an IP where localhost was expected)
+// looks identical to being offline until you can see the target.
+export class NetworkError extends Error {
+  constructor(url, cause) {
+    super(`Could not reach ${url}`);
+    this.name = 'NetworkError';
+    this.url = url;
+    this.cause = cause;
+  }
+}
+
 export async function login(password) {
-  const response = await fetch(`${API_URL}/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-  if (!response.ok) throw new Error('Login failed');
+  const loginUrl = `${API_URL}/login`;
+  if (!API_URL) throw new NetworkError(loginUrl, new Error('VITE_API_URL is not set'));
+
+  let response;
+  try {
+    response = await fetch(loginUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+  } catch (fetchError) {
+    // fetch only rejects when the request itself failed, never on an HTTP error.
+    throw new NetworkError(loginUrl, fetchError);
+  }
+
+  if (response.status === 401) throw new InvalidPasswordError();
+  if (!response.ok) throw new Error(`Login failed: ${response.status}`);
   const { token } = await response.json();
   return token;
 }

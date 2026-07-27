@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import Banner from '../components/layout/Banner';
+import AdminLinkRow from '../components/layout/AdminLinkRow';
 import GalleryGrid from '../components/astrophotography/GalleryGrid';
 
 export default function AstrophotographyPage() {
@@ -16,6 +17,7 @@ export default function AstrophotographyPage() {
 
       <div className="bg-black min-h-screen">
         <Banner />
+        <AdminLinkRow to="/dashboard" label="← Media dashboard" />
         <GalleryGrid />
       </div>
     </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login } from '../../lib/mediaApi';
+import { login, InvalidPasswordError, NetworkError } from '../../lib/mediaApi';
 
 export default function LoginForm({ onAuthenticated }) {
   const [password, setPassword] = useState('');
@@ -10,14 +10,36 @@ export default function LoginForm({ onAuthenticated }) {
     event.preventDefault();
     setBusy(true);
     setError('');
+
+    let token;
     try {
-      const token = await login(password);
-      onAuthenticated(token);
-    } catch {
-      setError('Incorrect password.');
+      token = await login(password);
+    } catch (loginError) {
+      // Only a 401 means the password was wrong. Anything else is a fault on our
+      // side, and saying "incorrect password" would send the user chasing a
+      // password that was never the problem — so name what actually broke and
+      // keep the original error in the console to debug from.
+      if (loginError instanceof InvalidPasswordError) {
+        setError('Incorrect password.');
+      } else if (loginError instanceof NetworkError) {
+        // The browser withholds the CORS reason from JS, so the URL we called is
+        // the only clue we can show — usually enough to spot a wrong API origin.
+        setError(
+          `Could not reach ${loginError.url}. If that address looks wrong, check VITE_API_URL; otherwise the browser console has the blocked-request details.`,
+        );
+        console.error(loginError.cause ?? loginError);
+      } else {
+        setError('Login failed — the server returned an error. See the console for details.');
+        console.error(loginError);
+      }
+      return;
     } finally {
       setBusy(false);
     }
+
+    // Deliberately outside the try: a failure to store the token is not a login
+    // failure, and must not be reported as one.
+    onAuthenticated(token);
   };
 
   return (
