@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
@@ -17,8 +18,7 @@ import {
   deleteKml,
   SessionExpiredError,
 } from '../lib/mediaApi';
-
-const TOKEN_KEY = 'mediaAdminToken';
+import { useAdminToken, signIn, signOut } from '../lib/adminSession';
 
 const GALLERY_TABS = [
   { id: 'astro', label: 'Astronomy', fetchPhotos: fetchAstroPhotos },
@@ -26,7 +26,7 @@ const GALLERY_TABS = [
 ];
 
 export default function DashboardPage() {
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY));
+  const token = useAdminToken();
   const [gallery, setGallery] = useState('astro');
   const [photos, setPhotos] = useState([]);
   const [trips, setTrips] = useState([]);
@@ -67,16 +67,6 @@ export default function DashboardPage() {
       active = false;
     };
   }, [token, gallery]);
-
-  const signIn = (newToken) => {
-    sessionStorage.setItem(TOKEN_KEY, newToken);
-    setToken(newToken);
-  };
-
-  const signOut = () => {
-    sessionStorage.removeItem(TOKEN_KEY);
-    setToken(null);
-  };
 
   const handleSessionExpired = () => {
     setError('Session expired — please log in again.');
@@ -147,12 +137,28 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-neon-blue-bright font-display text-3xl">Media Dashboard</h1>
             {token && (
-              <button
-                onClick={signOut}
-                className="text-sm text-neutral-400 hover:text-white underline cursor-pointer"
-              >
-                Sign out
-              </button>
+              <div className="flex items-center gap-4">
+                {/* The galleries are where the uploads actually land, so jumping
+                    between them and here is the common admin loop. */}
+                <Link
+                  to="/astrophotography"
+                  className="text-sm text-neon-blue-bright hover:text-white underline"
+                >
+                  Astro gallery
+                </Link>
+                <Link
+                  to="/backpacking"
+                  className="text-sm text-neon-blue-bright hover:text-white underline"
+                >
+                  Hike map
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="text-sm text-neutral-400 hover:text-white underline cursor-pointer"
+                >
+                  Sign out
+                </button>
+              </div>
             )}
           </div>
 
