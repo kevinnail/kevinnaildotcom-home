@@ -1,13 +1,8 @@
-// Client for the media Lambda + S3.
-// Reads (the gallery) hit the public manifest directly; writes go through the
-// Lambda with a Bearer token. Base URLs come from Vite env vars (non-secret).
+// Client for the media API + S3.
+// Reads (the galleries) are public GETs; writes go through the API with a
+// Bearer token. Base URLs come from Vite env vars (non-secret).
 
 const API_URL = import.meta.env.VITE_API_URL;
-const MEDIA_URL = import.meta.env.VITE_MEDIA_URL;
-
-export const ASTRO_MANIFEST_URL = `${MEDIA_URL}/manifests/astro.json`;
-export const HIKES_MANIFEST_URL = `${MEDIA_URL}/manifests/hikes.json`;
-export const KML_MANIFEST_URL = `${MEDIA_URL}/manifests/kml.json`;
 
 // Writes target a gallery via `?gallery=`; astro is the Lambda's default, so we
 // only append the param for non-astro galleries (keeps astro URLs unchanged).
@@ -177,36 +172,34 @@ export async function deleteKml(token, id) {
   return response.json();
 }
 
-// Public read of a manifest. Missing manifest (before the first upload) reads as
-// an empty gallery rather than an error.
-async function fetchManifest(manifestUrl) {
-  const response = await fetch(manifestUrl, { cache: 'no-cache' });
-  if (response.status === 403 || response.status === 404) return [];
-  if (!response.ok) throw new Error('Failed to load gallery');
+// Public read. The API returns an empty array for an empty gallery, so there is
+// no missing-resource case to absorb the way a missing manifest needed.
+async function publicGet(path) {
+  const url = `${API_URL}${path}`;
+  if (!API_URL) throw new NetworkError(url, new Error('VITE_API_URL is not set'));
+
+  let response;
+  try {
+    response = await fetch(url, { cache: 'no-cache' });
+  } catch (fetchError) {
+    throw new NetworkError(url, fetchError);
+  }
+
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
   return response.json();
 }
 
-// Hikes read chronologically by EXIF capture time, falling back to upload time
-// when a photo has no timestamp. Ascending (oldest first). Astro keeps its
-// hand-curated manifest order.
-function sortByCaptureTime(photos) {
-  return [...photos].sort(
-    (first, second) =>
-      Date.parse(first.takenAt ?? first.uploadedAt) -
-      Date.parse(second.takenAt ?? second.uploadedAt),
-  );
-}
-
+// Astro keeps its hand-curated order and hikes come back sorted by EXIF capture
+// time (falling back to upload time) — both are ordered by the server now.
 export function fetchAstroPhotos() {
-  return fetchManifest(ASTRO_MANIFEST_URL);
+  return publicGet('/photos?gallery=astro');
 }
 
-export async function fetchHikePhotos() {
-  return sortByCaptureTime(await fetchManifest(HIKES_MANIFEST_URL));
+export function fetchHikePhotos() {
+  return publicGet('/photos?gallery=hikes');
 }
 
-// Public read of the KML trip manifest (drives the map sidebar). Missing manifest
-// (before the first upload) reads as no trips, like the photo galleries.
+// Public read of the KML trips (drives the map sidebar).
 export function fetchTrips() {
-  return fetchManifest(KML_MANIFEST_URL);
+  return publicGet('/trips');
 }
