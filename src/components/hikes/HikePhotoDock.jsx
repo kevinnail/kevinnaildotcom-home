@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isGeotagged } from '../../lib/hikePhotos';
 
 // Swipe thresholds. The distance keeps a sloppy tap from counting as a swipe, and
 // the off-axis ratio rejects gestures that are really vertical — a diagonal drag
@@ -127,6 +128,15 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
     </figcaption>
   );
 
+  // This photo carries no coordinates, so it was never placed on the globe. Say so
+  // plainly rather than leaving the visitor to wonder why the map didn't move.
+  const locationNote = !isGeotagged(photo) && (
+    <p className="flex shrink-0 items-center gap-1.5 px-4 pb-2 font-body text-xs text-gray-400">
+      <span aria-hidden="true">📍</span>
+      No GPS data for this photo — its exact location isn’t shown on the map.
+    </p>
+  );
+
   if (isFullscreen) {
     return (
       <figure
@@ -150,6 +160,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
           className="min-h-0 w-full flex-1 object-contain"
         />
         {caption}
+        {locationNote}
       </figure>
     );
   }
@@ -187,6 +198,7 @@ export default function HikePhotoDock({ photo, onClose, onPrev, onNext, hasPrev,
           className="min-h-0 w-full flex-1 object-contain"
         />
         {caption}
+        {locationNote}
       </figure>
     </div>
   );
