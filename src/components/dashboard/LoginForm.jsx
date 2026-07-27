@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { login, InvalidPasswordError, NetworkError } from '../../lib/mediaApi';
 
 export default function LoginForm({ onAuthenticated }) {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,14 +14,14 @@ export default function LoginForm({ onAuthenticated }) {
 
     let token;
     try {
-      token = await login(password);
+      token = await login(username, password);
     } catch (loginError) {
-      // Only a 401 means the password was wrong. Anything else is a fault on our
-      // side, and saying "incorrect password" would send the user chasing a
+      // Only a 401 means the credentials were wrong. Anything else is a fault on
+      // our side, and saying "incorrect password" would send the user chasing a
       // password that was never the problem — so name what actually broke and
       // keep the original error in the console to debug from.
       if (loginError instanceof InvalidPasswordError) {
-        setError('Incorrect password.');
+        setError('Incorrect username or password.');
       } else if (loginError instanceof NetworkError) {
         // The browser withholds the CORS reason from JS, so the URL we called is
         // the only clue we can show — usually enough to spot a wrong API origin.
@@ -49,17 +50,26 @@ export default function LoginForm({ onAuthenticated }) {
     >
       <h2 className="text-neon-blue-bright font-display text-2xl text-center">Admin Login</h2>
       <input
+        type="text"
+        value={username}
+        onChange={(event) => setUsername(event.target.value)}
+        placeholder="Username"
+        autoComplete="username"
+        autoFocus
+        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none"
+      />
+      <input
         type="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         placeholder="Password"
-        autoFocus
+        autoComplete="current-password"
         className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none"
       />
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
       <button
         type="submit"
-        disabled={busy || !password}
+        disabled={busy || !username || !password}
         className="px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed"
       >
         {busy ? 'Signing in…' : 'Sign in'}
