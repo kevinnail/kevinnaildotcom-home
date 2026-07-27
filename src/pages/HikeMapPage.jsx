@@ -6,7 +6,7 @@ import HikeGlobe from '../components/hikes/HikeGlobe';
 import HikePhotoDock from '../components/hikes/HikePhotoDock';
 import HikeCoachMarks from '../components/hikes/HikeCoachMarks';
 import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
-import { selectTripPhotos } from '../lib/hikePhotos';
+import { selectTripPhotos, isGeotagged } from '../lib/hikePhotos';
 import useIsDesktop from '../lib/useIsDesktop';
 
 export default function HikeMapPage() {
@@ -70,18 +70,22 @@ export default function HikeMapPage() {
     setIsPhotoViewOpen(false);
   }
 
-  // A thumbnail tap flies the globe on every device; on desktop it also opens the
-  // dock immediately, on mobile it defers to the "View photo" pill.
+  // A geotagged thumbnail tap flies the globe; on desktop it also opens the dock
+  // immediately, on mobile it defers to the "View photo" pill so the pin is seen
+  // first. A non-geotagged photo has no location to preview, so its dock opens
+  // straight away on every device.
   function handleSelectPhoto(photoId) {
+    const photo = tripPhotos.find((candidate) => candidate.id === photoId);
     setSelectedPhotoId(photoId);
-    setIsPhotoViewOpen(isDesktop);
+    setIsPhotoViewOpen(isDesktop || !isGeotagged(photo));
   }
 
-  // Desktop matches the prior behaviour (closing clears the pin). Mobile keeps the
-  // pin/selection so the globe stays put and the "View photo" pill reappears.
+  // Desktop matches the prior behaviour (closing clears the pin). Mobile keeps a
+  // geotagged pin/selection so the globe stays put and the "View photo" pill
+  // reappears; a non-geotagged photo has no pin to preserve, so clear it too.
   function handleCloseDock() {
     setIsPhotoViewOpen(false);
-    if (isDesktop) setSelectedPhotoId(null);
+    if (isDesktop || !isGeotagged(selectedPhoto)) setSelectedPhotoId(null);
   }
 
   // Stepping the selected photo drives both the dock image and the globe pin,
@@ -99,8 +103,7 @@ export default function HikeMapPage() {
         ? 'Could not load trips.'
         : 'No trips yet.';
 
-  const photoMessage =
-    status === 'loading' ? 'Loading photos…' : 'No geotagged photos for this hike.';
+  const photoMessage = status === 'loading' ? 'Loading photos…' : 'No photos for this hike.';
 
   return (
     <>
@@ -137,8 +140,9 @@ export default function HikeMapPage() {
               onSelectTrip={handleSelectTrip}
             />
             {/* Mobile: a photo is located on the globe but its dock is closed —
-                offer to open it without covering the pin until the user chooses. */}
-            {selectedPhoto && !isPhotoViewOpen && (
+                offer to open it without covering the pin until the user chooses.
+                Only geotagged photos have a pin to preview, so the pill is theirs. */}
+            {selectedPhoto && isGeotagged(selectedPhoto) && !isPhotoViewOpen && (
               <button
                 type="button"
                 onClick={() => setIsPhotoViewOpen(true)}
@@ -155,10 +159,10 @@ export default function HikeMapPage() {
               hasPrev={selectedIndex > 0}
               hasNext={selectedIndex >= 0 && selectedIndex < tripPhotos.length - 1}
             />
-            {/* Mounted only while a photo is open — the walkthrough explains the
-                zoom control and the dock, and both are on screen only then. It
-                renders nothing once the visitor has dismissed it. */}
-            {isPhotoViewOpen && selectedPhoto && <HikeCoachMarks />}
+            {/* Mounted only while a geotagged photo is open — the walkthrough
+                explains the zoom control and the per-photo fly-to, which exist
+                only for located photos. It renders nothing once dismissed. */}
+            {isPhotoViewOpen && isGeotagged(selectedPhoto) && <HikeCoachMarks />}
           </main>
         </div>
       </div>
