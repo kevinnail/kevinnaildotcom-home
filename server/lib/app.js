@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import health from './controllers/health.js';
 import photos from './controllers/photos.js';
+import presign from './controllers/presign.js';
 import trips from './controllers/trips.js';
 import users from './controllers/users.js';
 import notFound from './middleware/not-found.js';
@@ -23,6 +24,7 @@ app.use(
 // App routes
 app.use('/api/v1/health', health);
 app.use('/api/v1/photos', photos);
+app.use('/api/v1/presign', presign);
 app.use('/api/v1/trips', trips);
 app.use('/api/v1/users', users);
 
