@@ -5,6 +5,7 @@ import MapSidebar from '../components/hikes/MapSidebar';
 import HikeGlobe from '../components/hikes/HikeGlobe';
 import HikePhotoDock from '../components/hikes/HikePhotoDock';
 import HikeCoachMarks from '../components/hikes/HikeCoachMarks';
+import AdminLinkRow from '../components/layout/AdminLinkRow';
 import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
 import { selectTripPhotos, isGeotagged } from '../lib/hikePhotos';
 import useIsDesktop from '../lib/useIsDesktop';
@@ -118,6 +119,7 @@ export default function HikeMapPage() {
 
       <div className="flex h-dvh w-screen flex-col overflow-hidden bg-black">
         <Banner compact />
+        <AdminLinkRow to="/dashboard" label="← Media dashboard" />
         <div className="flex flex-1 flex-col-reverse overflow-hidden md:flex-row">
           <MapSidebar
             trips={trips}
