@@ -1,0 +1,4 @@
+-- Use this file to define your SQL tables
+-- The SQL in this file will be executed when you run `npm run setup-db`
+-- Tables are dropped and recreated on every run, so define DROP TABLE IF EXISTS
+-- statements above their CREATE TABLE counterparts as tables are added.
