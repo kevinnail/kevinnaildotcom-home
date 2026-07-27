@@ -18,13 +18,14 @@ export class SessionExpiredError extends Error {
   }
 }
 
-// A rejected password is the only login failure the user can act on, and the
-// Lambda signals it with a 401 (handleLogin). Everything else — the API URL
-// missing, CORS, a 5xx — is our problem, not theirs, and must not be reported
-// as a bad password.
+// Rejected credentials are the only login failure the user can act on, and the
+// API signals it with a 401. Everything else — the API URL missing, CORS, a
+// 5xx — is our problem, not theirs, and must not be reported as a bad password.
+// The server answers an unknown username and a wrong password identically, so
+// this can't say which one was wrong.
 export class InvalidPasswordError extends Error {
   constructor() {
-    super('Invalid password');
+    super('Invalid username or password');
     this.name = 'InvalidPasswordError';
   }
 }
@@ -44,8 +45,8 @@ export class NetworkError extends Error {
   }
 }
 
-export async function login(password) {
-  const loginUrl = `${API_URL}/login`;
+export async function login(username, password) {
+  const loginUrl = `${API_URL}/users/sessions`;
   if (!API_URL) throw new NetworkError(loginUrl, new Error('VITE_API_URL is not set'));
 
   let response;
@@ -53,7 +54,7 @@ export async function login(password) {
     response = await fetch(loginUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     });
   } catch (fetchError) {
     // fetch only rejects when the request itself failed, never on an HTTP error.
