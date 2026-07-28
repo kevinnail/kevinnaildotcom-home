@@ -12,11 +12,12 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Built in middleware
-app.use(express.json());
+// A full 500-photo batch runs past Express's 100kb default and would 413.
+app.use(express.json({ limit: '1mb' }));
 
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:5173'],
+    origin: [process.env.FRONTEND_URL, 'http://localhost:5173'],
     credentials: true,
   }),
 );
