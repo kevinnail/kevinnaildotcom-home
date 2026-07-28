@@ -97,4 +97,87 @@ export default class Photo {
 
     return rows.map((row) => new Photo(row));
   }
+
+  // Every photo assigned to a trip, so a trip delete can purge their S3 objects
+  // and report their ids before the foreign-key cascade takes the rows.
+  static async getByTrip(tripId) {
+    const { rows } = await pool.query('SELECT * FROM photos WHERE trip_id = $1', [tripId]);
+
+    return rows.map((row) => new Photo(row));
+  }
+
+  static async getById(id) {
+    const { rows } = await pool.query('SELECT * FROM photos WHERE id = $1', [id]);
+
+    return rows[0] ? new Photo(rows[0]) : null;
+  }
+
+  // A partial patch: an absent field keeps its prior value. `tripId` is the one
+  // exception — a photo has to be able to be UN-assigned from a trip, so an
+  // explicit null clears it while COALESCE could only ever preserve. The caller
+  // decides which case it is by passing `tripIdProvided`.
+  static async update(id, { alt, caption, lat, lng, tripId, tripIdProvided }) {
+    const { rows } = await pool.query(
+      `UPDATE photos SET
+         alt     = COALESCE($2, alt),
+         caption = COALESCE($3, caption),
+         lat     = COALESCE($4, lat),
+         lng     = COALESCE($5, lng),
+         trip_id = CASE WHEN $6::boolean THEN $7::uuid ELSE trip_id END
+       WHERE id = $1
+       RETURNING *`,
+      [id, alt ?? null, caption ?? null, lat ?? null, lng ?? null, tripIdProvided, tripId ?? null],
+    );
+
+    return rows[0] ? new Photo(rows[0]) : null;
+  }
+
+  static async deleteById(id) {
+    const { rows } = await pool.query('DELETE FROM photos WHERE id = $1 RETURNING *', [id]);
+
+    return rows[0] ? new Photo(rows[0]) : null;
+  }
+
+  // Renumber a gallery's curated order to 0..n-1 in one transaction.
+  // `orderedIds` must be an exact permutation of the gallery's ids: anything
+  // else (a duplicate, an unknown id, a short list) would silently drop or
+  // double a photo, so it returns false and writes nothing. The rows are locked
+  // for the comparison so a concurrent insert can't invalidate it mid-check.
+  static async reorder(gallery, orderedIds) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query('SELECT id FROM photos WHERE gallery = $1 FOR UPDATE', [
+        gallery,
+      ]);
+      const existingIds = new Set(rows.map((row) => row.id));
+
+      const isPermutation =
+        orderedIds.length === existingIds.size &&
+        new Set(orderedIds).size === orderedIds.length &&
+        orderedIds.every((id) => existingIds.has(id));
+
+      if (!isPermutation) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      await client.query(
+        `UPDATE photos SET sort_order = ordering.position - 1
+         FROM unnest($1::uuid[]) WITH ORDINALITY AS ordering(id, position)
+         WHERE photos.id = ordering.id`,
+        [orderedIds],
+      );
+
+      await client.query('COMMIT');
+      return true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
