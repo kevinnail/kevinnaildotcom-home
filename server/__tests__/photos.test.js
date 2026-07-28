@@ -7,6 +7,23 @@ import { MAX_BATCH } from '../lib/controllers/photos.js';
 import AdminUser from '../lib/models/AdminUser.js';
 import { signAdminToken } from '../lib/utils/token.js';
 
+// Deletes purge the stored objects, and no test may ever reach S3 — CI has no
+// AWS credentials. Only the client's `send` is replaced, so the commands handed
+// to it are the real ones and a test can assert on exactly what was purged.
+const { send } = vi.hoisted(() => ({ send: vi.fn(async () => ({})) }));
+
+vi.mock('@aws-sdk/client-s3', async (importOriginal) => ({
+  ...(await importOriginal()),
+  S3Client: class {
+    send = send;
+  },
+}));
+
+// The keys named by the most recent DeleteObjects call.
+function purgedKeys() {
+  return send.mock.lastCall[0].input.Delete.Objects.map((object) => object.Key);
+}
+
 async function insertPhoto(fields) {
   const columns = Object.keys(fields);
   const placeholders = columns.map((_column, index) => `$${index + 1}`);
@@ -24,9 +41,11 @@ async function adminToken() {
 }
 
 beforeEach(async () => {
+  send.mockClear();
   // The row stores the full public URL, built from the object key the client
   // got back from presign.
   vi.stubEnv('MEDIA_BASE_URL', 'https://media.example.com');
+  vi.stubEnv('MEDIA_BUCKET', 'kevinnail-media-test');
   await setup(pool);
 });
 
@@ -452,5 +471,349 @@ describe('POST /api/v1/photos/batch', () => {
 
     const { rows } = await pool.query('SELECT * FROM photos');
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('PATCH /api/v1/photos/:id', () => {
+  it('updates the supplied fields and returns the whole entry', async () => {
+    const token = await adminToken();
+    const photo = await insertPhoto({
+      gallery: 'astro',
+      url: 'https://media.example.com/astro/orion.jpg',
+      alt: 'Orion',
+      caption: 'The hunter',
+    });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ caption: 'The hunter, from the driveway' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      id: photo.id,
+      url: 'https://media.example.com/astro/orion.jpg',
+      thumbUrl: null,
+      alt: 'Orion',
+      caption: 'The hunter, from the driveway',
+      lat: null,
+      lng: null,
+      takenAt: null,
+      tripId: null,
+      uploadedAt: photo.uploaded_at.toISOString(),
+    });
+
+    const { rows } = await pool.query('SELECT alt, caption FROM photos WHERE id = $1', [photo.id]);
+    expect(rows[0]).toEqual({ alt: 'Orion', caption: 'The hunter, from the driveway' });
+  });
+
+  it('updates coordinates without disturbing the rest', async () => {
+    const token = await adminToken();
+    const photo = await insertPhoto({
+      gallery: 'hikes',
+      url: 'ridge.jpg',
+      caption: 'Ridgeline',
+      lat: 44.5,
+      lng: -122.25,
+    });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ lat: 45.1 });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ lat: 45.1, lng: -122.25, caption: 'Ridgeline' });
+  });
+
+  it('an explicit null tripId unassigns the photo from its trip', async () => {
+    const token = await adminToken();
+    const { rows } = await pool.query(
+      "INSERT INTO trips (name, region, url) VALUES ('Loop', 'Cascades', 'loop.kml') RETURNING *",
+    );
+    const photo = await insertPhoto({ gallery: 'hikes', url: 'ridge.jpg', trip_id: rows[0].id });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ tripId: null });
+
+    expect(response.status).toBe(200);
+    expect(response.body.tripId).toBeNull();
+
+    const stored = await pool.query('SELECT trip_id FROM photos WHERE id = $1', [photo.id]);
+    expect(stored.rows[0].trip_id).toBeNull();
+  });
+
+  it('an absent tripId keeps the photo on its trip', async () => {
+    const token = await adminToken();
+    const { rows } = await pool.query(
+      "INSERT INTO trips (name, region, url) VALUES ('Loop', 'Cascades', 'loop.kml') RETURNING *",
+    );
+    const photo = await insertPhoto({ gallery: 'hikes', url: 'ridge.jpg', trip_id: rows[0].id });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ caption: 'Ridgeline' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.tripId).toBe(rows[0].id);
+  });
+
+  it('reassigns a photo to a different trip', async () => {
+    const token = await adminToken();
+    const { rows } = await pool.query(
+      `INSERT INTO trips (name, region, url) VALUES
+        ('Loop', 'Cascades', 'loop.kml'), ('Traverse', 'Olympics', 'traverse.kml')
+       RETURNING *`,
+    );
+    const [loop, traverse] = rows;
+    const photo = await insertPhoto({ gallery: 'hikes', url: 'ridge.jpg', trip_id: loop.id });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ tripId: traverse.id });
+
+    expect(response.status).toBe(200);
+    expect(response.body.tripId).toBe(traverse.id);
+  });
+
+  it('rejects a tripId that names no trip with a 400', async () => {
+    const token = await adminToken();
+    const photo = await insertPhoto({ gallery: 'hikes', url: 'ridge.jpg' });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ tripId: '00000000-0000-0000-0000-000000000000' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns a 404 for an unknown id', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .patch('/api/v1/photos/00000000-0000-0000-0000-000000000000')
+      .set('authorization', `Bearer ${token}`)
+      .send({ caption: 'Nowhere' });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns a 404 for a malformed id rather than a database error', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .patch('/api/v1/photos/not-a-uuid')
+      .set('authorization', `Bearer ${token}`)
+      .send({ caption: 'Nowhere' });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('rejects an unauthenticated edit with a 401 and changes nothing', async () => {
+    const photo = await insertPhoto({ gallery: 'astro', url: 'orion.jpg', caption: 'The hunter' });
+
+    const response = await request(app)
+      .patch(`/api/v1/photos/${photo.id}`)
+      .send({ caption: 'Hijacked' });
+
+    expect(response.status).toBe(401);
+
+    const { rows } = await pool.query('SELECT caption FROM photos WHERE id = $1', [photo.id]);
+    expect(rows[0].caption).toBe('The hunter');
+  });
+});
+
+describe('PUT /api/v1/photos/order', () => {
+  async function insertAstroTrio() {
+    const first = await insertPhoto({ gallery: 'astro', url: 'first.jpg', sort_order: 0 });
+    const second = await insertPhoto({ gallery: 'astro', url: 'second.jpg', sort_order: 1 });
+    const third = await insertPhoto({ gallery: 'astro', url: 'third.jpg', sort_order: 2 });
+
+    return [first, second, third];
+  }
+
+  it('renumbers the gallery and a re-read returns the new order', async () => {
+    const token = await adminToken();
+    const [first, second, third] = await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: [third.id, first.id, second.id] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.map((photo) => photo.url)).toEqual([
+      'third.jpg',
+      'first.jpg',
+      'second.jpg',
+    ]);
+
+    const reread = await request(app).get('/api/v1/photos?gallery=astro');
+    expect(reread.body.map((photo) => photo.url)).toEqual(['third.jpg', 'first.jpg', 'second.jpg']);
+
+    const { rows } = await pool.query('SELECT url, sort_order FROM photos ORDER BY sort_order');
+    expect(rows).toEqual([
+      { url: 'third.jpg', sort_order: 0 },
+      { url: 'first.jpg', sort_order: 1 },
+      { url: 'second.jpg', sort_order: 2 },
+    ]);
+  });
+
+  it('rejects an order with a duplicate id and leaves every row untouched', async () => {
+    const token = await adminToken();
+    const [first, , third] = await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: [third.id, first.id, first.id] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('order must be a permutation of the existing photo ids');
+
+    const { rows } = await pool.query('SELECT url, sort_order FROM photos ORDER BY sort_order');
+    expect(rows).toEqual([
+      { url: 'first.jpg', sort_order: 0 },
+      { url: 'second.jpg', sort_order: 1 },
+      { url: 'third.jpg', sort_order: 2 },
+    ]);
+  });
+
+  it('rejects an order naming a photo from another gallery', async () => {
+    const token = await adminToken();
+    const [first, second] = await insertAstroTrio();
+    const hike = await insertPhoto({ gallery: 'hikes', url: 'ridge.jpg' });
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: [first.id, second.id, hike.id] });
+
+    expect(response.status).toBe(400);
+
+    const { rows } = await pool.query(
+      "SELECT sort_order FROM photos WHERE gallery = 'astro' ORDER BY sort_order",
+    );
+    expect(rows.map((row) => row.sort_order)).toEqual([0, 1, 2]);
+  });
+
+  it('rejects an order that omits a photo', async () => {
+    const token = await adminToken();
+    const [first, second] = await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: [second.id, first.id] });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('rejects an order that is not an array with a 400', async () => {
+    const token = await adminToken();
+    await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: 'first,second' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('order must be an array of photo ids');
+  });
+
+  it('rejects a missing gallery with a 400', async () => {
+    const token = await adminToken();
+    const [first] = await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order')
+      .set('authorization', `Bearer ${token}`)
+      .send({ order: [first.id] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toMatch(/gallery must be one of/);
+  });
+
+  it('rejects an unauthenticated reorder with a 401 and leaves the order alone', async () => {
+    const [first, second, third] = await insertAstroTrio();
+
+    const response = await request(app)
+      .put('/api/v1/photos/order?gallery=astro')
+      .send({ order: [third.id, second.id, first.id] });
+
+    expect(response.status).toBe(401);
+
+    const { rows } = await pool.query('SELECT url, sort_order FROM photos ORDER BY sort_order');
+    expect(rows.map((row) => row.url)).toEqual(['first.jpg', 'second.jpg', 'third.jpg']);
+  });
+});
+
+describe('DELETE /api/v1/photos/:id', () => {
+  it('removes the row and purges the stored object', async () => {
+    const token = await adminToken();
+    const photo = await insertPhoto({
+      gallery: 'astro',
+      url: 'https://media.example.com/astro/orion.jpg',
+    });
+    const survivor = await insertPhoto({
+      gallery: 'astro',
+      url: 'https://media.example.com/astro/pleiades.jpg',
+    });
+
+    const response = await request(app)
+      .delete(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true });
+    expect(purgedKeys()).toEqual(['astro/orion.jpg']);
+
+    const { rows } = await pool.query('SELECT id FROM photos');
+    expect(rows).toEqual([{ id: survivor.id }]);
+  });
+
+  it('purges a hike photo original and its thumbnail together', async () => {
+    const token = await adminToken();
+    const photo = await insertPhoto({
+      gallery: 'hikes',
+      url: 'https://media.example.com/hikes/ridge.jpg',
+      thumb_url: 'https://media.example.com/hikes/ridge-thumb.jpg',
+    });
+
+    const response = await request(app)
+      .delete(`/api/v1/photos/${photo.id}`)
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(purgedKeys()).toEqual(['hikes/ridge.jpg', 'hikes/ridge-thumb.jpg']);
+  });
+
+  it('returns a 404 for an unknown id and purges nothing', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .delete('/api/v1/photos/00000000-0000-0000-0000-000000000000')
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unauthenticated delete with a 401 and keeps the row', async () => {
+    const photo = await insertPhoto({ gallery: 'astro', url: 'orion.jpg' });
+
+    const response = await request(app).delete(`/api/v1/photos/${photo.id}`);
+
+    expect(response.status).toBe(401);
+    expect(send).not.toHaveBeenCalled();
+
+    const { rows } = await pool.query('SELECT id FROM photos');
+    expect(rows).toHaveLength(1);
   });
 });

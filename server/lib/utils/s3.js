@@ -4,10 +4,14 @@
 // stored.
 
 import { randomUUID } from 'node:crypto';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const UPLOAD_URL_TTL_SECONDS = 5 * 60;
+
+// DeleteObjects accepts up to 1000 keys per request, so purging a trip with
+// hundreds of photos costs one or a handful of calls instead of one per object.
+const DELETE_BATCH = 1000;
 
 // Object keys are content-immutable uuids, so the bytes at a key never change —
 // a one-year immutable Cache-Control is baked in at upload time so repeat views
@@ -37,6 +41,32 @@ function fileExtension(filename) {
 // as the manifest entries they replace did.
 export function mediaUrl(objectKey) {
   return `${process.env.MEDIA_BASE_URL}/${objectKey}`;
+}
+
+// The inverse of mediaUrl: rows store the public URL, not the key, so a delete
+// derives the key back out of it. A URL from somewhere else (or a null thumbUrl)
+// yields null and is skipped rather than guessed at.
+export function objectKeyFromUrl(url) {
+  const base = `${process.env.MEDIA_BASE_URL}/`;
+
+  return typeof url === 'string' && url.startsWith(base) ? url.slice(base.length) : null;
+}
+
+// Purge the stored objects behind a set of public URLs. Callers pass URLs
+// straight off the rows they are deleting — including nulls, which drop out.
+export async function deleteObjectsByUrl(urls) {
+  const objectKeys = urls.map(objectKeyFromUrl).filter(Boolean);
+
+  for (let start = 0; start < objectKeys.length; start += DELETE_BATCH) {
+    const chunk = objectKeys.slice(start, start + DELETE_BATCH);
+
+    await client.send(
+      new DeleteObjectsCommand({
+        Bucket: process.env.MEDIA_BUCKET,
+        Delete: { Objects: chunk.map((objectKey) => ({ Key: objectKey })), Quiet: true },
+      }),
+    );
+  }
 }
 
 export async function createUploadUrl({ gallery, filename, contentType }) {

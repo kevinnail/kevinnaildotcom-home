@@ -6,15 +6,34 @@ import app from '../lib/app.js';
 import AdminUser from '../lib/models/AdminUser.js';
 import { signAdminToken } from '../lib/utils/token.js';
 
+// A trip delete purges the KML object and its photos' objects, and no test may
+// ever reach S3 — CI has no AWS credentials. Only the client's `send` is
+// replaced, so a test can assert on exactly what was purged.
+const { send } = vi.hoisted(() => ({ send: vi.fn(async () => ({})) }));
+
+vi.mock('@aws-sdk/client-s3', async (importOriginal) => ({
+  ...(await importOriginal()),
+  S3Client: class {
+    send = send;
+  },
+}));
+
+// The keys named by the most recent DeleteObjects call.
+function purgedKeys() {
+  return send.mock.lastCall[0].input.Delete.Objects.map((object) => object.Key);
+}
+
 async function adminToken() {
   const user = await AdminUser.insert({ username: 'kevin', password: 'correct horse' });
   return signAdminToken(user);
 }
 
 beforeEach(async () => {
+  send.mockClear();
   // The row stores the full public URL, built from the object key the client
   // got back from presign.
   vi.stubEnv('MEDIA_BASE_URL', 'https://media.example.com');
+  vi.stubEnv('MEDIA_BUCKET', 'kevinnail-media-test');
   await setup(pool);
 });
 
@@ -145,5 +164,109 @@ describe('POST /api/v1/trips', () => {
 
     const { rows } = await pool.query('SELECT * FROM trips');
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('DELETE /api/v1/trips/:id', () => {
+  async function insertTrip(name, objectKey) {
+    const { rows } = await pool.query(
+      'INSERT INTO trips (name, region, url) VALUES ($1, $2, $3) RETURNING *',
+      [name, 'Cascades', `https://media.example.com/${objectKey}`],
+    );
+
+    return rows[0];
+  }
+
+  async function insertHikePhoto(tripId, objectKey) {
+    const { rows } = await pool.query(
+      `INSERT INTO photos (gallery, url, thumb_url, trip_id)
+       VALUES ('hikes', $1, $2, $3) RETURNING *`,
+      [
+        `https://media.example.com/${objectKey}.jpg`,
+        `https://media.example.com/${objectKey}-thumb.jpg`,
+        tripId,
+      ],
+    );
+
+    return rows[0];
+  }
+
+  it('deletes the trip, cascades to its photos, and reports their ids', async () => {
+    const token = await adminToken();
+    const trip = await insertTrip('Timberline Loop', 'kml/loop.kml');
+    const other = await insertTrip('Traverse', 'kml/traverse.kml');
+    const first = await insertHikePhoto(trip.id, 'hikes/one');
+    const second = await insertHikePhoto(trip.id, 'hikes/two');
+    const untouched = await insertHikePhoto(other.id, 'hikes/three');
+
+    const response = await request(app)
+      .delete(`/api/v1/trips/${trip.id}`)
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.ok).toBe(true);
+    expect(response.body.deletedPhotoIds.sort()).toEqual([first.id, second.id].sort());
+
+    const trips = await pool.query('SELECT id FROM trips');
+    expect(trips.rows).toEqual([{ id: other.id }]);
+
+    const photos = await pool.query('SELECT id FROM photos');
+    expect(photos.rows).toEqual([{ id: untouched.id }]);
+  });
+
+  it('purges the KML object plus every assigned photo and thumbnail', async () => {
+    const token = await adminToken();
+    const trip = await insertTrip('Timberline Loop', 'kml/loop.kml');
+    await insertHikePhoto(trip.id, 'hikes/one');
+
+    await request(app).delete(`/api/v1/trips/${trip.id}`).set('authorization', `Bearer ${token}`);
+
+    expect(purgedKeys()).toEqual(['kml/loop.kml', 'hikes/one.jpg', 'hikes/one-thumb.jpg']);
+  });
+
+  it('deletes a trip with no photos', async () => {
+    const token = await adminToken();
+    const trip = await insertTrip('Timberline Loop', 'kml/loop.kml');
+
+    const response = await request(app)
+      .delete(`/api/v1/trips/${trip.id}`)
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, deletedPhotoIds: [] });
+    expect(purgedKeys()).toEqual(['kml/loop.kml']);
+  });
+
+  it('returns a 404 for an unknown id and purges nothing', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .delete('/api/v1/trips/00000000-0000-0000-0000-000000000000')
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('returns a 404 for a malformed id rather than a database error', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .delete('/api/v1/trips/not-a-uuid')
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('rejects an unauthenticated delete with a 401 and keeps the trip', async () => {
+    const trip = await insertTrip('Timberline Loop', 'kml/loop.kml');
+
+    const response = await request(app).delete(`/api/v1/trips/${trip.id}`);
+
+    expect(response.status).toBe(401);
+    expect(send).not.toHaveBeenCalled();
+
+    const { rows } = await pool.query('SELECT id FROM trips');
+    expect(rows).toEqual([{ id: trip.id }]);
   });
 });

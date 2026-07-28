@@ -2,8 +2,9 @@ import { Router } from 'express';
 import Photo, { PHOTO_GALLERIES } from '../models/Photo.js';
 import authenticate from '../middleware/authenticate.js';
 import requireGallery from '../utils/gallery.js';
-import badRequest from '../utils/badRequest.js';
-import { mediaUrl } from '../utils/s3.js';
+import requireResourceId from '../utils/resourceId.js';
+import { badRequest, notFound } from '../utils/httpError.js';
+import { mediaUrl, deleteObjectsByUrl } from '../utils/s3.js';
 
 // Most photos one bulk-upload request may add at once, carried over from the
 // Lambda. A cap keeps a runaway client from holding a transaction open over
@@ -80,6 +81,70 @@ export default Router()
       res.status(201).json(await Photo.insertMany(rows));
     } catch (error) {
       if (error.code === FOREIGN_KEY_VIOLATION) error.status = 400;
+      next(error);
+    }
+  })
+
+  // Renumber the curated order. Declared before `/:id` so `order` is never read
+  // as a photo id.
+  .put('/order', authenticate, async (req, res, next) => {
+    try {
+      const gallery = requireGallery(req, PHOTO_GALLERIES);
+      const orderedIds = req.body?.order;
+
+      if (!Array.isArray(orderedIds)) throw badRequest('order must be an array of photo ids');
+
+      const reordered = await Photo.reorder(gallery, orderedIds);
+      if (!reordered) {
+        throw badRequest('order must be a permutation of the existing photo ids');
+      }
+
+      res.json(await Photo.getByGallery(gallery));
+    } catch (error) {
+      next(error);
+    }
+  })
+
+  // A partial edit of one photo's metadata. `gallery` is not required here — the
+  // id identifies the row on its own, unlike the manifest this replaces.
+  .patch('/:id', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+      const { alt, caption, lat, lng, tripId } = req.body ?? {};
+
+      const photo = await Photo.update(id, {
+        alt,
+        caption,
+        lat,
+        lng,
+        tripId,
+        // An absent tripId keeps the prior trip; a supplied one — including an
+        // explicit null, which unassigns — replaces it.
+        tripIdProvided: tripId !== undefined,
+      });
+      if (!photo) throw notFound();
+
+      res.json(photo);
+    } catch (error) {
+      if (error.code === FOREIGN_KEY_VIOLATION) error.status = 400;
+      next(error);
+    }
+  })
+
+  .delete('/:id', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+
+      const photo = await Photo.getById(id);
+      if (!photo) throw notFound();
+
+      // The stored objects go first: an orphaned row is recoverable and visible,
+      // an orphaned S3 object is neither — it just keeps billing.
+      await deleteObjectsByUrl([photo.url, photo.thumbUrl]);
+      await Photo.deleteById(id);
+
+      res.json({ ok: true });
+    } catch (error) {
       next(error);
     }
   });

@@ -23,4 +23,19 @@ export default class Trip {
 
     return rows.map((row) => new Trip(row));
   }
+
+  static async getById(id) {
+    const { rows } = await pool.query('SELECT * FROM trips WHERE id = $1', [id]);
+
+    return rows[0] ? new Trip(rows[0]) : null;
+  }
+
+  // The trip's photos go with it: photos.trip_id is ON DELETE CASCADE, so this
+  // one statement takes the rows too. Their S3 objects are purged by the
+  // controller beforehand, while it can still read their URLs.
+  static async deleteById(id) {
+    const { rows } = await pool.query('DELETE FROM trips WHERE id = $1 RETURNING *', [id]);
+
+    return rows[0] ? new Trip(rows[0]) : null;
+  }
 }
