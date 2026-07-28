@@ -4,10 +4,11 @@
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Writes target a gallery via `?gallery=`; astro is the Lambda's default, so we
-// only append the param for non-astro galleries (keeps astro URLs unchanged).
+// Gallery-scoped routes select their target with `?gallery=`. The Lambda
+// defaulted an omitted param to astro; the API validates against an allowlist
+// and 400s on anything outside it, so the param is always sent.
 function galleryQuery(gallery) {
-  return gallery && gallery !== 'astro' ? `?gallery=${gallery}` : '';
+  return `?gallery=${gallery}`;
 }
 
 // Thrown when the Lambda rejects a token so the UI can force a re-login.
@@ -156,9 +157,9 @@ export async function deletePhoto(token, id, gallery) {
 // --- KML trips (map trails/campsites) ---
 
 // Record an already-uploaded KML object as a trip. The bytes went straight to S3
-// via presign (?gallery=kml) + uploadToS3; this only writes the trip manifest.
+// via presign (?gallery=kml) + uploadToS3; this only writes the trip row.
 export async function saveKml(token, { objectKey, name, region }) {
-  const response = await authorizedFetch('/kml', token, {
+  const response = await authorizedFetch('/trips', token, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ objectKey, name, region }),
