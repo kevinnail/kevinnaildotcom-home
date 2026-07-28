@@ -47,6 +47,7 @@ export default [
     },
   },
   {
-    ignores: ['dist/'],
+    // server/ is a separate package with its own Node-globals ESLint config.
+    ignores: ['dist/', 'server/'],
   },
 ];
