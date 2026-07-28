@@ -140,14 +140,14 @@ export async function updatePhoto(token, id, { alt, caption, lat, lng, tripId },
 }
 
 // Persist a new gallery order. `orderedIds` must list every existing photo id
-// exactly once; the Lambda rejects anything else with a 400.
+// exactly once; the API rejects anything else with a 400.
 export async function reorderPhotos(token, orderedIds, gallery) {
   const response = await authorizedFetch(`/photos/order${galleryQuery(gallery)}`, token, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ order: orderedIds }),
   });
-  return response.json(); // the reordered manifest
+  return response.json(); // the gallery in its new order
 }
 
 export async function deletePhoto(token, id, gallery) {
@@ -170,7 +170,7 @@ export async function saveKml(token, { objectKey, name, region }) {
 // Deleting a trip cascades to its photos on the server. Returns
 // { ok, deletedPhotoIds } so the dashboard can drop those photos from state too.
 export async function deleteKml(token, id) {
-  const response = await authorizedFetch(`/kml/${id}`, token, { method: 'DELETE' });
+  const response = await authorizedFetch(`/trips/${id}`, token, { method: 'DELETE' });
   return response.json();
 }
 
