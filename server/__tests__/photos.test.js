@@ -3,6 +3,7 @@ import request from 'supertest';
 import pool from '../lib/utils/pool.js';
 import setup from '../data/setup.js';
 import app from '../lib/app.js';
+import { MAX_BATCH } from '../lib/controllers/photos.js';
 import AdminUser from '../lib/models/AdminUser.js';
 import { signAdminToken } from '../lib/utils/token.js';
 
@@ -296,5 +297,160 @@ describe('POST /api/v1/photos', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('objectKey is required');
+  });
+});
+
+describe('POST /api/v1/photos/batch', () => {
+  async function insertTrip() {
+    const { rows } = await pool.query(
+      "INSERT INTO trips (name, region, url) VALUES ('Loop', 'Cascades', 'loop.kml') RETURNING *",
+    );
+
+    return rows[0];
+  }
+
+  it('inserts every hike photo, tied to its trip, with thumbnails preserved', async () => {
+    const token = await adminToken();
+    const trip = await insertTrip();
+
+    const response = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({
+        photos: [
+          {
+            objectKey: 'hikes/one.jpg',
+            thumbObjectKey: 'hikes/one-thumb.jpg',
+            lat: 44.5,
+            lng: -122.25,
+            takenAt: '2023-06-01T12:00:00.000Z',
+            tripId: trip.id,
+          },
+          {
+            objectKey: 'hikes/two.jpg',
+            thumbObjectKey: 'hikes/two-thumb.jpg',
+            caption: 'Second morning',
+            takenAt: '2023-06-02T12:00:00.000Z',
+            tripId: trip.id,
+          },
+        ],
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual([
+      {
+        id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+        url: 'https://media.example.com/hikes/one.jpg',
+        thumbUrl: 'https://media.example.com/hikes/one-thumb.jpg',
+        alt: '',
+        caption: '',
+        lat: 44.5,
+        lng: -122.25,
+        takenAt: '2023-06-01T12:00:00.000Z',
+        tripId: trip.id,
+        uploadedAt: expect.any(String),
+      },
+      {
+        id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+        url: 'https://media.example.com/hikes/two.jpg',
+        thumbUrl: 'https://media.example.com/hikes/two-thumb.jpg',
+        alt: '',
+        caption: 'Second morning',
+        lat: null,
+        lng: null,
+        takenAt: '2023-06-02T12:00:00.000Z',
+        tripId: trip.id,
+        uploadedAt: expect.any(String),
+      },
+    ]);
+
+    const { rows } = await pool.query('SELECT * FROM photos ORDER BY taken_at');
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.trip_id)).toEqual([trip.id, trip.id]);
+    expect(rows.map((row) => row.sort_order)).toEqual([null, null]);
+  });
+
+  it('rolls the whole batch back when one item names a trip that does not exist', async () => {
+    const token = await adminToken();
+    const trip = await insertTrip();
+
+    const response = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({
+        photos: [
+          { objectKey: 'hikes/good.jpg', tripId: trip.id },
+          { objectKey: 'hikes/orphan.jpg', tripId: '00000000-0000-0000-0000-000000000000' },
+        ],
+      });
+
+    expect(response.status).toBe(400);
+
+    // The first item inserted cleanly before the second failed — if the
+    // transaction leaked, this row would still be here.
+    const { rows } = await pool.query('SELECT * FROM photos');
+    expect(rows).toHaveLength(0);
+  });
+
+  it('rejects a batch containing a malformed item and inserts nothing', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({ photos: [{ objectKey: 'hikes/good.jpg' }, { alt: 'no key' }] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('photos[1].objectKey is required');
+
+    const { rows } = await pool.query('SELECT * FROM photos');
+    expect(rows).toHaveLength(0);
+  });
+
+  it('rejects an empty or missing photos array with a 400', async () => {
+    const token = await adminToken();
+
+    const empty = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({ photos: [] });
+    const missing = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(empty.status).toBe(400);
+    expect(empty.body.message).toBe('photos must be a non-empty array');
+    expect(missing.status).toBe(400);
+    expect(missing.body.message).toBe('photos must be a non-empty array');
+  });
+
+  it('rejects a batch over the per-request limit with a 400', async () => {
+    const token = await adminToken();
+    const photos = Array.from({ length: MAX_BATCH + 1 }, (_item, index) => ({
+      objectKey: `hikes/${index}.jpg`,
+    }));
+
+    const response = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .set('authorization', `Bearer ${token}`)
+      .send({ photos });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe(`photos exceeds the ${MAX_BATCH} per-batch limit`);
+
+    const { rows } = await pool.query('SELECT * FROM photos');
+    expect(rows).toHaveLength(0);
+  });
+
+  it('rejects an unauthenticated batch with a 401 and writes nothing', async () => {
+    const response = await request(app)
+      .post('/api/v1/photos/batch?gallery=hikes')
+      .send({ photos: [{ objectKey: 'hikes/one.jpg' }] });
+
+    expect(response.status).toBe(401);
+
+    const { rows } = await pool.query('SELECT * FROM photos');
+    expect(rows).toHaveLength(0);
   });
 });
