@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node -r dotenv/config server.js",
     "dev": "node --watch -r dotenv/config server.js",
+    "start:watch": "node --watch -r dotenv/config server.js",
     "setup-db": "node -r dotenv/config setup-db.js",
     "setup-test-db": "node -r dotenv/config setup-test-db.js",
     "create-admin": "node -r dotenv/config scripts/create-admin.js",
