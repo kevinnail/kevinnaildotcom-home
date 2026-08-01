@@ -6,7 +6,6 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default [
   js.configs.recommended,
-  prettierConfig,
   {
     files: ['**/*.{js,jsx}'],
     plugins: {
@@ -29,7 +28,18 @@ export default [
     rules: {
       ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-console': ['warn', { allow: ['info', 'error'] }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'prefer-arrow-callback': 'error',
+      'object-shorthand': ['error', 'always'],
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/no-unescaped-entities': 'off',
@@ -50,4 +60,6 @@ export default [
     // server/ is a separate package with its own Node-globals ESLint config.
     ignores: ['dist/', 'server/'],
   },
+  // Must stay last: turns off stylistic rules that conflict with Prettier
+  prettierConfig,
 ];

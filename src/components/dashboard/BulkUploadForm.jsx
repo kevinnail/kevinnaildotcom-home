@@ -6,7 +6,7 @@ import {
   SessionExpiredError,
 } from '../../lib/mediaApi';
 import { readPhotoMeta } from '../../lib/exif';
-import { createThumbnail } from '../../lib/thumbnail';
+import { createDisplayImage, createThumbnail } from '../../lib/resizeImage';
 import { mapWithConcurrency } from '../../lib/concurrency';
 
 const MAX_BATCH = 500; // must match the Lambda's per-batch cap
@@ -47,25 +47,28 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
     resetSummary();
   };
 
-  // Read EXIF, generate a sidebar thumbnail, and PUT both the original and the
-  // thumbnail to S3. Resolves to a result object so one bad file doesn't abort the
-  // batch; a session-expiry still throws so the whole run aborts and forces
-  // re-login. A photo whose thumbnail can't be built fails here, so every saved
-  // entry has a real thumbUrl — the sidebar never falls back to a full-res image.
+  // Read EXIF, build the two web-sized renditions, and PUT both to S3. The camera
+  // original is never uploaded — it is only ever the source the other two are
+  // derived from, and EXIF is read from it first so the resize can safely strip
+  // metadata. Resolves to a result object so one bad file doesn't abort the batch;
+  // a session-expiry still throws so the whole run aborts and forces re-login. A
+  // photo whose renditions can't be built fails here, so every saved entry has a
+  // real thumbUrl — the sidebar never falls back to a full-size image.
   const uploadOne = async (file) => {
     try {
       const meta = await readPhotoMeta(file);
+      const displayImage = await createDisplayImage(file);
       const thumbnail = await createThumbnail(file);
 
-      const original = await requestUpload(token, file, 'hikes');
+      const display = await requestUpload(token, displayImage, 'hikes');
       const thumb = await requestUpload(token, thumbnail, 'hikes');
-      await uploadToS3(original.uploadUrl, file, original.cacheControl);
+      await uploadToS3(display.uploadUrl, displayImage, display.cacheControl);
       await uploadToS3(thumb.uploadUrl, thumbnail, thumb.cacheControl);
 
       return {
         ok: true,
         item: {
-          objectKey: original.objectKey,
+          objectKey: display.objectKey,
           thumbObjectKey: thumb.objectKey,
           takenAt: meta.takenAt,
           lat: meta.lat,

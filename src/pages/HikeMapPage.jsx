@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Banner from '../components/layout/Banner';
 import MapSidebar from '../components/hikes/MapSidebar';
@@ -8,6 +8,7 @@ import HikeCoachMarks from '../components/hikes/HikeCoachMarks';
 import AdminLinkRow from '../components/layout/AdminLinkRow';
 import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
 import { selectTripPhotos, isGeotagged } from '../lib/hikePhotos';
+import preloadImages from '../lib/preloadImages';
 import useIsDesktop from '../lib/useIsDesktop';
 
 export default function HikeMapPage() {
@@ -49,9 +50,24 @@ export default function HikeMapPage() {
   }, []);
 
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId) ?? null;
-  const tripPhotos = selectTripPhotos(photos, selectedTripId);
+  // Memoised so it is a stable value the prefetch effect below can depend on —
+  // a fresh array every render would re-run the prefetch on every render.
+  const tripPhotos = useMemo(
+    () => selectTripPhotos(photos, selectedTripId),
+    [photos, selectedTripId],
+  );
   const selectedIndex = tripPhotos.findIndex((photo) => photo.id === selectedPhotoId);
   const selectedPhoto = selectedIndex >= 0 ? tripPhotos[selectedIndex] : null;
+
+  // Warm the photos on either side of the open one. Prev/next is the common way
+  // through a hike, so by the time an arrow is clicked its image is already fetched
+  // and decoded and the swap is just a paint. Only the immediate neighbours: a
+  // wider window would have a long hike speculatively pulling down photos most
+  // visitors never reach.
+  useEffect(() => {
+    if (selectedIndex < 0) return;
+    preloadImages([tripPhotos[selectedIndex - 1]?.url, tripPhotos[selectedIndex + 1]?.url]);
+  }, [tripPhotos, selectedIndex]);
 
   // Switching hikes clears the expanded photo so the new hike starts with no pin.
   // Choosing a hike is also the natural way out of the all-routes overview,
