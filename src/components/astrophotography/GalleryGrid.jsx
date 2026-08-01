@@ -3,14 +3,17 @@ import { fetchAstroPhotos } from '../../lib/mediaApi';
 import GalleryItem from './GalleryItem';
 import LightboxModal from './LightboxModal';
 
-export default function GalleryGrid({ fetchPhotos = fetchAstroPhotos }) {
+// The astro gallery. This took a `fetchPhotos` prop while the flat backpacking
+// grid reused it; that page is gone — the hikes are browsed on the map — so the
+// grid fetches the one gallery it serves.
+export default function GalleryGrid() {
   const [photos, setPhotos] = useState([]);
   const [loadState, setLoadState] = useState('loading'); // loading | ready | error
   const [lightbox, setLightbox] = useState({ isOpen: false, currentIndex: 0 });
 
   useEffect(() => {
     let active = true;
-    fetchPhotos()
+    fetchAstroPhotos()
       .then((data) => {
         if (!active) return;
         setPhotos(data);
@@ -22,7 +25,7 @@ export default function GalleryGrid({ fetchPhotos = fetchAstroPhotos }) {
     return () => {
       active = false;
     };
-  }, [fetchPhotos]);
+  }, []);
 
   const openLightbox = (index) => {
     if (window.innerWidth < 768) return;

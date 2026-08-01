@@ -63,9 +63,22 @@ The JWT authenticates the client **to the API**, not to S3. The presigned URL is
 
 Consequences of this design that show up throughout the code:
 
-- The server cannot inspect or transform image bytes, so **thumbnails are generated in the browser** (`src/lib/thumbnail.js`, canvas + `createImageBitmap`) and **EXIF is read in the browser** (`src/lib/exif.js`, via `exifr`). Both upload as ordinary files through the same presign path.
+- The server cannot inspect or transform image bytes, so **all image resizing happens in the browser** (`src/lib/resizeImage.js`, canvas + `createImageBitmap`) and **EXIF is read in the browser** (`src/lib/exif.js`, via `exifr`). Both upload as ordinary files through the same presign path.
 - Steps 3 and 4 are **not atomic**. A client that dies between them leaves an S3 object with no row pointing at it. See "Orphaned S3 objects".
 - Rows store the full public CloudFront URL, not the key. `mediaUrl()` / `objectKeyFromUrl()` in `server/lib/utils/s3.js` convert between them; deletes derive the key back out of the stored URL.
+
+### Image sizing — the two galleries are deliberately different
+
+**Astro uploads the camera original, untouched.** Those images are detail-critical — fine structure is the whole point — and the gallery will stay small enough that page weight never becomes the problem. Do not route astro through `resizeImage.js`.
+
+**Hikes never uploads the original.** A trip is hundreds of photos browsed by stepping through them on the map, so weight is the dominant cost. `BulkUploadForm` derives two renditions in the browser and uploads only those: a 2048px WebP display image (`url`) and a 400px WebP thumbnail (`thumb_url`). The original is a local source file and is never stored — masters live on the photographer's disk, not in S3.
+
+This is a canvas re-encode, which is the old "Save for Web" pipeline: EXIF, ICC, and the embedded preview are all dropped, and the 2D context is sRGB so a wide-gamut source is converted on the way through. Two consequences worth knowing:
+
+- `readPhotoMeta` must run on the **original**, before the resize, or GPS and `takenAt` are gone. The published file no longer carries campsite coordinates, which is a privacy win, not a bug.
+- `createImageBitmap` is called with an explicit `imageOrientation: 'from-image'`. Canvas output has no EXIF, so an orientation flag that isn't baked into the pixels at resize time is lost permanently and the photo ships sideways.
+
+`HikeMapPage` prefetches the display image of the photos on either side of the open one (`src/lib/preloadImages.js`), because stepping with the arrows otherwise starts a cold fetch on click.
 
 ### API
 
@@ -93,7 +106,6 @@ Routes in `src/App.jsx`, all wrapped in `PageWrapper` (scroll-to-top on navigati
 - `/projects` → ProjectsPage
 - `/astrophotography` → AstrophotographyPage
 - `/backpacking` → **HikeMapPage** (the 3D Cesium globe)
-- `/backpacking/gallery` → BackpackingPage (the flat grid)
 - `/dashboard` → DashboardPage (admin)
 - `/*` → NotFoundPage
 
@@ -104,11 +116,11 @@ Under `src/components/`:
 - `layout/` — PageWrapper, Banner, ScrollToTop, AdminLinkRow
 - `home/` — CardGrid, Card
 - `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, SectionEyebrow, ResumeEmbed, DiagramsSection, DecodeText
-- `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (the grid is reused by the backpacking gallery via a `fetchPhotos` prop)
+- `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (astro only; there is deliberately no flat grid for the hikes — they are browsed on the map)
 - `hikes/` — HikeGlobe (Cesium/Resium), MapSidebar, HikePhotoDock, HikeCoachMarks
 - `dashboard/` — LoginForm, UploadForm, BulkUploadForm, KmlUploadForm, PhotoList, HikeTripList
 
-Shared client logic in `src/lib/`: `mediaApi` (all API + S3 calls), `adminSession`, `thumbnail`, `exif`, `hikePhotos`, `concurrency` (bounded parallelism for bulk upload), `useIsDesktop`.
+Shared client logic in `src/lib/`: `mediaApi` (all API + S3 calls), `adminSession`, `resizeImage`, `exif`, `hikePhotos`, `preloadImages`, `concurrency` (bounded parallelism for bulk upload), `useIsDesktop`.
 
 ### Map
 
@@ -132,7 +144,7 @@ Site chrome images live in `public/images/`. Gallery media and project videos ar
 
 ### Testing
 
-Vitest on both sides. Server tests (`server/__tests__/`) are integration tests using `supertest` against a **real local test database**, reset per test via `setup-test-db`. Frontend tests are unit tests for pure logic (`thumbnail`, `hikePhotos`, `concurrency`). Mocks are reserved for third-party services that cost money or send real messages — never for the data layer.
+Vitest on both sides. Server tests (`server/__tests__/`) are integration tests using `supertest` against a **real local test database**, reset per test via `setup-test-db`. Frontend tests are unit tests for pure logic (`resizeImage`, `hikePhotos`, `concurrency`). Mocks are reserved for third-party services that cost money or send real messages — never for the data layer.
 
 ## Known Gaps
 
