@@ -1,3 +1,5 @@
+// `size` drives the mosaic layout in CardGrid. The counts are deliberate — see
+// the cell math in CardGrid.jsx before adding or removing a card.
 const homeCards = [
   {
     title: 'Stress Less Glass',
@@ -5,7 +7,8 @@ const homeCards = [
     href: 'https://stresslessglass.kevinnail.com',
     external: true,
     hoverBg: '/images/logo-sq.png',
-    hoverBgSize: '50%',
+    hoverFit: 'contain',
+    size: 'hero',
   },
   {
     title: 'Coding Portfolio',
@@ -13,31 +16,17 @@ const homeCards = [
     href: '/projects',
     external: false,
     hoverBg: '/images/cube.gif',
-    hoverBgSize: '100%',
+    hoverFit: 'contain',
+    size: 'hero',
   },
   {
-    title: 'My Music',
-    image: '/images/drumset.jpeg',
-    href: 'http://instagram.com/kevinnail_music',
-    external: true,
-    hoverBg: '/images/drumming.gif',
-    hoverBgSize: 'cover',
-  },
-  {
-    title: 'Good Morning Mushrooms',
-    image: '/images/pinkoysters.jpg',
-    href: 'http://www.instagram.com/good_morning_mushrooms',
-    external: true,
-    hoverBg: '/images/gmm.png',
-    hoverBgSize: 'cover',
-  },
-  {
-    title: 'About Kevin Nail',
+    title: 'Backpacking',
+    eyebrow: 'New',
+    blurb: 'Trips and trail photos on an interactive 3D globe',
     image: '/images/meHike.jpg',
-    href: 'https://stresslessglass.kevinnail.com/about-me',
-    external: true,
-    hoverBg: '/images/kevin.png',
-    hoverBgSize: 'cover',
+    href: '/backpacking',
+    external: false,
+    size: 'wide',
   },
   {
     title: 'Astrophotography',
@@ -45,7 +34,32 @@ const homeCards = [
     href: '/astrophotography',
     external: false,
     hoverBg: '/images/lunar-sm.JPG',
-    hoverBgSize: 'cover',
+    size: 'wide',
+  },
+
+  {
+    title: 'My Music',
+    image: '/images/drumset.jpeg',
+    href: 'http://instagram.com/kevinnail_music',
+    external: true,
+    hoverBg: '/images/drumming.gif',
+    size: 'tall',
+  },
+  {
+    title: 'Good Morning Mushrooms',
+    image: '/images/pinkoysters.jpg',
+    href: 'http://www.instagram.com/good_morning_mushrooms',
+    external: true,
+    hoverBg: '/images/gmm.png',
+    size: 'tall',
+  },
+  {
+    title: 'About Kevin Nail',
+    image: '/images/meHike.jpg',
+    href: 'https://stresslessglass.kevinnail.com/about-me',
+    external: true,
+    hoverBg: '/images/kevin.png',
+    size: 'hero',
   },
 ];
 
