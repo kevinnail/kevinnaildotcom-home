@@ -11,12 +11,14 @@ const homeCards = [
     size: 'hero',
   },
   {
+    // `inspector` swaps the hover payoff for the devtools self-teardown in
+    // InspectorOverlay. It replaced a 21MB screen-capture GIF, and is the only
+    // card that opts in — on the photography tiles it would just be noise.
     title: 'Coding Portfolio',
     image: '/images/code.png',
     href: '/projects',
     external: false,
-    hoverBg: '/images/cube.gif',
-    hoverFit: 'contain',
+    inspector: true,
     size: 'hero',
   },
   {
