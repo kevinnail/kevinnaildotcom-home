@@ -1,17 +1,11 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import resume from '../../data/resume';
 import SectionEyebrow from './SectionEyebrow';
 
-// The downloadable copy is a committed build artifact, not a second source of
-// truth: after editing src/data/resume.js, open this tab, Ctrl+P, "Save as
-// PDF", and overwrite the file below. The @media print rules in index.css are
-// what make that export match — do not treat them as dead code.
-const RESUME_PDF_PATH = '/kevin-nail-resume.pdf';
-
 // The phone number stays out of git. Set VITE_RESUME_PHONE in .env.local
-// (gitignored) and it renders locally, so a copy exported for job applications
-// carries it. Both the deployed site and the committed PDF above must be built
-// with it unset — regenerate that file only from a run where it is absent.
+// (gitignored) and it renders here and in the generated PDF, so a copy exported
+// for job applications carries it. Vite inlines env vars into the bundle, so
+// anything set here is public on the deployed site.
 const localPhone = import.meta.env.VITE_RESUME_PHONE;
 
 // Section heading inside the résumé: tracked caps over a hairline rule, which
@@ -64,38 +58,43 @@ function ResumeLinks({ links }) {
 }
 
 export default function Resume() {
-  // Chrome names a "Save as PDF" file after document.title, so borrow it during
-  // the print dialog to keep that regeneration step a one-keystroke save.
-  useEffect(() => {
-    const originalTitle = document.title;
-    const applyPrintTitle = () => {
-      document.title = 'kevin-nail-resume';
-    };
-    const restoreTitle = () => {
-      document.title = originalTitle;
-    };
+  const [downloadState, setDownloadState] = useState('idle');
 
-    window.addEventListener('beforeprint', applyPrintTitle);
-    window.addEventListener('afterprint', restoreTitle);
-    return () => {
-      window.removeEventListener('beforeprint', applyPrintTitle);
-      window.removeEventListener('afterprint', restoreTitle);
-      restoreTitle();
-    };
-  }, []);
+  // jsPDF is only needed once someone actually wants the file, so it is loaded
+  // on demand rather than shipped in the initial bundle.
+  async function handleDownload() {
+    setDownloadState('working');
+    try {
+      const { downloadResumePdf } = await import('../../lib/resumePdf');
+      downloadResumePdf({ resume, phone: localPhone });
+      setDownloadState('idle');
+    } catch (error) {
+      setDownloadState('error');
+      console.error('Résumé PDF generation failed', error);
+    }
+  }
 
   return (
     <div className="px-5 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <SectionEyebrow label="Résumé" />
 
-        <a
-          href={RESUME_PDF_PATH}
-          download
-          className="px-4 py-2 rounded-md border border-white/20 bg-black font-display tracking-[2px] text-sm no-underline transition-colors duration-300 hover:bg-white hover:text-black hover:border-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue"
-        >
-          Download PDF
-        </a>
+        <div className="flex items-center gap-3">
+          {downloadState === 'error' && (
+            <span role="alert" className="text-sm text-red-400">
+              Couldn&apos;t build the PDF — try again.
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloadState === 'working'}
+            className="px-4 py-2 rounded-md border border-white/20 bg-black font-display tracking-[2px] text-sm cursor-pointer transition-colors duration-300 hover:bg-white hover:text-black hover:border-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue disabled:opacity-50 disabled:cursor-default"
+          >
+            {downloadState === 'working' ? 'Building…' : 'Download PDF'}
+          </button>
+        </div>
       </div>
 
       <article className="resume-document mt-5 rounded-2xl border border-white/[0.08] bg-neutral-950 p-6 sm:p-9">
