@@ -291,10 +291,23 @@ export default function HikeGlobe({
         selectionIndicator={false}
         // Only render when the scene changes (camera move, data load, tile stream-in)
         // instead of every animation frame. Without this Cesium pins a CPU core at
-        // idle. maximumRenderTimeChange caps how long a static scene goes without a
-        // render so terrain/imagery tiles still resolve after they arrive.
+        // idle.
+        //
+        // maximumRenderTimeChange is the escape hatch from that: a render is also
+        // requested once the clock has advanced this many seconds since the last
+        // one. It is a HEARTBEAT, not a cap — HIGHER values render less, and
+        // Infinity disables it entirely (`difference > maximumRenderTimeChange` is
+        // never true). It was Infinity here, which broke the first hike on a cold
+        // load: the KML pushpin is a CLAMP_TO_GROUND billboard, and its clamp is
+        // resolved against whatever terrain happens to be loaded at that instant.
+        // On the opening fly-to that terrain is still streaming, so the pin lands
+        // near the ellipsoid — sea level, ~1,500 m under the plateau. Once the
+        // camera stopped, nothing re-rendered, so the clamp was never re-resolved
+        // and the pin sat at sea level swimming with parallax. Switching hikes hid
+        // it, because by the second fly-to the terrain was already cached.
+        // A finite value lets the scene settle after tiles land.
         requestRenderMode
-        maximumRenderTimeChange={Infinity}
+        maximumRenderTimeChange={1}
       >
         {isShowingAllRoutes
           ? trips.map((trip) => (
