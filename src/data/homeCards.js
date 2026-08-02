@@ -22,10 +22,10 @@ const homeCards = [
   {
     title: 'Backpacking',
     eyebrow: 'New',
-    blurb: 'Trips and trail photos on an interactive 3D globe',
-    image: '/images/meHike.jpg',
+    image: '/images/goat-lake.JPG',
     href: '/backpacking',
     external: false,
+    hoverBg: '/images/flowers.JPEG',
     size: 'wide',
   },
   {
