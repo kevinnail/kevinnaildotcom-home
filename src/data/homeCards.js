@@ -8,6 +8,8 @@ const homeCards = [
     external: true,
     hoverBg: '/images/logo-sq.png',
     hoverFit: 'contain',
+    // The hero title sits left, so the contained logo is pushed right to clear it.
+    hoverPosition: 'right',
     size: 'hero',
   },
   {

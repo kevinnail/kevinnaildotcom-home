@@ -5,7 +5,19 @@ import InspectorOverlay from './InspectorOverlay';
 import { spanClasses } from './tileSizes';
 
 export default function Card({ card, index = 0 }) {
-  const { title, eyebrow, blurb, image, href, external, hoverBg, hoverFit, size, inspector } = card;
+  const {
+    title,
+    eyebrow,
+    blurb,
+    image,
+    href,
+    external,
+    hoverBg,
+    hoverFit,
+    hoverPosition,
+    size,
+    inspector,
+  } = card;
   const [cardRef, isInView] = useInView();
 
   const isHero = size === 'hero';
@@ -44,6 +56,7 @@ export default function Card({ card, index = 0 }) {
           loading="lazy"
           decoding="async"
           aria-hidden="true"
+          style={hoverPosition ? { objectPosition: hoverPosition } : undefined}
           className={
             'absolute inset-0 h-full w-full opacity-0 transition-opacity duration-[600ms] ' +
             'ease-out group-hover:opacity-100 ' +
