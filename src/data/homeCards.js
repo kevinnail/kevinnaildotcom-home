@@ -1,3 +1,5 @@
+// `size` drives the mosaic layout in CardGrid. The counts are deliberate — see
+// the cell math in CardGrid.jsx before adding or removing a card.
 const homeCards = [
   {
     title: 'Stress Less Glass',
@@ -5,39 +7,30 @@ const homeCards = [
     href: 'https://stresslessglass.kevinnail.com',
     external: true,
     hoverBg: '/images/logo-sq.png',
-    hoverBgSize: '50%',
+    hoverFit: 'contain',
+    // The hero title sits left, so the contained logo is pushed right to clear it.
+    hoverPosition: 'right',
+    size: 'hero',
   },
   {
+    // `inspector` swaps the hover payoff for the devtools self-teardown in
+    // InspectorOverlay. It replaced a 21MB screen-capture GIF, and is the only
+    // card that opts in — on the photography tiles it would just be noise.
     title: 'Coding Portfolio',
     image: '/images/code.png',
     href: '/projects',
     external: false,
-    hoverBg: '/images/cube.gif',
-    hoverBgSize: '100%',
+    inspector: true,
+    size: 'hero',
   },
   {
-    title: 'My Music',
-    image: '/images/drumset.jpeg',
-    href: 'http://instagram.com/kevinnail_music',
-    external: true,
-    hoverBg: '/images/drumming.gif',
-    hoverBgSize: 'cover',
-  },
-  {
-    title: 'Good Morning Mushrooms',
-    image: '/images/pinkoysters.jpg',
-    href: 'http://www.instagram.com/good_morning_mushrooms',
-    external: true,
-    hoverBg: '/images/gmm.png',
-    hoverBgSize: 'cover',
-  },
-  {
-    title: 'About Kevin Nail',
-    image: '/images/meHike.jpg',
-    href: 'https://stresslessglass.kevinnail.com/about-me',
-    external: true,
-    hoverBg: '/images/kevin.png',
-    hoverBgSize: 'cover',
+    title: 'Backpacking',
+    eyebrow: 'New',
+    image: '/images/goat-lake.JPG',
+    href: '/backpacking',
+    external: false,
+    hoverBg: '/images/flowers.JPEG',
+    size: 'wide',
   },
   {
     title: 'Astrophotography',
@@ -45,7 +38,32 @@ const homeCards = [
     href: '/astrophotography',
     external: false,
     hoverBg: '/images/lunar-sm.JPG',
-    hoverBgSize: 'cover',
+    size: 'wide',
+  },
+
+  {
+    title: 'My Music',
+    image: '/images/drumset.jpeg',
+    href: 'http://instagram.com/kevinnail_music',
+    external: true,
+    hoverBg: '/images/drumming.gif',
+    size: 'tall',
+  },
+  {
+    title: 'Good Morning Mushrooms',
+    image: '/images/pinkoysters.jpg',
+    href: 'http://www.instagram.com/good_morning_mushrooms',
+    external: true,
+    hoverBg: '/images/gmm.png',
+    size: 'tall',
+  },
+  {
+    title: 'About Kevin Nail',
+    image: '/images/meHike.jpg',
+    href: 'https://stresslessglass.kevinnail.com/about-me',
+    external: true,
+    hoverBg: '/images/kevin.png',
+    size: 'hero',
   },
 ];
 

@@ -1,86 +1,131 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import useInView from '../../hooks/useInView';
+import trackPointer from '../../lib/trackPointer';
+import InspectorOverlay from './InspectorOverlay';
+import { spanClasses } from './tileSizes';
 
-export default function Card({ card }) {
-  const [hovered, setHovered] = useState(false);
-  const { title, image, href, external, hoverBg, hoverBgSize } = card;
+export default function Card({ card, index = 0 }) {
+  const {
+    title,
+    eyebrow,
+    blurb,
+    image,
+    href,
+    external,
+    hoverBg,
+    hoverFit,
+    hoverPosition,
+    size,
+    inspector,
+  } = card;
+  const [cardRef, isInView] = useInView();
 
-  const cardContent = (
-    <div
-      className="bg-black pb-2.5 h-[175px] md:h-[225px] lg:h-[250px] rounded-lg grid min-w-[100px] border-2 border-neon-blue-50 overflow-hidden transition-all duration-500"
-      style={{
-        boxShadow: hovered ? '0 0 15px 0 white' : '0 0 5px pink',
-        ...(hovered
-          ? {
-              height: '300px',
-              backgroundImage: `linear-gradient(to bottom, #ffffff83, #2f00ff83), url(${hoverBg})`,
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: `cover, ${hoverBgSize}`,
-              transform: 'scale(1.1)',
-            }
-          : {}),
-      }}
-      onMouseEnter={() => {
-        if (window.innerWidth >= 1024) setHovered(true);
-      }}
-      onMouseLeave={() => setHovered(false)}
+  const isHero = size === 'hero';
+
+  const panel = (
+    <article
+      ref={cardRef}
+      onMouseMove={trackPointer}
+      style={{ animationDelay: `${Math.min(index, 5) * 80}ms` }}
+      className={
+        'spotlight group energize relative h-full w-full overflow-hidden rounded-2xl ' +
+        'border border-white/[0.08] bg-neutral-950 transition-transform duration-300 ' +
+        'motion-safe:hover:-translate-y-1 ' +
+        (isInView ? 'energized' : '')
+      }
     >
       <img
         src={image}
-        alt={title}
-        className="w-full rounded-t-lg transition-all duration-500"
+        alt=""
         loading="lazy"
-        style={
-          hovered
-            ? {
-                transition: '3s',
-                width: '120%',
-                transform: 'translateX(-10%)',
-                opacity: 0,
-              }
-            : {}
+        decoding="async"
+        aria-hidden="true"
+        className={
+          'absolute inset-0 h-full w-full object-cover transition-[transform,opacity] ' +
+          'duration-[600ms] ease-out motion-safe:group-hover:scale-[1.05] ' +
+          (hoverBg ? 'group-hover:opacity-0' : '')
         }
       />
-      <p
-        className="font-[Segoe_UI,Tahoma,Geneva,Verdana,sans-serif] text-[0.8rem] md:text-[1.2rem] m-0 transition-all duration-500 pl-2.5 self-end lg:w-[90%] lg:mx-auto"
-        style={
-          hovered
-            ? {
-                fontSize: '1.5rem',
-                transition: '550ms',
-                backgroundColor: 'black',
-                borderRadius: '5px',
-                boxShadow: 'inset 0 0 15px 0 #2f00ff83',
-                opacity: 0,
-              }
-            : {}
+
+      {/* The payoff layer: the original cards wiped their content away to show
+          this. Here it cross-fades in underneath a title that stays put. */}
+      {hoverBg && (
+        <img
+          src={hoverBg}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+          style={hoverPosition ? { objectPosition: hoverPosition } : undefined}
+          className={
+            'absolute inset-0 h-full w-full opacity-0 transition-opacity duration-[600ms] ' +
+            'ease-out group-hover:opacity-100 ' +
+            (hoverFit === 'contain' ? 'object-contain p-6' : 'object-cover')
+          }
+        />
+      )}
+
+      <div
+        className={
+          'pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t ' +
+          (isHero
+            ? 'from-black via-black/55 to-black/10 lg:bg-gradient-to-r lg:from-black lg:via-black/60 lg:to-transparent'
+            : 'from-black via-black/45 to-transparent')
+        }
+        aria-hidden="true"
+      />
+
+      <div
+        className={
+          'relative z-[2] flex h-full flex-col justify-end gap-1 p-4 ' +
+          (isHero ? 'md:p-6 lg:w-3/4 lg:justify-center' : '')
         }
       >
-        {title}
-      </p>
-    </div>
+        {eyebrow && (
+          <span className="font-body text-[0.62rem] font-semibold uppercase tracking-[3px] text-neon-blue-bright">
+            {eyebrow}
+          </span>
+        )}
+        <h2
+          className={
+            'm-0 font-display font-bold leading-[1.1] tracking-[0.5px] ' +
+            (isHero ? 'text-2xl md:text-4xl lg:text-5xl' : 'text-base md:text-lg')
+          }
+        >
+          {title}
+        </h2>
+        {blurb && (
+          <p className="m-0 mt-1 font-body text-[0.78rem] md:text-[0.95rem] leading-snug text-white/70">
+            {blurb}
+          </p>
+        )}
+      </div>
+
+      {inspector && <InspectorOverlay />}
+
+      <div
+        className="trace pointer-events-none absolute inset-0 z-[3] rounded-2xl"
+        aria-hidden="true"
+      />
+    </article>
   );
+
+  const wrapperClass =
+    'group no-underline text-white rounded-2xl ' +
+    'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue ' +
+    (spanClasses[size] ?? spanClasses.default);
 
   if (external) {
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="no-underline text-white max-w-[190px] md:w-[205px] md:max-w-[205px] lg:w-[250px] lg:min-w-[250px]"
-      >
-        {cardContent}
+      <a href={href} target="_blank" rel="noopener noreferrer" className={wrapperClass}>
+        {panel}
       </a>
     );
   }
 
   return (
-    <Link
-      to={href}
-      className="no-underline text-white max-w-[190px] md:w-[205px] md:max-w-[205px] lg:w-[250px] lg:min-w-[250px]"
-    >
-      {cardContent}
+    <Link to={href} className={wrapperClass}>
+      {panel}
     </Link>
   );
 }
