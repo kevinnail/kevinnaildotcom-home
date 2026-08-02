@@ -1,16 +1,7 @@
 import { useState } from 'react';
 import useInView from '../../hooks/useInView';
+import trackPointer from '../../lib/trackPointer';
 import DecodeText from './DecodeText';
-
-// Follows the cursor and feeds its position to the card as CSS custom props,
-// which drive the edge-light glow. Written straight to the DOM node (no state)
-// so moving the mouse never triggers a React render.
-function trackPointer(event) {
-  const card = event.currentTarget;
-  const bounds = card.getBoundingClientRect();
-  card.style.setProperty('--pointer-x', `${event.clientX - bounds.left}px`);
-  card.style.setProperty('--pointer-y', `${event.clientY - bounds.top}px`);
-}
 
 export default function ProjectCard({ project, index = 0, featured = false }) {
   const {
