@@ -173,10 +173,13 @@
   }
 }
 
-/* These rules are how public/kevin-nail-resume.pdf gets produced: open the
-   résumé tab, Ctrl+P, "Save as PDF". The site chrome (banner, tabs, blurred
-   backdrop, scroll button) is stripped, the dark panel is inverted to ink on
-   paper, and the type is re-scaled to hold the whole résumé to one page. */
+/* Makes Ctrl+P on the résumé tab produce a sane page instead of a screenshot of
+   a dark website: site chrome (banner, tabs, blurred backdrop, scroll button)
+   is stripped, the dark panel is inverted to ink on paper, and the type is
+   re-scaled to hold the résumé to one page.
+
+   This is NOT how the Download PDF button works — that generates the file from
+   src/data/resume.js via src/lib/resumePdf.js and never touches these rules. */
 @media print {
   @page {
     size: letter;
