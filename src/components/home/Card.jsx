@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import useInView from '../../hooks/useInView';
 import trackPointer from '../../lib/trackPointer';
+import InspectorOverlay from './InspectorOverlay';
 import { spanClasses } from './tileSizes';
 
 export default function Card({ card, index = 0 }) {
-  const { title, eyebrow, blurb, image, href, external, hoverBg, hoverFit, size } = card;
+  const { title, eyebrow, blurb, image, href, external, hoverBg, hoverFit, size, inspector } = card;
   const [cardRef, isInView] = useInView();
 
   const isHero = size === 'hero';
@@ -86,6 +87,8 @@ export default function Card({ card, index = 0 }) {
           </p>
         )}
       </div>
+
+      {inspector && <InspectorOverlay />}
 
       <div
         className="trace pointer-events-none absolute inset-0 z-[3] rounded-2xl"
