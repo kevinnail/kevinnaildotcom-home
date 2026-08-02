@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Banner from '../components/layout/Banner';
 import ScrollToTop from '../components/layout/ScrollToTop';
 import BioSection from '../components/projects/BioSection';
-import ResumeEmbed from '../components/projects/ResumeEmbed';
+import Resume from '../components/projects/Resume';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
 import SectionEyebrow from '../components/projects/SectionEyebrow';
@@ -104,7 +104,7 @@ export default function ProjectsPage() {
 
             {activeTab === 'resume' && (
               <section id="tab-panel-resume" role="tabpanel" aria-labelledby="tab-resume">
-                <ResumeEmbed />
+                <Resume />
               </section>
             )}
 

@@ -173,6 +173,169 @@
   }
 }
 
+/* Makes Ctrl+P on the résumé tab produce a sane page instead of a screenshot of
+   a dark website: site chrome (banner, tabs, blurred backdrop, scroll button)
+   is stripped, the dark panel is inverted to ink on paper, and the type is
+   re-scaled to hold the résumé to one page.
+
+   This is NOT how the Download PDF button works — that generates the file from
+   src/data/resume.js via src/lib/resumePdf.js and never touches these rules. */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.45in;
+  }
+
+  /* Keep the résumé, everything inside it, and only its ancestors. */
+  body :not(:has(.resume-document)):not(.resume-document):not(.resume-document *) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  body :has(.resume-document) {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    background: #fff !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .resume-document,
+  .resume-document * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* The screen layout is airy; on paper it has to hold to a single page, so the
+     type scale and vertical rhythm are re-set here rather than inherited from
+     the Tailwind spacing utilities. */
+  .resume-document {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    font-size: 7.75pt;
+    line-height: 1.22;
+  }
+
+  /* Tailwind sets font-size and line-height on each element, so the container
+     values above are never inherited — the text elements have to be handed
+     back to them directly. Headings are excluded; they are sized on their own
+     below. */
+  .resume-document p,
+  .resume-document ul,
+  .resume-document li,
+  .resume-document span,
+  .resume-document a,
+  .resume-document strong {
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  /* Measure caps that keep the screen column readable would only force extra
+     line wraps on paper, where the page already sets the measure. */
+  .resume-document p,
+  .resume-document li {
+    max-width: none !important;
+  }
+
+  .resume-document .resume-entry {
+    grid-template-columns: 1fr 148pt !important;
+    gap: 0 10pt !important;
+    margin-top: 4pt !important;
+  }
+
+  .resume-document .resume-entry:first-child {
+    margin-top: 0 !important;
+  }
+
+  .resume-document h1 {
+    font-size: 15pt;
+  }
+
+  .resume-document h2 {
+    font-size: 8.5pt;
+    margin: 0 !important;
+    padding-bottom: 1.5pt !important;
+    border-bottom: 1px solid #000 !important;
+  }
+
+  .resume-document h3 {
+    font-size: 8.25pt;
+  }
+
+  .resume-document .resume-role {
+    font-size: 9pt !important;
+  }
+
+  .resume-document .resume-contact {
+    margin-top: 2pt !important;
+  }
+
+  .resume-document header {
+    padding-bottom: 2.5pt !important;
+    border-bottom: 1.25px solid #000 !important;
+  }
+
+  .resume-document section {
+    margin-top: 5pt !important;
+  }
+
+  .resume-document section > div {
+    margin-top: 3pt !important;
+  }
+
+  .resume-document p,
+  .resume-document ul {
+    margin-top: 2pt !important;
+    margin-bottom: 0 !important;
+  }
+
+  .resume-document li {
+    margin-top: 0 !important;
+  }
+
+  .resume-document li + li {
+    margin-top: 1pt !important;
+  }
+
+  .resume-document .resume-links,
+  .resume-document .resume-links a {
+    font-size: 6.75pt !important;
+  }
+
+  .resume-document .resume-links li + li {
+    margin-top: 0 !important;
+  }
+
+  .resume-document a {
+    color: #1d4ed8 !important;
+    text-decoration: none;
+  }
+
+  .resume-document li::marker {
+    color: #000 !important;
+  }
+
+  /* Don't split a heading off its content, or a role off its bullets. */
+  .resume-document h1,
+  .resume-document h2,
+  .resume-document h3 {
+    break-after: avoid;
+  }
+
+  .resume-document li {
+    break-inside: avoid;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
