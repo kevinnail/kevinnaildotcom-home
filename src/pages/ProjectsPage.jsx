@@ -6,7 +6,7 @@ import BioSection from '../components/projects/BioSection';
 import Resume from '../components/projects/Resume';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
-import SectionEyebrow from '../components/projects/SectionEyebrow';
+import SectionLabel from '../components/projects/SectionLabel';
 
 export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState('projects');
@@ -77,7 +77,7 @@ export default function ProjectsPage() {
             {activeTab === 'projects' && (
               <section id="tab-panel-projects" role="tabpanel" aria-labelledby="tab-projects">
                 <div className="px-5 pt-5 pb-4 sm:px-6">
-                  <SectionEyebrow label="Selected Work" />
+                  <SectionLabel label="Selected Work" />
                   <p className="mt-4 mb-0 max-w-[68ch] text-[0.92rem] leading-[1.65] text-white/70">
                     The bulk of my projects below are all a React / Node / Express + Postgres stack
                     with the recent addition of SQLite and React Native for my new iOS app{' '}
