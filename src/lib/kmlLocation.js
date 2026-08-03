@@ -7,7 +7,7 @@
 // The file is read as text and scanned, not parsed into a DOM: DOMParser is a
 // browser API and the test environment is node, and pulling one number pair out of
 // a Google Earth export doesn't need a tree. Tag matching allows an optional
-// namespace prefix (`kml:LookAt`), which some exporters write.
+// namespace prefix (`kml:coordinates`), which some exporters write.
 
 const COORDINATES_TAG = /<(?:\w+:)?coordinates\b[^>]*>([\s\S]*?)</i;
 
@@ -37,7 +37,6 @@ function firstCoordinateLocation(kmlText) {
 // usable coordinate.
 export function parseKmlLocation(kmlText) {
   if (typeof kmlText !== 'string') return null;
-  // return lookAtLocation(kmlText) ?? firstCoordinateLocation(kmlText);
   return firstCoordinateLocation(kmlText);
 }
 

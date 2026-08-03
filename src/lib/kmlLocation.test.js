@@ -3,7 +3,8 @@ import { parseKmlLocation, fetchTripLocations } from './kmlLocation';
 
 // Trimmed to the shape a Google Earth Pro export actually has: a document-level
 // LookAt above the styles, then placemarks whose coordinates are lng,lat,alt
-// tuples separated by whitespace.
+// tuples separated by whitespace. The LookAt is kept in the fixture on purpose —
+// the pin comes from the first placemark coordinate even when one is present.
 const kmlWithLookAt = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
@@ -37,30 +38,32 @@ const kmlWithoutLookAt = `<?xml version="1.0" encoding="UTF-8"?>
 </kml>`;
 
 describe('parseKmlLocation', () => {
-  test('prefers the document LookAt, which is centred on the whole route', () => {
-    expect(parseKmlLocation(kmlWithLookAt)).toEqual({ lng: -121.432207, lat: 46.569769 });
-  });
-
-  test('falls back to the first coordinate tuple when there is no LookAt', () => {
+  test('reads the first coordinate tuple of the first placemark', () => {
     expect(parseKmlLocation(kmlWithoutLookAt)).toEqual({ lng: -121.386, lat: 46.643 });
   });
 
-  test('reads namespace-prefixed tags', () => {
-    const prefixed = `<kml:kml><kml:Document><kml:LookAt>
-      <kml:longitude>-120.5</kml:longitude><kml:latitude>47.25</kml:latitude>
-      </kml:LookAt></kml:Document></kml:kml>`;
-    expect(parseKmlLocation(prefixed)).toEqual({ lng: -120.5, lat: 47.25 });
+  test('uses the coordinates even when the document carries a LookAt', () => {
+    expect(parseKmlLocation(kmlWithLookAt)).toEqual({ lng: -121.386, lat: 46.643 });
   });
 
-  test('ignores a LookAt with unreadable numbers and uses the coordinates instead', () => {
-    const brokenLookAt = `<kml><LookAt><longitude></longitude><latitude></latitude></LookAt>
-      <coordinates>-121.386,46.643,1372</coordinates></kml>`;
-    expect(parseKmlLocation(brokenLookAt)).toEqual({ lng: -121.386, lat: 46.643 });
+  test('reads a namespace-prefixed coordinates tag', () => {
+    const prefixed = `<kml:kml><kml:Document><kml:Placemark>
+      <kml:coordinates>-120.5,47.25,0</kml:coordinates>
+      </kml:Placemark></kml:Document></kml:kml>`;
+    expect(parseKmlLocation(prefixed)).toEqual({ lng: -120.5, lat: 47.25 });
   });
 
   test('returns null for out-of-range coordinates', () => {
     const swapped = `<kml><coordinates>46.643,-181.0,0</coordinates></kml>`;
     expect(parseKmlLocation(swapped)).toBeNull();
+  });
+
+  test('returns null when the tuple is missing its latitude', () => {
+    expect(parseKmlLocation('<kml><coordinates>-121.386</coordinates></kml>')).toBeNull();
+  });
+
+  test('returns null when the coordinates tag is empty', () => {
+    expect(parseKmlLocation('<kml><coordinates>   </coordinates></kml>')).toBeNull();
   });
 
   test('returns null when the file carries no coordinate at all', () => {
@@ -87,7 +90,7 @@ describe('fetchTripLocations', () => {
 
     const located = await fetchTripLocations(trips);
 
-    expect(located).toEqual([{ trip: trips[0], lng: -121.432207, lat: 46.569769 }]);
+    expect(located).toEqual([{ trip: trips[0], lng: -121.386, lat: 46.643 }]);
     expect(fetch).toHaveBeenCalledWith('https://cdn.test/goat-rocks.kml');
   });
 
@@ -109,6 +112,18 @@ describe('fetchTripLocations', () => {
     const located = await fetchTripLocations(trips);
 
     expect(located).toEqual([{ trip: trips[1], lng: -121.386, lat: 46.643 }]);
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  test('skips a trip whose KML carries no usable coordinate', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, text: async () => '<kml><Document/></kml>' })),
+    );
+    const trips = [{ id: 'trip-1', name: 'Empty', url: 'https://cdn.test/empty.kml' }];
+
+    expect(await fetchTripLocations(trips)).toEqual([]);
     expect(console.error).toHaveBeenCalled();
   });
 });
