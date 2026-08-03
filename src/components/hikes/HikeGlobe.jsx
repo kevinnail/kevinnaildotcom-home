@@ -17,6 +17,7 @@ import {
 } from 'cesium';
 import { isGeotagged } from '../../lib/hikePhotos';
 import { fetchTripLocations } from '../../lib/kmlLocation';
+import useIsDesktop from '../../lib/useIsDesktop';
 
 // Non-secret, client-side token (Ion free tier). Empty token still renders a
 // globe, but base imagery + world terrain won't load until it's set in .env.
@@ -59,6 +60,15 @@ const SINGLE_PIN_RANGE_METERS = 60000;
 // The overview pin's label sits above its dot rather than on it.
 const PIN_LABEL_OFFSET = new Cartesian2(0, -16);
 
+// Overview pins are the primary way into a hike on a phone, where the target is a
+// fingertip rather than a cursor. Cesium picks the label as readily as the point,
+// so growing both widens one hit area rather than creating two.
+const PIN_POINT_PIXEL_SIZE = { desktop: 16, touch: 24 };
+const PIN_LABEL_FONT = {
+  desktop: '15px "Open Sans", sans-serif',
+  touch: '19px "Open Sans", sans-serif',
+};
+
 // Stable empty list, so "no pins on screen" never looks like a change to the
 // effect that frames them.
 const NO_PINS = [];
@@ -74,7 +84,21 @@ export default function HikeGlobe({
   isShowingAllRoutes,
   onSelectTrip,
 }) {
-  const viewerRef = useRef(null);
+  // The Cesium viewer is held in state, not a ref, because effects need to RUN
+  // when it arrives. resium mounts it asynchronously — it awaits construction and
+  // then flips an internal mounted flag, so `ref.current.cesiumElement` is still
+  // null during our effects in the commit that renders <Viewer>. A ref gives no
+  // signal when it later fills in, so any camera work racing the mount is silently
+  // dropped. That is exactly what happens to the overview's opening flight now
+  // that it fires on page load rather than on a button press. As state, the
+  // arrival is a render and every camera effect below re-runs against a real
+  // viewer.
+  const [viewer, setViewer] = useState(null);
+  // Stable identity: a fresh callback each render would detach and reattach the
+  // ref on every render.
+  const handleViewerRef = useCallback((instance) => {
+    setViewer(instance?.cesiumElement ?? null);
+  }, []);
   // 'pending' until the async terrain resolves; then the provider (3D relief) or
   // null (fall back to the flat ellipsoid if terrain fails, e.g. missing token).
   const [terrainProvider, setTerrainProvider] = useState('pending');
@@ -85,7 +109,9 @@ export default function HikeGlobe({
   // matches the current trips is simply ignored, rather than cleared by an effect.
   const [pinResult, setPinResult] = useState(null);
   const fetchedTripsRef = useRef(null);
+  const isDesktop = useIsDesktop();
   const { rangeMeters, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
+  const pinSizing = isDesktop ? 'desktop' : 'touch';
 
   // World terrain loads asynchronously (createWorldTerrain was removed in Cesium
   // 1.14x). We resolve it BEFORE mounting the Viewer so it's applied at
@@ -110,18 +136,20 @@ export default function HikeGlobe({
   // terrain with no clue where the new trail went. Driven by onLoad rather than a
   // selectedTrip effect because the entities don't exist — and so have no bounding
   // sphere to fly to — until the KML resolves.
-  const handleTripRouteLoad = useCallback((dataSource) => {
-    const viewer = viewerRef.current?.cesiumElement;
-    if (!viewer) return;
-    viewer.flyTo(dataSource, {
-      duration: TRIP_OVERVIEW_DURATION_SECONDS,
-      offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
-    });
-  }, []);
+  const handleTripRouteLoad = useCallback(
+    (dataSource) => {
+      if (!viewer) return;
+      viewer.flyTo(dataSource, {
+        duration: TRIP_OVERVIEW_DURATION_SECONDS,
+        offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
+      });
+    },
+    [viewer],
+  );
 
   // Overview mode reads one coordinate out of each trip's KML instead of loading
-  // the files into the scene. Fetched on entering the mode rather than on mount so
-  // a visitor who never opens the overview never pays for it.
+  // the files into the scene. This runs on mount now that the overview is the
+  // landing state, and again only if the trips themselves change.
   useEffect(() => {
     if (!isShowingAllRoutes || trips.length === 0) return undefined;
     // Leaving and re-entering the overview reuses what was already read; only a
@@ -141,11 +169,12 @@ export default function HikeGlobe({
   const tripPins = isShowingAllRoutes && pinResult?.trips === trips ? pinResult.pins : NO_PINS;
 
   // Frame every pin at once, after they've all resolved. Flying per pin would yank
-  // the camera once per hike as the KMLs trickle in.
+  // the camera once per hike as the KMLs trickle in. This is the page's opening
+  // shot as well as the "show all hikes" flight — whichever of the viewer and the
+  // pins arrives second triggers it, so the visitor never lands on the raw globe
+  // with every hike stacked on one another.
   useEffect(() => {
-    if (tripPins.length === 0) return;
-    const viewer = viewerRef.current?.cesiumElement;
-    if (!viewer) return;
+    if (!viewer || tripPins.length === 0) return;
     const pinPositions = tripPins.map((pin) => Cartesian3.fromDegrees(pin.lng, pin.lat));
     viewer.camera.flyToBoundingSphere(BoundingSphere.fromPoints(pinPositions), {
       duration: ALL_ROUTES_DURATION_SECONDS,
@@ -155,7 +184,7 @@ export default function HikeGlobe({
         pinPositions.length > 1 ? 0 : SINGLE_PIN_RANGE_METERS,
       ),
     });
-  }, [tripPins]);
+  }, [tripPins, viewer]);
 
   // Recenter the camera on the selected photo — a deliberate response to a photo
   // click. Selecting a trip clears the photo, so this never races the route
@@ -179,9 +208,7 @@ export default function HikeGlobe({
   const photoLng = selectedPhoto?.lng;
   const photoLat = selectedPhoto?.lat;
   useEffect(() => {
-    if (photoId == null) return undefined;
-    const viewer = viewerRef.current?.cesiumElement;
-    if (!viewer) return undefined;
+    if (photoId == null || !viewer) return undefined;
     let cancelled = false;
 
     function flyToGroundTarget(targetHeightMeters) {
@@ -213,7 +240,7 @@ export default function HikeGlobe({
     return () => {
       cancelled = true;
     };
-  }, [photoId, photoLng, photoLat, rangeMeters, pitchDegrees, terrainProvider]);
+  }, [photoId, photoLng, photoLat, rangeMeters, pitchDegrees, terrainProvider, viewer]);
 
   if (terrainProvider === 'pending') {
     return (
@@ -266,7 +293,7 @@ export default function HikeGlobe({
         </div>
       ) : null}
       <Viewer
-        ref={viewerRef}
+        ref={handleViewerRef}
         style={{ width: '100%', height: '100%' }}
         terrainProvider={terrainProvider ?? undefined}
         timeline={false}
@@ -307,7 +334,7 @@ export default function HikeGlobe({
                 onMouseEnter={() => setIsHoveringPin(true)}
                 onMouseLeave={() => setIsHoveringPin(false)}
                 point={{
-                  pixelSize: 16,
+                  pixelSize: PIN_POINT_PIXEL_SIZE[pinSizing],
                   color: Color.fromCssColorString('#4fd2ff'),
                   outlineColor: Color.WHITE,
                   outlineWidth: 2,
@@ -316,7 +343,7 @@ export default function HikeGlobe({
                 }}
                 label={{
                   text: trip.name,
-                  font: '15px "Open Sans", sans-serif',
+                  font: PIN_LABEL_FONT[pinSizing],
                   fillColor: Color.WHITE,
                   outlineColor: Color.BLACK,
                   outlineWidth: 3,
