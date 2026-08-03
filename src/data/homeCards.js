@@ -25,7 +25,7 @@ const homeCards = [
   },
   {
     title: 'Backpacking',
-    eyebrow: 'New',
+    label: 'New',
     image: '/images/goat-lake.JPG',
     href: '/backpacking',
     external: false,

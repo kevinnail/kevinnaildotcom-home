@@ -1,6 +1,6 @@
 // Shared section label: a lit blue tick + tracked caps, matching the project
-// cards' category eyebrow so every tab reads as one system.
-export default function SectionEyebrow({ label }) {
+// cards' category label so every tab reads as one system.
+export default function SectionLabel({ label }) {
   return (
     <div className="flex items-center gap-2.5">
       <span

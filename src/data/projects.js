@@ -29,6 +29,38 @@ const projects = [
   },
 
   {
+    title: 'kevinnail.com',
+    subtitle: 'This Site — 3D Trip Map + Admin Media Pipeline',
+    category: 'Full-Stack · 3D Map',
+    stack: ['React', 'Vite', 'Cesium', 'Node/Express', 'Postgres', 'S3 + CloudFront', 'JWT'],
+    description: `The site you are on. It began as a static portfolio and grew into a full-stack
+     app with an admin-only media pipeline behind it. The astrophotography and backpacking
+     galleries are database-driven: an authenticated admin uploads through a dashboard, and
+     image bytes go straight from the browser to S3 over short-lived presigned URLs — they
+     never pass through the API — with Postgres storing only the resulting CloudFront URLs and
+     metadata. Because the server never sees the bytes, EXIF parsing (capture time and GPS) and
+     image resizing both run client-side; hike photos are re-encoded in the browser into a
+     2048px WebP display image plus a 400px thumbnail, so the original — and the campsite
+     coordinates baked into it — are never published. The backpacking page is the centerpiece:
+     KML trail and campsite files upload through the same presigned path and render on a 3D
+     Cesium globe, with every geotagged photo dropped as a pin on its trail so a trip can be
+     browsed by flying the route and stepping through the images in place. Built with React 18 +
+     Vite + Tailwind v4 on the front end and Express 5 + Postgres on the back, with JWT auth
+     (scrypt hashes, token in sessionStorage), bounded-concurrency bulk uploads, and Vitest
+     unit tests plus Supertest integration tests against a real local database.`,
+    mediaType: 'image',
+    mediaSrc: '/images/kevinnail-site.png',
+    links: [
+      { label: 'Backpacking Map', href: 'https://kevinnail.com/backpacking' },
+      { label: 'Astrophotography', href: 'https://kevinnail.com/astrophotography' },
+      {
+        label: 'GitHub',
+        href: 'https://github.com/kevinnail/kevinnaildotcom-home',
+      },
+    ],
+  },
+
+  {
     title: 'Stress Less Glass',
     category: 'Full-Stack · Production',
     stack: ['React', 'Node/Express', 'Postgres', 'AWS S3', 'Socket.IO', 'Mailer'],

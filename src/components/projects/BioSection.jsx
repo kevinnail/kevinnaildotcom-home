@@ -1,10 +1,10 @@
 import ContactLinks from './ContactLinks';
-import SectionEyebrow from './SectionEyebrow';
+import SectionLabel from './SectionLabel';
 
 export default function BioSection() {
   return (
     <section className="px-5 py-6 sm:px-6">
-      <SectionEyebrow label="About" />
+      <SectionLabel label="About" />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4">

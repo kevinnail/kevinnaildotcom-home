@@ -60,7 +60,7 @@ export default function MapSidebar({
   onSelectPhoto,
   photoMessage,
   isShowingAllRoutes,
-  onToggleAllRoutes,
+  onShowAllRoutes,
 }) {
   // Mobile-only: the full hike list lives in a bottom sheet instead of a
   // sideways-scrolling strip, which is awkward to browse on a phone.
@@ -69,44 +69,42 @@ export default function MapSidebar({
 
   return (
     <aside className="flex max-h-[55vh] w-full shrink-0 flex-col overflow-hidden border-t border-neon-blue-50 bg-black/90 text-white md:max-h-none md:w-72 md:border-r md:border-t-0">
-      {/* Desktop header. The overview toggle lives here rather than over the globe:
-          it's a selection control like the list below it, and floating it on the
-          map crowded Cesium's own buttons. Desktop only — clicking a trail is a
-          cursor job, so phones select from the picker sheet instead. */}
+      {/* Desktop header. The "all hikes" control lives here rather than over the
+          globe: it's a selection control like the list below it, and floating it on
+          the map crowded Cesium's own buttons. It is one-way — the overview is the
+          absence of a selection, so there is nothing to "exit" back to and the
+          button simply retires while the overview is up. */}
 
       <div className="hidden shrink-0 border-b border-neon-blue-50 px-4 py-4 md:block">
         <h1 className="font-display text-2xl text-white">Hikes</h1>
         <p className="font-body text-sm text-gray-300">
           {isShowingAllRoutes
-            ? 'Click a pin on the map to open that hike.'
+            ? 'Click a pin on the map, or a hike below, to open it.'
             : 'Select a hike to view its route.'}
         </p>
-        {trips.length > 1 && (
+        {trips.length > 1 && !isShowingAllRoutes && (
           <button
             type="button"
-            onClick={onToggleAllRoutes}
-            aria-pressed={isShowingAllRoutes}
-            className={`mt-3 w-full rounded-lg border px-3 py-2 font-body text-sm transition-colors ${
-              isShowingAllRoutes
-                ? 'border-neon-blue-bright bg-neon-blue-50/35 text-white shadow-[0_0_20px_-5px_var(--color-neon-blue-bright)]'
-                : 'border-white/10 bg-white/[0.03] text-gray-200 hover:border-neon-blue-bright/45 hover:bg-white/[0.07] hover:text-white'
-            }`}
+            onClick={onShowAllRoutes}
+            className="mt-3 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-body text-sm text-gray-200 transition-colors hover:border-neon-blue-bright/45 hover:bg-white/[0.07] hover:text-white"
           >
-            {isShowingAllRoutes ? 'Exit overview' : 'Show all hikes'}
+            Show all hikes
           </button>
         )}
       </div>
 
       {/* Mobile current-hike bar: the title owns the full width so long names stay
-          readable, and the button shares the shorter region line beneath it. */}
+          readable, and the button shares the shorter region line beneath it. With
+          nothing selected the bar names the overview instead, and the button reads
+          as an invitation to pick rather than to swap. */}
       <div className="shrink-0 border-b border-neon-blue-50 px-4 py-2 md:hidden">
         {/* Sized and lit to out-rank the Cesium credit sitting just above it. */}
         <span className="line-clamp-2 block font-display text-xl leading-tight text-white [text-shadow:0_0_12px_var(--color-neon-blue-bright)]">
-          {selectedTrip ? selectedTrip.name : 'Hikes'}
+          {selectedTrip ? selectedTrip.name : 'All hikes'}
         </span>
         <div className="mt-1 flex items-center justify-between gap-3">
           <span className="min-w-0 flex-1 truncate font-body text-[0.7rem] uppercase tracking-[0.14em] text-neon-blue-bright">
-            {selectedTrip?.region}
+            {selectedTrip ? selectedTrip.region : 'Tap a pin to open one'}
           </span>
           <button
             type="button"
@@ -114,7 +112,7 @@ export default function MapSidebar({
             disabled={trips.length === 0}
             className="shrink-0 touch-manipulation rounded border border-neon-blue-50 px-3 py-1 font-body text-sm text-black transition-all [-webkit-tap-highlight-color:transparent] hover:bg-neon-blue-50/40 active:scale-[0.97] active:duration-75 disabled:opacity-40 bg-[#50d71e] hover:text-white"
           >
-            Change hike
+            {selectedTrip ? 'Change hike' : 'Choose a hike'}
           </button>
         </div>
       </div>
@@ -211,6 +209,23 @@ export default function MapSidebar({
                 ×
               </button>
             </div>
+            {/* The phone's route back to the overview — there is no sidebar button
+                to carry it, and it only earns its space once a hike is open. Unlike
+                a trip pick it closes the sheet, since the map itself is the answer. */}
+            {trips.length > 1 && !isShowingAllRoutes && (
+              <div className="shrink-0 border-b border-neon-blue-50 p-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onShowAllRoutes();
+                    setIsPickerOpen(false);
+                  }}
+                  className="w-full touch-manipulation rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-left font-display text-lg text-gray-200 transition-all [-webkit-tap-highlight-color:transparent] active:scale-[0.98] active:bg-neon-blue-bright/30 active:text-white active:duration-75"
+                >
+                  ← All hikes
+                </button>
+              </div>
+            )}
             {trips.length === 0 ? (
               <p className="px-4 py-3 font-body text-sm text-gray-300">{emptyMessage}</p>
             ) : (

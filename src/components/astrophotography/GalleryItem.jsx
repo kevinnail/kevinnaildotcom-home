@@ -1,7 +1,7 @@
 export default function GalleryItem({ photo, onClick }) {
   return (
     <div
-      className="group relative w-full md:w-[calc(33.33%-16px)] mb-4 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
+      className="group relative w-full md:w-[calc(33.33%-16px)] mb-4 overflow-hidden rounded-lg cursor-pointer"
       style={{ boxShadow: '0 0 10px 0 rgba(255, 255, 255, 1)' }}
       onClick={onClick}
     >

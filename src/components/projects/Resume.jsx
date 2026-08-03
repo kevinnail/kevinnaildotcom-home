@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import resume from '../../data/resume';
-import SectionEyebrow from './SectionEyebrow';
+import SectionLabel from './SectionLabel';
 
 // The phone number stays out of git. Set VITE_RESUME_PHONE in .env.local
 // (gitignored) and it renders here and in the generated PDF, so a copy exported
@@ -77,7 +77,7 @@ export default function Resume() {
   return (
     <div className="px-5 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <SectionEyebrow label="Résumé" />
+        <SectionLabel label="Résumé" />
 
         <div className="flex items-center gap-3">
           {downloadState === 'error' && (

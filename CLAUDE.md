@@ -115,7 +115,7 @@ Under `src/components/`:
 
 - `layout/` — PageWrapper, Banner, ScrollToTop, AdminLinkRow
 - `home/` — CardGrid, Card
-- `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, SectionEyebrow, ResumeEmbed, DiagramsSection, DecodeText
+- `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, SectionLabel, ResumeEmbed, DiagramsSection, DecodeText
 - `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (astro only; there is deliberately no flat grid for the hikes — they are browsed on the map)
 - `hikes/` — HikeGlobe (Cesium/Resium), MapSidebar, HikePhotoDock, HikeCoachMarks
 - `dashboard/` — LoginForm, UploadForm, BulkUploadForm, KmlUploadForm, PhotoList, HikeTripList
