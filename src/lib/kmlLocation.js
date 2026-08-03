@@ -8,9 +8,7 @@
 // browser API and the test environment is node, and pulling one number pair out of
 // a Google Earth export doesn't need a tree. Tag matching allows an optional
 // namespace prefix (`kml:LookAt`), which some exporters write.
-const LOOK_AT_BLOCK = /<(?:\w+:)?LookAt\b[^>]*>([\s\S]*?)<\/(?:\w+:)?LookAt>/i;
-const LONGITUDE_TAG = /<(?:\w+:)?longitude\b[^>]*>([^<]*)</i;
-const LATITUDE_TAG = /<(?:\w+:)?latitude\b[^>]*>([^<]*)</i;
+
 const COORDINATES_TAG = /<(?:\w+:)?coordinates\b[^>]*>([\s\S]*?)</i;
 
 // Takes the raw text of the two tags, because `Number('')` is 0 — an empty
@@ -24,18 +22,7 @@ function toLocation(longitudeText, latitudeText) {
   return { lng, lat };
 }
 
-// Google Earth saves a document-level <LookAt>: the view the trip was last framed
-// under, which sits over the middle of the route. That is a better anchor for a
-// single pin than any one point on the trail, so it wins when the file has one.
-function lookAtLocation(kmlText) {
-  const [, lookAtBlock] = kmlText.match(LOOK_AT_BLOCK) ?? [];
-  if (!lookAtBlock) return null;
-  const [, longitudeText] = lookAtBlock.match(LONGITUDE_TAG) ?? [];
-  const [, latitudeText] = lookAtBlock.match(LATITUDE_TAG) ?? [];
-  return toLocation(longitudeText, latitudeText);
-}
-
-// Fallback: the first coordinate in the document — the start of the first
+// the first coordinate in the document — the start of the first
 // placemark, so a trailhead or the first waypoint. Off-centre for the route, but
 // it is on the hike, which is all the overview pin has to be.
 function firstCoordinateLocation(kmlText) {
@@ -50,7 +37,8 @@ function firstCoordinateLocation(kmlText) {
 // usable coordinate.
 export function parseKmlLocation(kmlText) {
   if (typeof kmlText !== 'string') return null;
-  return lookAtLocation(kmlText) ?? firstCoordinateLocation(kmlText);
+  // return lookAtLocation(kmlText) ?? firstCoordinateLocation(kmlText);
+  return firstCoordinateLocation(kmlText);
 }
 
 // Trips paired with their pin location, in input order, skipping any whose KML
