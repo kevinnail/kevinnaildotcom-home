@@ -1,4 +1,4 @@
-import SectionEyebrow from './SectionEyebrow';
+import SectionLabel from './SectionLabel';
 
 const diagrams = [
   {
@@ -24,7 +24,7 @@ const diagrams = [
 export default function DiagramsSection() {
   return (
     <section className="px-5 py-6 sm:px-6">
-      <SectionEyebrow label="System Diagrams" />
+      <SectionLabel label="System Diagrams" />
 
       <p className="mt-4 mb-0 max-w-[70ch] text-[0.92rem] leading-[1.65] text-white/70">
         Mapping out complex systems is part of my process — great for OCD&apos;ing down to each
