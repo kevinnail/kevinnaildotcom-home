@@ -22,13 +22,14 @@ export default function HikeMapPage() {
   // globe there), but manual on mobile, where the dock would cover the globe —
   // so the user taps a "View photo" pill to open it after seeing the location.
   const [isPhotoViewOpen, setIsPhotoViewOpen] = useState(false);
-  // Desktop-only overview: every route on screen at once so the visitor can see
-  // where the hikes are and click one to open it.
-  const [hasRequestedAllRoutes, setHasRequestedAllRoutes] = useState(false);
   const isDesktop = useIsDesktop();
-  // Derived rather than stored, so narrowing the window to phone width can't leave
-  // the overview running with its only exit — the desktop sidebar button — gone.
-  const isShowingAllRoutes = isDesktop && hasRequestedAllRoutes;
+  // "No hike selected" IS the overview — one pin per hike, the whole list visible
+  // at once. Keeping them as one variable rather than two makes the two states
+  // mutually exclusive by construction: the overview can never run with a hike
+  // still lit up in the sidebar and its photos loaded underneath it. It is also
+  // the landing state, so the page opens on the top level and the visitor chooses
+  // what to dive into, rather than arriving mid-hike with no orientation.
+  const isShowingAllRoutes = selectedTripId == null;
 
   useEffect(() => {
     let active = true;
@@ -38,7 +39,6 @@ export default function HikeMapPage() {
         if (!active) return;
         setTrips(loadedTrips);
         setPhotos(loadedPhotos);
-        setSelectedTripId(loadedTrips[0]?.id ?? null);
         setStatus('ready');
       } catch {
         if (active) setStatus('error');
@@ -70,19 +70,18 @@ export default function HikeMapPage() {
   }, [tripPhotos, selectedIndex]);
 
   // Switching hikes clears the expanded photo so the new hike starts with no pin.
-  // Choosing a hike is also the natural way out of the all-routes overview,
-  // whether the pick came from the sidebar or from clicking the route itself.
+  // Selecting is also what leaves the overview, since the overview is just the
+  // absence of a selection — whether the pick came from the sidebar or a map pin.
   function handleSelectTrip(tripId) {
     setSelectedTripId(tripId);
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
-    setHasRequestedAllRoutes(false);
   }
 
-  // Entering the overview drops the pin and dock: it's about where the hikes are,
-  // not about any one photo.
-  function handleToggleAllRoutes() {
-    setHasRequestedAllRoutes((hasRequested) => !hasRequested);
+  // Back to the top level. Deselecting drops the pin and dock with it: the
+  // overview is about where the hikes are, not about any one photo.
+  function handleShowAllRoutes() {
+    setSelectedTripId(null);
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
   }
@@ -147,7 +146,7 @@ export default function HikeMapPage() {
             onSelectPhoto={handleSelectPhoto}
             photoMessage={photoMessage}
             isShowingAllRoutes={isShowingAllRoutes}
-            onToggleAllRoutes={handleToggleAllRoutes}
+            onShowAllRoutes={handleShowAllRoutes}
           />
           <main className="relative min-h-0 flex-1">
             <HikeGlobe
