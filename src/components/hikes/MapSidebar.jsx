@@ -78,7 +78,7 @@ export default function MapSidebar({
         <h1 className="font-display text-2xl text-white">Hikes</h1>
         <p className="font-body text-sm text-gray-300">
           {isShowingAllRoutes
-            ? 'Click a route on the map to open that hike.'
+            ? 'Click a pin on the map to open that hike.'
             : 'Select a hike to view its route.'}
         </p>
         {trips.length > 1 && (
