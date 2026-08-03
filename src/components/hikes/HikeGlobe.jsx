@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Viewer, KmlDataSource, Entity, ScreenSpaceEventHandler, ScreenSpaceEvent } from 'resium';
+import { Viewer, KmlDataSource, Entity } from 'resium';
 import {
   Ion,
   createWorldTerrainAsync,
+  Cartesian2,
   Cartesian3,
   Cartographic,
   Color,
   BoundingSphere,
   HeadingPitchRange,
   HeightReference,
-  ScreenSpaceEventType,
+  LabelStyle,
+  VerticalOrigin,
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
 import { isGeotagged } from '../../lib/hikePhotos';
+import { fetchTripLocations } from '../../lib/kmlLocation';
 
 // Non-secret, client-side token (Ion free tier). Empty token still renders a
 // globe, but base imagery + world terrain won't load until it's set in .env.
@@ -46,13 +49,19 @@ const TRIP_OVERVIEW_PITCH_DEGREES = -50;
 const TRIP_OVERVIEW_DURATION_SECONDS = 2;
 
 // "All hikes" overview: pitched near straight-down so widely separated ranges sit
-// in one frame without the near ones hiding the far ones behind terrain.
+// in one frame without the near ones hiding the far ones behind terrain. Range 0
+// lets Cesium derive the distance from the pins' own bounding sphere; a lone pin
+// has no extent to derive from, so it gets a fixed range instead.
 const ALL_ROUTES_PITCH_DEGREES = -75;
 const ALL_ROUTES_DURATION_SECONDS = 2.5;
+const SINGLE_PIN_RANGE_METERS = 60000;
 
-// Picking a trail is picking a line a few pixels wide, so widen the pick rectangle
-// — a cursor that has to land exactly on the stroke makes the routes feel inert.
-const ROUTE_PICK_TOLERANCE_PIXELS = 12;
+// The overview pin's label sits above its dot rather than on it.
+const PIN_LABEL_OFFSET = new Cartesian2(0, -16);
+
+// Stable empty list, so "no pins on screen" never looks like a change to the
+// effect that frames them.
+const NO_PINS = [];
 
 function formatRange(rangeMeters) {
   return rangeMeters >= 1000 ? `${(rangeMeters / 1000).toFixed(1)} km` : `${rangeMeters} m`;
@@ -66,15 +75,16 @@ export default function HikeGlobe({
   onSelectTrip,
 }) {
   const viewerRef = useRef(null);
-  // Which trip each loaded overview route belongs to, keyed by its Cesium
-  // DataSource. A click gives us an Entity; its collection's owner is the data
-  // source, so this map is what turns a picked trail back into a trip id.
-  const routeTripIdsRef = useRef(new Map());
   // 'pending' until the async terrain resolves; then the provider (3D relief) or
   // null (fall back to the flat ellipsoid if terrain fails, e.g. missing token).
   const [terrainProvider, setTerrainProvider] = useState('pending');
   const [zoomLevelIndex, setZoomLevelIndex] = useState(DEFAULT_ZOOM_LEVEL_INDEX);
-  const [isHoveringRoute, setIsHoveringRoute] = useState(false);
+  const [isHoveringPin, setIsHoveringPin] = useState(false);
+  // One { trip, lng, lat } per hike, read out of the KML files, for the overview.
+  // Stored alongside the trips it was derived from so a result that no longer
+  // matches the current trips is simply ignored, rather than cleared by an effect.
+  const [pinResult, setPinResult] = useState(null);
+  const fetchedTripsRef = useRef(null);
   const { rangeMeters, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
 
   // World terrain loads asynchronously (createWorldTerrain was removed in Cesium
@@ -109,66 +119,43 @@ export default function HikeGlobe({
     });
   }, []);
 
-  // Overview mode loads every route at once. Each KML resolves on its own, so we
-  // wait until the last one lands and then fly to all of their entities together —
-  // Viewer.flyTo unions the bounding spheres for us. Flying on each load instead
-  // would yank the camera once per hike as they trickle in.
-  const handleAllRoutesLoad = useCallback(
-    (tripId, dataSource) => {
-      const viewer = viewerRef.current?.cesiumElement;
-      if (!viewer) return;
-      routeTripIdsRef.current.set(dataSource, tripId);
-      if (routeTripIdsRef.current.size < trips.length) return;
-
-      const allRouteEntities = [...routeTripIdsRef.current.keys()].flatMap(
-        (loadedSource) => loadedSource.entities.values,
-      );
-      if (allRouteEntities.length === 0) return;
-      viewer.flyTo(allRouteEntities, {
-        duration: ALL_ROUTES_DURATION_SECONDS,
-        offset: new HeadingPitchRange(0, CesiumMath.toRadians(ALL_ROUTES_PITCH_DEGREES), 0),
-      });
-    },
-    [trips.length],
-  );
-
-  // The map is only stale once the routes it describes are unmounted, which is
-  // exactly when the mode flips.
+  // Overview mode reads one coordinate out of each trip's KML instead of loading
+  // the files into the scene. Fetched on entering the mode rather than on mount so
+  // a visitor who never opens the overview never pays for it.
   useEffect(() => {
-    routeTripIdsRef.current = new Map();
-  }, [isShowingAllRoutes]);
+    if (!isShowingAllRoutes || trips.length === 0) return undefined;
+    // Leaving and re-entering the overview reuses what was already read; only a
+    // new trips array is worth fetching for.
+    if (fetchedTripsRef.current === trips) return undefined;
+    fetchedTripsRef.current = trips;
+    // No cancellation guard: the result is stored with the trips it came from, so
+    // one that lands after the user has left the overview is just cached for the
+    // next entry rather than something to throw away.
+    fetchTripLocations(trips).then((located) => setPinResult({ trips, pins: located }));
+    return undefined;
+  }, [isShowingAllRoutes, trips]);
 
-  function tripIdForPickedObject(pickedObject) {
-    const owningDataSource = pickedObject?.id?.entityCollection?.owner;
-    if (!owningDataSource) return null;
-    return routeTripIdsRef.current.get(owningDataSource) ?? null;
-  }
+  // Empty unless the overview is open and the pins belong to the current trips,
+  // which is also what makes re-entering the overview re-frame the camera: the
+  // list flips back from empty to the same pins and the fly-to below re-runs.
+  const tripPins = isShowingAllRoutes && pinResult?.trips === trips ? pinResult.pins : NO_PINS;
 
-  function handleOverviewClick(movement) {
+  // Frame every pin at once, after they've all resolved. Flying per pin would yank
+  // the camera once per hike as the KMLs trickle in.
+  useEffect(() => {
+    if (tripPins.length === 0) return;
     const viewer = viewerRef.current?.cesiumElement;
     if (!viewer) return;
-    const picked = viewer.scene.pick(
-      movement.position,
-      ROUTE_PICK_TOLERANCE_PIXELS,
-      ROUTE_PICK_TOLERANCE_PIXELS,
-    );
-    const tripId = tripIdForPickedObject(picked);
-    if (tripId != null) onSelectTrip(tripId);
-  }
-
-  // Without a cursor change the trails give no sign they're clickable. The cursor
-  // rides on the wrapper element rather than the canvas so it stays React state
-  // instead of a manual DOM mutation.
-  function handleOverviewHover(movement) {
-    const viewer = viewerRef.current?.cesiumElement;
-    if (!viewer) return;
-    const picked = viewer.scene.pick(
-      movement.endPosition,
-      ROUTE_PICK_TOLERANCE_PIXELS,
-      ROUTE_PICK_TOLERANCE_PIXELS,
-    );
-    setIsHoveringRoute(tripIdForPickedObject(picked) != null);
-  }
+    const pinPositions = tripPins.map((pin) => Cartesian3.fromDegrees(pin.lng, pin.lat));
+    viewer.camera.flyToBoundingSphere(BoundingSphere.fromPoints(pinPositions), {
+      duration: ALL_ROUTES_DURATION_SECONDS,
+      offset: new HeadingPitchRange(
+        0,
+        CesiumMath.toRadians(ALL_ROUTES_PITCH_DEGREES),
+        pinPositions.length > 1 ? 0 : SINGLE_PIN_RANGE_METERS,
+      ),
+    });
+  }, [tripPins]);
 
   // Recenter the camera on the selected photo — a deliberate response to a photo
   // click. Selecting a trip clears the photo, so this never races the route
@@ -248,7 +235,7 @@ export default function HikeGlobe({
     // previous overview session can't strand the pointer cursor.
     <div
       className={`relative h-full w-full ${
-        isShowingAllRoutes && isHoveringRoute ? 'cursor-pointer' : ''
+        isShowingAllRoutes && isHoveringPin ? 'cursor-pointer' : ''
       }`}
     >
       {/* The zoom level only drives the photo fly-to, so the control is dead
@@ -309,13 +296,39 @@ export default function HikeGlobe({
         requestRenderMode
         maximumRenderTimeChange={1}
       >
+        {/* Overview draws pins only — the routes themselves belong to the single-trip
+            view, which is what clicking a pin opens. */}
         {isShowingAllRoutes
-          ? trips.map((trip) => (
-              <KmlDataSource
+          ? tripPins.map(({ trip, lng, lat }) => (
+              <Entity
                 key={trip.id}
-                data={trip.url}
-                clampToGround
-                onLoad={(dataSource) => handleAllRoutesLoad(trip.id, dataSource)}
+                position={Cartesian3.fromDegrees(lng, lat)}
+                onClick={() => onSelectTrip(trip.id)}
+                onMouseEnter={() => setIsHoveringPin(true)}
+                onMouseLeave={() => setIsHoveringPin(false)}
+                point={{
+                  pixelSize: 16,
+                  color: Color.fromCssColorString('#4fd2ff'),
+                  outlineColor: Color.WHITE,
+                  outlineWidth: 2,
+                  heightReference: HeightReference.CLAMP_TO_GROUND,
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                }}
+                label={{
+                  text: trip.name,
+                  font: '15px "Open Sans", sans-serif',
+                  fillColor: Color.WHITE,
+                  outlineColor: Color.BLACK,
+                  outlineWidth: 3,
+                  // Satellite imagery is busy and every shade of it turns up under
+                  // these pins, so the text carries its own dark outline rather
+                  // than relying on contrast with whatever is behind it.
+                  style: LabelStyle.FILL_AND_OUTLINE,
+                  pixelOffset: PIN_LABEL_OFFSET,
+                  verticalOrigin: VerticalOrigin.BOTTOM,
+                  heightReference: HeightReference.CLAMP_TO_GROUND,
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                }}
               />
             ))
           : selectedTrip && (
@@ -326,12 +339,6 @@ export default function HikeGlobe({
                 onLoad={handleTripRouteLoad}
               />
             )}
-        {isShowingAllRoutes ? (
-          <ScreenSpaceEventHandler>
-            <ScreenSpaceEvent action={handleOverviewClick} type={ScreenSpaceEventType.LEFT_CLICK} />
-            <ScreenSpaceEvent action={handleOverviewHover} type={ScreenSpaceEventType.MOUSE_MOVE} />
-          </ScreenSpaceEventHandler>
-        ) : null}
         {hasPhotoLocation && !isShowingAllRoutes ? (
           <Entity
             position={Cartesian3.fromDegrees(selectedPhoto.lng, selectedPhoto.lat)}
