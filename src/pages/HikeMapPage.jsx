@@ -17,18 +17,14 @@ export default function HikeMapPage() {
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
-  // Selecting a photo always flies the globe + drops the pin. Whether the photo
-  // dock opens is a separate step: immediate on desktop (it doesn't obscure the
-  // globe there), but manual on mobile, where the dock would cover the globe —
-  // so the user taps a "View photo" pill to open it after seeing the location.
+
   const [isPhotoViewOpen, setIsPhotoViewOpen] = useState(false);
+  // Reported by HikeGlobe: true once terrain, the viewer, and the overview pins are
+  // all in. The trips request and the globe race each other and either can win, so
+  // the page is only really loaded when both are done — see `statusMessage` below.
+  const [isGlobeReady, setIsGlobeReady] = useState(false);
   const isDesktop = useIsDesktop();
-  // "No hike selected" IS the overview — one pin per hike, the whole list visible
-  // at once. Keeping them as one variable rather than two makes the two states
-  // mutually exclusive by construction: the overview can never run with a hike
-  // still lit up in the sidebar and its photos loaded underneath it. It is also
-  // the landing state, so the page opens on the top level and the visitor chooses
-  // what to dive into, rather than arriving mid-hike with no orientation.
+
   const isShowingAllRoutes = selectedTripId == null;
 
   useEffect(() => {
@@ -69,43 +65,29 @@ export default function HikeMapPage() {
     preloadImages([tripPhotos[selectedIndex - 1]?.url, tripPhotos[selectedIndex + 1]?.url]);
   }, [tripPhotos, selectedIndex]);
 
-  // Switching hikes clears the expanded photo so the new hike starts with no pin.
-  // Selecting is also what leaves the overview, since the overview is just the
-  // absence of a selection — whether the pick came from the sidebar or a map pin.
   function handleSelectTrip(tripId) {
     setSelectedTripId(tripId);
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
   }
 
-  // Back to the top level. Deselecting drops the pin and dock with it: the
-  // overview is about where the hikes are, not about any one photo.
   function handleShowAllRoutes() {
     setSelectedTripId(null);
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
   }
 
-  // A geotagged thumbnail tap flies the globe; on desktop it also opens the dock
-  // immediately, on mobile it defers to the "View photo" pill so the pin is seen
-  // first. A non-geotagged photo has no location to preview, so its dock opens
-  // straight away on every device.
   function handleSelectPhoto(photoId) {
     const photo = tripPhotos.find((candidate) => candidate.id === photoId);
     setSelectedPhotoId(photoId);
     setIsPhotoViewOpen(isDesktop || !isGeotagged(photo));
   }
 
-  // Desktop matches the prior behaviour (closing clears the pin). Mobile keeps a
-  // geotagged pin/selection so the globe stays put and the "View photo" pill
-  // reappears; a non-geotagged photo has no pin to preserve, so clear it too.
   function handleCloseDock() {
     setIsPhotoViewOpen(false);
     if (isDesktop || !isGeotagged(selectedPhoto)) setSelectedPhotoId(null);
   }
 
-  // Stepping the selected photo drives both the dock image and the globe pin,
-  // so prev/next is equivalent to clicking the neighbouring sidebar thumbnail.
   function stepPhoto(offset) {
     if (selectedIndex < 0) return;
     const nextPhoto = tripPhotos[selectedIndex + offset];
@@ -118,6 +100,8 @@ export default function HikeMapPage() {
       : status === 'error'
         ? 'Could not load trips.'
         : 'No trips yet.';
+
+  const statusMessage = trips.length === 0 ? sidebarMessage : isGlobeReady ? null : 'Loading map…';
 
   const photoMessage = status === 'loading' ? 'Loading photos…' : 'No photos for this hike.';
 
@@ -141,6 +125,7 @@ export default function HikeMapPage() {
             selectedTripId={selectedTripId}
             onSelectTrip={handleSelectTrip}
             emptyMessage={sidebarMessage}
+            statusMessage={statusMessage}
             tripPhotos={tripPhotos}
             selectedPhotoId={selectedPhotoId}
             onSelectPhoto={handleSelectPhoto}
@@ -155,6 +140,7 @@ export default function HikeMapPage() {
               trips={trips}
               isShowingAllRoutes={isShowingAllRoutes}
               onSelectTrip={handleSelectTrip}
+              onReadyChange={setIsGlobeReady}
             />
             {/* Mobile: a photo is located on the globe but its dock is closed —
                 offer to open it without covering the pin until the user chooses.
