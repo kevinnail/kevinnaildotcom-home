@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Banner from '../components/layout/Banner';
 import ScrollToTop from '../components/layout/ScrollToTop';
 import BioSection from '../components/projects/BioSection';
@@ -7,9 +7,20 @@ import Resume from '../components/projects/Resume';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
 import SectionLabel from '../components/projects/SectionLabel';
+import MatrixIntro, { shouldPlayIntro } from '../components/projects/MatrixIntro';
 
 export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState('projects');
+
+  // The intro overlay and the page reveal are tracked separately: the page
+  // starts animating in while the rain is still on screen, and the overlay
+  // unmounts a beat later once it has fully dissolved.
+  const [isIntroPlaying, setIsIntroPlaying] = useState(shouldPlayIntro);
+  const [hasRevealed, setHasRevealed] = useState(() => !shouldPlayIntro());
+
+  // Stable so they don't restart the intro's phase timer on every render.
+  const revealPage = useCallback(() => setHasRevealed(true), []);
+  const unmountIntro = useCallback(() => setIsIntroPlaying(false), []);
 
   const tabs = [
     { key: 'projects', label: 'Projects' },
@@ -38,7 +49,11 @@ export default function ProjectsPage() {
         }}
       />
 
-      <div className="flex flex-col min-h-screen">
+      {isIntroPlaying && <MatrixIntro onReveal={revealPage} onFinish={unmountIntro} />}
+
+      <div
+        className={'flex flex-col min-h-screen ' + (hasRevealed ? 'matrix-reveal' : 'opacity-0')}
+      >
         <Banner />
 
         <div className="bg-black w-full">
