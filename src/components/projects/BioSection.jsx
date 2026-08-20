@@ -1,10 +1,10 @@
 import ContactLinks from './ContactLinks';
-import SectionLabel from './SectionLabel';
+import SectionTitle from './SectionTitle';
 
 export default function BioSection() {
   return (
     <section className="px-5 py-6 sm:px-6">
-      <SectionLabel label="About" />
+      <SectionTitle>About</SectionTitle>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4">
@@ -27,7 +27,7 @@ export default function BioSection() {
           </h2>
 
           <p className="m-0 text-[0.95rem] leading-[1.7] text-white/80">
-            I&apos;m Kevin Nail — a full-stack developer who likes building practical, reliable
+            I&apos;m Kevin Nail, a full-stack developer who likes building practical, reliable
             tools with clean UX. I got into coding back in the early 2000&apos;s while running my
             glass business: first by improving eBay listings, then by building Excel/VBA apps for
             accounting, inventory, and day-to-day workflow.
@@ -36,7 +36,7 @@ export default function BioSection() {
           <p className="m-0 text-[0.95rem] leading-[1.7] text-white/80">
             In 2022 I attended Alchemy Code Lab for web development and worked through a React /
             Node / Express / Postgres stack with multiple group projects. When the program shut down
-            unexpectedly, our cohort kept going independently — meeting up, shipping projects, and
+            unexpectedly, our cohort kept going independently: meeting up, shipping projects, and
             keeping each other accountable.
           </p>
 

@@ -83,16 +83,8 @@ export default function HikeGlobe({
   trips,
   isShowingAllRoutes,
   onSelectTrip,
+  onReadyChange,
 }) {
-  // The Cesium viewer is held in state, not a ref, because effects need to RUN
-  // when it arrives. resium mounts it asynchronously — it awaits construction and
-  // then flips an internal mounted flag, so `ref.current.cesiumElement` is still
-  // null during our effects in the commit that renders <Viewer>. A ref gives no
-  // signal when it later fills in, so any camera work racing the mount is silently
-  // dropped. That is exactly what happens to the overview's opening flight now
-  // that it fires on page load rather than on a button press. As state, the
-  // arrival is a render and every camera effect below re-runs against a real
-  // viewer.
   const [viewer, setViewer] = useState(null);
   // Stable identity: a fresh callback each render would detach and reattach the
   // ref on every render.
@@ -167,6 +159,18 @@ export default function HikeGlobe({
   // which is also what makes re-entering the overview re-frame the camera: the
   // list flips back from empty to the same pins and the fly-to below re-runs.
   const tripPins = isShowingAllRoutes && pinResult?.trips === trips ? pinResult.pins : NO_PINS;
+
+  // fetchTripLocations resolves with whatever it could read, so a trip with an
+  // unreachable KML would otherwise stall the page on "loading" forever.
+  const hasResolvedOverviewPins = pinResult?.trips === trips;
+  const isGlobeReady =
+    terrainProvider !== 'pending' &&
+    viewer != null &&
+    (!isShowingAllRoutes || trips.length === 0 || hasResolvedOverviewPins);
+
+  useEffect(() => {
+    onReadyChange?.(isGlobeReady);
+  }, [isGlobeReady, onReadyChange]);
 
   // Frame every pin at once, after they've all resolved. Flying per pin would yank
   // the camera once per hike as the KMLs trickle in. This is the page's opening

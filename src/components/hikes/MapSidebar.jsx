@@ -55,6 +55,7 @@ export default function MapSidebar({
   selectedTripId,
   onSelectTrip,
   emptyMessage,
+  statusMessage,
   tripPhotos,
   selectedPhotoId,
   onSelectPhoto,
@@ -67,14 +68,15 @@ export default function MapSidebar({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId) ?? null;
 
+  let mobileTitle = statusMessage;
+  let mobileSubtitle = '';
+  if (!statusMessage) {
+    mobileTitle = selectedTrip ? selectedTrip.name : 'All hikes';
+    mobileSubtitle = selectedTrip ? selectedTrip.region : 'Tap a pin to open one';
+  }
+
   return (
     <aside className="flex max-h-[55vh] w-full shrink-0 flex-col overflow-hidden border-t border-neon-blue-50 bg-black/90 text-white md:max-h-none md:w-72 md:border-r md:border-t-0">
-      {/* Desktop header. The "all hikes" control lives here rather than over the
-          globe: it's a selection control like the list below it, and floating it on
-          the map crowded Cesium's own buttons. It is one-way — the overview is the
-          absence of a selection, so there is nothing to "exit" back to and the
-          button simply retires while the overview is up. */}
-
       <div className="hidden shrink-0 border-b border-neon-blue-50 px-4 py-4 md:block">
         <h1 className="font-display text-2xl text-white">Hikes</h1>
         <p className="font-body text-sm text-gray-300">
@@ -93,18 +95,16 @@ export default function MapSidebar({
         )}
       </div>
 
-      {/* Mobile current-hike bar: the title owns the full width so long names stay
-          readable, and the button shares the shorter region line beneath it. With
-          nothing selected the bar names the overview instead, and the button reads
-          as an invitation to pick rather than to swap. */}
       <div className="shrink-0 border-b border-neon-blue-50 px-4 py-2 md:hidden">
-        {/* Sized and lit to out-rank the Cesium credit sitting just above it. */}
-        <span className="line-clamp-2 block font-display text-xl leading-tight text-white [text-shadow:0_0_12px_var(--color-neon-blue-bright)]">
-          {selectedTrip ? selectedTrip.name : 'All hikes'}
+        <span
+          aria-live="polite"
+          className="line-clamp-2 block font-display text-xl leading-tight text-white [text-shadow:0_0_12px_var(--color-neon-blue-bright)]"
+        >
+          {mobileTitle}
         </span>
         <div className="mt-1 flex items-center justify-between gap-3">
           <span className="min-w-0 flex-1 truncate font-body text-[0.7rem] uppercase tracking-[0.14em] text-neon-blue-bright">
-            {selectedTrip ? selectedTrip.region : 'Tap a pin to open one'}
+            {mobileSubtitle}
           </span>
           <button
             type="button"
@@ -137,8 +137,6 @@ export default function MapSidebar({
 
       {selectedTripId != null && (
         <div className="flex max-h-[45vh] shrink-0 flex-col border-t border-neon-blue-50 px-2 py-3">
-          {/* Thumbnails read as photos on sight, so the label only earns its row on
-              desktop; on mobile it stays for screen readers only. */}
           <h2 className="sr-only shrink-0 font-display text-sm uppercase tracking-wide text-gray-300 md:not-sr-only md:px-2 md:pb-2">
             Photos
           </h2>
@@ -149,10 +147,6 @@ export default function MapSidebar({
               {tripPhotos.map((photo) => {
                 const isSelected = photo.id === selectedPhotoId;
                 return (
-                  // content-visibility:auto skips layout/paint for thumbnails
-                  // that aren't near the viewport, so scrolling only decodes the
-                  // handful on screen instead of the whole list. The intrinsic
-                  // size reserves each cell's space so the scrollbar stays honest.
                   <li
                     key={photo.id}
                     className="w-20 shrink-0 md:w-auto md:shrink [content-visibility:auto] [contain-intrinsic-size:auto_88px]"
@@ -209,9 +203,7 @@ export default function MapSidebar({
                 ×
               </button>
             </div>
-            {/* The phone's route back to the overview — there is no sidebar button
-                to carry it, and it only earns its space once a hike is open. Unlike
-                a trip pick it closes the sheet, since the map itself is the answer. */}
+
             {trips.length > 1 && !isShowingAllRoutes && (
               <div className="shrink-0 border-b border-neon-blue-50 p-2">
                 <button
@@ -241,8 +233,7 @@ export default function MapSidebar({
                 ))}
               </ul>
             )}
-            {/* Selecting keeps the sheet open so the lit row confirms the tap; the
-                user dismisses deliberately. */}
+
             <div className="shrink-0 border-t border-neon-blue-50 p-3">
               <button
                 type="button"

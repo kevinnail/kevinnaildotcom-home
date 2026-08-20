@@ -30,18 +30,18 @@ const projects = [
 
   {
     title: 'kevinnail.com',
-    subtitle: 'This Site — 3D Trip Map + Admin Media Pipeline',
+    subtitle: 'This Site: 3D Trip Map + Admin Media Pipeline',
     category: 'Full-Stack · 3D Map',
     stack: ['React', 'Vite', 'Cesium', 'Node/Express', 'Postgres', 'S3 + CloudFront', 'JWT'],
     description: `The site you are on. It began as a static portfolio and grew into a full-stack
      app with an admin-only media pipeline behind it. The astrophotography and backpacking
      galleries are database-driven: an authenticated admin uploads through a dashboard, and
-     image bytes go straight from the browser to S3 over short-lived presigned URLs — they
-     never pass through the API — with Postgres storing only the resulting CloudFront URLs and
+     image bytes go straight from the browser to S3 over short-lived presigned URLs; they
+     never pass through the API. Postgres stores only the resulting CloudFront URLs and
      metadata. Because the server never sees the bytes, EXIF parsing (capture time and GPS) and
      image resizing both run client-side; hike photos are re-encoded in the browser into a
-     2048px WebP display image plus a 400px thumbnail, so the original — and the campsite
-     coordinates baked into it — are never published. The backpacking page is the centerpiece:
+     2048px WebP display image plus a 400px thumbnail, so the original, and the campsite
+     coordinates baked into it, are never published. The backpacking page is the centerpiece:
      KML trail and campsite files upload through the same presigned path and render on a 3D
      Cesium globe, with every geotagged photo dropped as a pin on its trail so a trip can be
      browsed by flying the route and stepping through the images in place. Built with React 18 +
@@ -86,10 +86,18 @@ const projects = [
 
   {
     title: 'Crop Planner',
-    subtitle: 'Crop Planner — iOS App for Growers',
+    subtitle: 'Crop Planner: iOS App for Growers',
     category: 'iOS App',
-    stack: ['React Native', 'SQLite', 'Postgres', 'Offline-first'],
-    description: `Published iOS app (Lifestyle category, on the App Store) for home growers, hobby farmers, and small-scale producers. Plan your entire growing season on a visual timeline grid — each row is a crop, each column is a week, with color-coded lifecycle stages (Seedling, Vegetative, Flowering, Fruiting, Harvest, Pinning, Inoculation, Colonization, Drying, and more). Built features: visualize overlapping crops across a 3-year timeline, drag crops to shift their schedule when plans change, task management built into the timeline, group crops by location, track mushroom grows alongside traditional crops, attach notes and photos. Works fully offline with no login required — built by a grower, for growers.`,
+    stack: [
+      'React Native',
+      'Expo',
+      'SQLite',
+      'Node/Express',
+      'Postgres',
+      'RevenueCat',
+      'Offline-first sync',
+    ],
+    description: `Published iOS app (Lifestyle category, on the App Store) for home growers, hobby farmers, and small-scale producers. Plan a season on a visual timeline grid: each row is a crop, each column a week across a rolling 156-week window, with color-coded lifecycle stages for plants and mushroom grows alike, editable per-stage durations, inline task tracking, a Location → Garden → Section hierarchy, and notes and photos on any week cell. Offline-first on local SQLite, no account required, so the planner works signed-out permanently. v2.0 added an optional annual subscription unlocking cloud backup and multi-device sync: a RevenueCat/StoreKit subscription over a Node/Express + Drizzle + Postgres API, plus a hand-rolled two-way sync across nine tables using client-generated UUIDs, foreign keys carried as parent UUIDs so no device-local ID crosses the wire, last-write-wins, and tombstone deletes. Entitlement is re-checked in the database on every sync, never trusted from the client. 566 tests across both repos. Built by a grower, for growers.`,
     mediaType: 'screenshots',
     mediaSrcs: [
       '/images/crop-planner-1.png',

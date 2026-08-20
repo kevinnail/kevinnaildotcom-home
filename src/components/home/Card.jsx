@@ -28,11 +28,6 @@ export default function Card({ card, index = 0 }) {
       onMouseMove={trackPointer}
       style={{ animationDelay: `${Math.min(index, 5) * 80}ms` }}
       className={
-        /* The panel itself never moves on hover — no lift, no shift, no scale.
-           Its hover cue is light only: the border brightens and the
-           cursor-tracked spotlight lights the nearest edge. The background
-           image zooming slightly is the one intended motion; the card does not
-           follow it. Do not put a transform back on the panel. */
         'spotlight group energize relative h-full w-full overflow-hidden rounded-2xl ' +
         'border border-white/[0.08] bg-neutral-950 transition-colors duration-300 ' +
         'hover:border-white/25 ' +
@@ -52,8 +47,6 @@ export default function Card({ card, index = 0 }) {
         }
       />
 
-      {/* The payoff layer: the original cards wiped their content away to show
-          this. Here it cross-fades in underneath a title that stays put. */}
       {hoverBg && (
         <img
           src={hoverBg}
@@ -87,7 +80,7 @@ export default function Card({ card, index = 0 }) {
         }
       >
         {label && (
-          <span className="font-body text-[0.62rem] font-semibold uppercase tracking-[3px] text-neon-blue-bright">
+          <span className="font-body text-[0.72rem] font-semibold tracking-[0.3px] text-neon-blue-bright">
             {label}
           </span>
         )}
