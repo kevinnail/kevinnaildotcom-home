@@ -32,7 +32,7 @@ export default function ProjectCard({ project, index = 0, featured = false }) {
   const header = (
     <div className="relative z-10 px-5 pt-5">
       {category && (
-        <span className="block text-[0.68rem] font-semibold uppercase tracking-[3px] text-neon-blue-bright/80">
+        <span className="block text-[0.82rem] font-medium tracking-[0.2px] text-neon-blue-bright/80">
           {category}
         </span>
       )}
@@ -105,7 +105,7 @@ export default function ProjectCard({ project, index = 0, featured = false }) {
         <button
           type="button"
           onClick={() => setIsExpanded((previous) => !previous)}
-          className="mt-3 inline-flex items-center gap-1.5 bg-transparent border-0 p-0 text-white/60 font-semibold text-[0.72rem] uppercase tracking-[2px] transition-colors duration-200 hover:text-white rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue"
+          className="mt-3 inline-flex items-center gap-1.5 bg-transparent border-0 p-0 text-white/60 font-semibold text-[0.78rem] tracking-[0.2px] transition-colors duration-200 hover:text-white rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-blue"
           aria-expanded={isExpanded}
         >
           <span>{isExpanded ? 'Less' : 'Read more'}</span>
