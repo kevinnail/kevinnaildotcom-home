@@ -1,4 +1,4 @@
-import SectionLabel from './SectionLabel';
+import SectionTitle from './SectionTitle';
 
 const diagrams = [
   {
@@ -11,23 +11,23 @@ const diagrams = [
     src: '/images/database-slg.png',
     alt: 'Stress Less Glass database diagram',
     caption:
-      'My business site, live with users — homegrown auth, AWS S3 for image uploads, WebSockets for instant messaging / live auctions / notifications, and a third-party mailer for email.',
+      'My business site, live with users: homegrown auth, AWS S3 for image uploads, WebSockets for instant messaging / live auctions / notifications, and a third-party mailer for email.',
   },
   {
     src: '/images/app-flow-1.png',
     alt: 'App flow diagram',
     caption:
-      'Front-end program flow for screens and forms. Originally built in VBA inside MS Excel — where I started teaching myself to program.',
+      'Front-end program flow for screens and forms. Originally built in VBA inside MS Excel, where I started teaching myself to program.',
   },
 ];
 
 export default function DiagramsSection() {
   return (
     <section className="px-5 py-6 sm:px-6">
-      <SectionLabel label="System Diagrams" />
+      <SectionTitle>System Diagrams</SectionTitle>
 
       <p className="mt-4 mb-0 max-w-[70ch] text-[0.92rem] leading-[1.65] text-white/70">
-        Mapping out complex systems is part of my process — great for OCD&apos;ing down to each
+        Mapping out complex systems is part of my process, great for OCD&apos;ing down to each
         piece of data, and a powerful planning and communication tool for the team. These are from a
         few of my current projects. All are Express/Node servers on Postgres; the diagrams depict
         the data relationships and flows described below.
