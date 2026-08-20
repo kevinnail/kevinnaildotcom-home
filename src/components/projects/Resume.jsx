@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import resume from '../../data/resume';
-import SectionLabel from './SectionLabel';
+import SectionTitle from './SectionTitle';
 
-// The phone number stays out of git. Set VITE_RESUME_PHONE in .env.local
-// (gitignored) and it renders here and in the generated PDF, so a copy exported
-// for job applications carries it. Vite inlines env vars into the bundle, so
-// anything set here is public on the deployed site.
 const localPhone = import.meta.env.VITE_RESUME_PHONE;
 
-// Section heading inside the résumé: tracked caps over a hairline rule, which
-// is what the printed version reads as too.
 function ResumeSection({ title, children }) {
   return (
     <section className="mt-7 first:mt-0">
@@ -60,8 +54,6 @@ function ResumeLinks({ links }) {
 export default function Resume() {
   const [downloadState, setDownloadState] = useState('idle');
 
-  // jsPDF is only needed once someone actually wants the file, so it is loaded
-  // on demand rather than shipped in the initial bundle.
   async function handleDownload() {
     setDownloadState('working');
     try {
@@ -77,12 +69,12 @@ export default function Resume() {
   return (
     <div className="px-5 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <SectionLabel label="Résumé" />
+        <SectionTitle>Résumé</SectionTitle>
 
         <div className="flex items-center gap-3">
           {downloadState === 'error' && (
             <span role="alert" className="text-sm text-red-400">
-              Couldn&apos;t build the PDF — try again.
+              Couldn&apos;t build the PDF. Try again.
             </span>
           )}
 
