@@ -1,7 +1,3 @@
-// Résumé content, transcribed from the last Canva-hosted version (5.11).
-// This is the single source of truth for both the on-screen résumé and the
-// downloadable PDF — edit here, not in the component.
-
 const resume = {
   name: 'Kevin Nail',
   title: 'Full Stack Developer',
@@ -17,7 +13,7 @@ const resume = {
     glass art business to developing modern web applications, I'm always trying to learn what's new.
     I'm continuously expanding my expertise by integrating advanced technologies with a deep
     understanding of marketing, branding, and user experience. My focus is on building practical tools
-    that work well for people — including myself. I'm focused on end users, providing them solutions
+    that work well for people, including myself. I'm focused on end users, providing them solutions
     that meet real world needs with an aesthetic touch.`,
 
   projects: [
