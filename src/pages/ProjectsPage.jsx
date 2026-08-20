@@ -6,19 +6,15 @@ import BioSection from '../components/projects/BioSection';
 import Resume from '../components/projects/Resume';
 import ProjectList from '../components/projects/ProjectList';
 import DiagramsSection from '../components/projects/DiagramsSection';
-import SectionLabel from '../components/projects/SectionLabel';
+import SectionTitle from '../components/projects/SectionTitle';
 import MatrixIntro, { shouldPlayIntro } from '../components/projects/MatrixIntro';
 
 export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState('projects');
 
-  // The intro overlay and the page reveal are tracked separately: the page
-  // starts animating in while the rain is still on screen, and the overlay
-  // unmounts a beat later once it has fully dissolved.
   const [isIntroPlaying, setIsIntroPlaying] = useState(shouldPlayIntro);
   const [hasRevealed, setHasRevealed] = useState(() => !shouldPlayIntro());
 
-  // Stable so they don't restart the intro's phase timer on every render.
   const revealPage = useCallback(() => setHasRevealed(true), []);
   const unmountIntro = useCallback(() => setIsIntroPlaying(false), []);
 
@@ -92,7 +88,7 @@ export default function ProjectsPage() {
             {activeTab === 'projects' && (
               <section id="tab-panel-projects" role="tabpanel" aria-labelledby="tab-projects">
                 <div className="px-5 pt-5 pb-4 sm:px-6">
-                  <SectionLabel label="Selected Work" />
+                  <SectionTitle>Selected Work</SectionTitle>
                   <p className="mt-4 mb-0 max-w-[68ch] text-[0.92rem] leading-[1.65] text-white/70">
                     The bulk of my projects below are all a React / Node / Express + Postgres stack
                     with the recent addition of SQLite and React Native for my new iOS app{' '}
