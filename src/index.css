@@ -36,10 +36,6 @@
   }
 }
 
-/* Power-on reveal: as a card enters view it energizes — a brief brightness
-   pop while a blue light traces once around the panel border, then settles.
-   Fires once (useInView adds .energized); stagger via inline animation-delay.
-   Pairs with the title-decode scramble in DecodeText. */
 @property --trace-angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -48,7 +44,7 @@
 
 @keyframes energizeIn {
   0% {
-    opacity: 0;
+    opacity: 0.5;
     filter: brightness(2.6) contrast(1.15);
   }
   45% {
@@ -81,15 +77,13 @@
 }
 
 .energize {
-  opacity: 0;
+  opacity: 0.5;
 }
 
 .energized {
   animation: energizeIn 0.6s ease-out forwards;
 }
 
-/* Border trace: a conic gradient rotated once around a border-only mask, so a
-   bright blue arc travels the panel edge as it powers on. */
 .trace {
   opacity: 0;
   padding: 1.5px;
@@ -126,23 +120,6 @@
   }
 }
 
-/* Matrix rain cold-open on the Projects page (src/components/projects/MatrixIntro.jsx).
-   The glyphs are painted to a canvas by that component; everything here is the
-   staging around them.
-
-   The opening sweep — every column falling from the top row at once, filling
-   the screen with glyphs before it breaks into rain — is driven by the canvas,
-   not by CSS. So is the climax: the rain stops falling and gathers into a glyph
-   mosaic of "hello, world", then the glyphs lock from green to
-   neon-blue-bright left to right. The word is only ever spelled by the rain
-   itself — no type is drawn over the top of it. That canvas clock is what
-   triggers the exit below, and the assembled word is what dissolves.
-
-   The exit is deliberately not one fade. `.is-exiting` drops the black backdrop
-   first and holds the canvas a little longer, so for about half a second the
-   rain is falling over the live projects page before it dissolves — the page
-   comes up through the effect instead of replacing it. The content underneath
-   runs `matrixReveal` on the same beat. */
 .matrix-intro {
   position: fixed;
   inset: 0;
@@ -160,14 +137,12 @@
 
 .matrix-intro-backdrop {
   background: #000;
-  transition: opacity 0.75s ease-in;
+  transition: opacity 0.4s ease;
 }
 
 .matrix-intro-canvas {
   display: block;
-  transition:
-    opacity 0.9s ease-in 1.45s,
-    filter 0.9s ease-in 0.45s;
+  transition: opacity 0.4s ease;
 }
 
 .matrix-intro-skip {
@@ -193,7 +168,6 @@
 
 .matrix-intro.is-exiting .matrix-intro-canvas {
   opacity: 0;
-  filter: blur(6px);
 }
 
 .matrix-intro.is-exiting .matrix-intro-skip {
@@ -201,7 +175,6 @@
   pointer-events: none;
 }
 
-/* Page content coming up behind the dissolving rain. */
 @keyframes matrixReveal {
   from {
     opacity: 0;
@@ -225,9 +198,6 @@
   }
 }
 
-/* Cursor-tracked edge light. --pointer-x/--pointer-y are written per card by
-   the JS pointer handler; the blue is used here as a single light source
-   (a lit border + a faint interior wash) rather than scattered accents. */
 .spotlight::before,
 .spotlight::after {
   content: '';
@@ -272,20 +242,12 @@
   }
 }
 
-/* Makes Ctrl+P on the résumé tab produce a sane page instead of a screenshot of
-   a dark website: site chrome (banner, tabs, blurred backdrop, scroll button)
-   is stripped, the dark panel is inverted to ink on paper, and the type is
-   re-scaled to hold the résumé to one page.
-
-   This is NOT how the Download PDF button works — that generates the file from
-   src/data/resume.js via src/lib/resumePdf.js and never touches these rules. */
 @media print {
   @page {
     size: letter;
     margin: 0.45in;
   }
 
-  /* Keep the résumé, everything inside it, and only its ancestors. */
   body :not(:has(.resume-document)):not(.resume-document):not(.resume-document *) {
     display: none !important;
   }
@@ -313,9 +275,6 @@
     text-shadow: none !important;
   }
 
-  /* The screen layout is airy; on paper it has to hold to a single page, so the
-     type scale and vertical rhythm are re-set here rather than inherited from
-     the Tailwind spacing utilities. */
   .resume-document {
     margin: 0 !important;
     padding: 0 !important;
@@ -324,10 +283,6 @@
     line-height: 1.22;
   }
 
-  /* Tailwind sets font-size and line-height on each element, so the container
-     values above are never inherited — the text elements have to be handed
-     back to them directly. Headings are excluded; they are sized on their own
-     below. */
   .resume-document p,
   .resume-document ul,
   .resume-document li,
@@ -338,8 +293,6 @@
     line-height: inherit !important;
   }
 
-  /* Measure caps that keep the screen column readable would only force extra
-     line wraps on paper, where the page already sets the measure. */
   .resume-document p,
   .resume-document li {
     max-width: none !important;
@@ -423,7 +376,6 @@
     color: #000 !important;
   }
 
-  /* Don't split a heading off its content, or a role off its bullets. */
   .resume-document h1,
   .resume-document h2,
   .resume-document h3 {
