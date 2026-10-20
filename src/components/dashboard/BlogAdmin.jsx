@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchAdminBlogPosts, createBlogPost, SessionExpiredError } from '../../api/mediaApi';
 import './BlogAdmin.css';
 
 const BlogAdmin = ({ token, onSessionExpired }) => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [title, setTitle] = useState('');
@@ -46,18 +48,15 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
     setIsCreating(true);
     try {
       const post = await createBlogPost(token, { title, category });
-      setPosts((current) => [post, ...current]);
-      setTitle('');
-      setCategory('');
+      navigate(`/dashboard/blog/${post.id}`);
     } catch (submitError) {
+      setIsCreating(false);
       if (submitError instanceof SessionExpiredError) {
         onSessionExpired();
         return;
       }
       console.error('Creating blog draft failed', submitError);
       setCreateError('Could not create the draft. Please try again.');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -114,7 +113,11 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
             <tbody>
               {posts.map((post) => (
                 <tr key={post.id}>
-                  <td>{post.title}</td>
+                  <td>
+                    <Link to={`/dashboard/blog/${post.id}`} className="blog-posts-title-link">
+                      {post.title}
+                    </Link>
+                  </td>
                   <td>{post.category}</td>
                   <td>{post.publishedAt ? 'Published' : 'Draft'}</td>
                 </tr>
