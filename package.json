@@ -22,7 +22,8 @@
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.13.0",
     "resium": "^1.24.0",
-    "vite-plugin-cesium": "^1.2.23"
+    "vite-plugin-cesium": "^1.2.23",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
