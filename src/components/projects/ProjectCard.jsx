@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useInView from '../../hooks/useInView';
-import trackPointer from '../../lib/trackPointer';
+import trackPointer from '../../utils/trackPointer';
 import DecodeText from './DecodeText';
 
 export default function ProjectCard({ project, index = 0, featured = false }) {
