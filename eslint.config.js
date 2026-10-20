@@ -57,6 +57,15 @@ export default [
     },
   },
   {
+    // One-off data build scripts, run with Node rather than in the browser.
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     // server/ is a separate package with its own Node-globals ESLint config.
     ignores: ['dist/', 'server/'],
   },
