@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PhotoList from './PhotoList';
+import './HikeTripList.css';
 
 // Group hike photos by their `tripId`. Unassigned photos (no tripId) are left out
 // — they live in their own section on the dashboard.
@@ -19,11 +20,26 @@ function groupPhotosByTrip(photos) {
 // (reusing PhotoList) so assigned photos are managed in-place, grouped with their
 // trail — no separate route. Deleting a trip removes its S3 object + manifest
 // entry (the photos keep their now-dangling tripId, harmless per slice 6a).
-export default function HikeTripList({ trips, photos, onEdit, onDelete, onDeleteTrip }) {
+export default function HikeTripList({
+  trips,
+  photos,
+  onEdit,
+  onDelete,
+  onDeleteTrip,
+  onMeasureTrip,
+}) {
   const [openTripId, setOpenTripId] = useState(null);
   // The trip awaiting delete confirmation, and whether its delete is in flight.
   const [confirmTrip, setConfirmTrip] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  // The trip whose route is being measured, one at a time.
+  const [measuringTripId, setMeasuringTripId] = useState(null);
+
+  const handleMeasure = async (trip) => {
+    setMeasuringTripId(trip.id);
+    await onMeasureTrip(trip);
+    setMeasuringTripId(null);
+  };
 
   const photosByTripId = groupPhotosByTrip(photos);
   const openTrip = openTripId != null ? trips.find((trip) => trip.id === openTripId) : null;
@@ -75,6 +91,16 @@ export default function HikeTripList({ trips, photos, onEdit, onDelete, onDelete
                 </span>
               </div>
               <div className="flex shrink-0 gap-2">
+                {trip.stats === null && (
+                  <button
+                    type="button"
+                    onClick={() => handleMeasure(trip)}
+                    disabled={measuringTripId !== null}
+                    className="trip-measure-button"
+                  >
+                    {measuringTripId === trip.id ? 'Measuring…' : 'Compute route stats'}
+                  </button>
+                )}
                 <button
                   onClick={() => setOpenTripId(trip.id)}
                   aria-label={`View photos for ${trip.name}`}

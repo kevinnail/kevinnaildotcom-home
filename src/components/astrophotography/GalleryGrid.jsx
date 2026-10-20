@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchAstroPhotos } from '../../lib/mediaApi';
+import { fetchAstroPhotos } from '../../api/mediaApi';
 import GalleryItem from './GalleryItem';
 import LightboxModal from './LightboxModal';
 

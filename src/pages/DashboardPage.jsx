@@ -16,9 +16,12 @@ import {
   reorderPhotos,
   deletePhoto,
   deleteKml,
+  saveTripStats,
+  fetchKmlText,
   SessionExpiredError,
-} from '../lib/mediaApi';
-import { useAdminToken, signIn, signOut } from '../lib/adminSession';
+} from '../api/mediaApi';
+import { measureKmlRoute } from '../utils/routeElevations';
+import { useAdminToken, signIn, signOut } from '../hooks/adminSession';
 
 const GALLERY_TABS = [
   { id: 'astro', label: 'Astronomy', fetchPhotos: fetchAstroPhotos },
@@ -125,6 +128,34 @@ export default function DashboardPage() {
     }
   };
 
+  //^ =======================================================
+  //^ TODO: worth removing this after all trips have been measured/ stored-
+  //^ all trips automatically measure on upload now
+
+  // Measures a trip uploaded before route stats existed, from its stored KML,
+  // and saves the result.
+  const handleTripMeasure = async (trip) => {
+    try {
+      const stats = await measureKmlRoute(await fetchKmlText(trip.url));
+      if (!stats) {
+        setError(`"${trip.name}" has no route line to measure.`);
+        return;
+      }
+      const updatedTrip = await saveTripStats(token, trip.id, stats);
+      setTrips((current) =>
+        current.map((existing) => (existing.id === updatedTrip.id ? updatedTrip : existing)),
+      );
+    } catch (measureError) {
+      if (measureError instanceof SessionExpiredError) {
+        handleSessionExpired();
+        return;
+      }
+      console.error(`Measuring "${trip.name}" failed`, measureError);
+      setError(`Could not measure "${trip.name}".`);
+    }
+  };
+  //^ =======================================================
+
   return (
     <>
       <Helmet>
@@ -204,6 +235,7 @@ export default function DashboardPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onDeleteTrip={handleTripDelete}
+                    onMeasureTrip={handleTripMeasure}
                   />
                   <section className="mt-8">
                     <h2 className="font-display text-xl text-neon-blue-bright">

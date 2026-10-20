@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import resume from '../data/resume';
-import { buildResumePdf } from './resumePdf';
+import { buildResumePdf } from '../utils/resumePdf';
 
 // jsPDF writes uncompressed content streams by default, so the drawn strings
 // appear verbatim in the output. That makes it possible to assert on what

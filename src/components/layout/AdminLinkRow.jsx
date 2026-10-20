@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useAdminToken } from '../../lib/adminSession';
+import { useAdminToken } from '../../hooks/adminSession';
 
 // Admin-only shortcut row. Sits directly under the banner so it can't be clipped
 // by a page's scroll containers or covered by the map's own controls, and renders

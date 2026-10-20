@@ -1,0 +1,20 @@
+/* Shown on a trip uploaded before route stats existed, until it is measured. */
+.trip-measure-button {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--color-neon-blue-50);
+  border-radius: 4px;
+  background-color: rgb(0 0 0 / 0.7);
+  color: var(--color-neon-blue-bright);
+  font-size: 1rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.trip-measure-button:hover {
+  background-color: #000000;
+}
+
+.trip-measure-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

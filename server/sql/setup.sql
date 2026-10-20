@@ -19,7 +19,16 @@ CREATE TABLE trips (
   name        TEXT NOT NULL DEFAULT '',
   region      TEXT NOT NULL DEFAULT '',
   url         TEXT NOT NULL,            -- the KML object's public URL
-  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Route stats, measured by the browser from the KML at upload. All null when
+  -- the KML has no route line, or the trip predates stats and is unmeasured.
+  distance_miles        DOUBLE PRECISION,
+  elevation_min_feet    DOUBLE PRECISION,
+  elevation_max_feet    DOUBLE PRECISION,
+  elevation_gain_feet   DOUBLE PRECISION,
+  elevation_loss_feet   DOUBLE PRECISION,
+  -- One profile per route line: [{ "name": ..., "points": [[distanceMiles, elevationFeet], ...] }, ...]
+  elevation_profiles    JSONB
 );
 
 CREATE TABLE photos (

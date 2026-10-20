@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Viewer, KmlDataSource, Entity } from 'resium';
 import {
-  Ion,
   createWorldTerrainAsync,
   Cartesian2,
   Cartesian3,
@@ -15,13 +14,13 @@ import {
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
-import { isGeotagged } from '../../lib/hikePhotos';
-import { fetchTripLocations } from '../../lib/kmlLocation';
-import useIsDesktop from '../../lib/useIsDesktop';
-
-// Non-secret, client-side token (Ion free tier). Empty token still renders a
-// globe, but base imagery + world terrain won't load until it's set in .env.
-Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN ?? '';
+import '../../utils/cesiumIon';
+import { isGeotagged } from '../../utils/hikePhotos';
+import { isInGeologyMapArea } from '../../utils/geologyAge';
+import { fetchTripLocations } from '../../utils/kmlLocation';
+import useIsDesktop from '../../hooks/useIsDesktop';
+import GeologyLayer from './GeologyLayer';
+import HikeInfoPanel from './HikeInfoPanel';
 
 // Fly-to framing used for every photo, so each pin gets the same, predictable
 // view instead of inheriting whatever zoom/tilt the user left. The user picks a
@@ -73,6 +72,29 @@ const PIN_LABEL_FONT = {
 // effect that frames them.
 const NO_PINS = [];
 
+// Whether any point of a loaded KML route falls inside the area the USGS geology
+// map covers. Checks the route's own lines and placemarks rather than the
+// overview pin, which is only the first coordinate in the file.
+function routeTouchesGeologyMapArea(dataSource) {
+  for (const entity of dataSource.entities.values) {
+    const positions = [
+      ...(entity.polyline?.positions?.getValue() ?? []),
+      ...(entity.position ? [entity.position.getValue()] : []),
+    ];
+    for (const position of positions) {
+      if (!position) continue;
+      const cartographic = Cartographic.fromCartesian(position);
+      if (!cartographic) continue;
+      const point = {
+        lng: CesiumMath.toDegrees(cartographic.longitude),
+        lat: CesiumMath.toDegrees(cartographic.latitude),
+      };
+      if (isInGeologyMapArea(point)) return true;
+    }
+  }
+  return false;
+}
+
 function formatRange(rangeMeters) {
   return rangeMeters >= 1000 ? `${(rangeMeters / 1000).toFixed(1)} km` : `${rangeMeters} m`;
 }
@@ -82,6 +104,7 @@ export default function HikeGlobe({
   selectedPhoto,
   trips,
   isShowingAllRoutes,
+  isPhotoViewOpen,
   onSelectTrip,
   onReadyChange,
 }) {
@@ -96,6 +119,18 @@ export default function HikeGlobe({
   const [terrainProvider, setTerrainProvider] = useState('pending');
   const [zoomLevelIndex, setZoomLevelIndex] = useState(DEFAULT_ZOOM_LEVEL_INDEX);
   const [isHoveringPin, setIsHoveringPin] = useState(false);
+  // Geology layers: null until first switched on, then true or false. See
+  // GeologyLayer for why null is distinct from false.
+  const [mapUnitsVisibility, setMapUnitsVisibility] = useState(null);
+  const [morainesVisibility, setMorainesVisibility] = useState(null);
+  const [geologyColorMode, setGeologyColorMode] = useState('plate');
+  const [hasGeologyLoadError, setHasGeologyLoadError] = useState(false);
+  const handleGeologyLoadError = useCallback(() => setHasGeologyLoadError(true), []);
+  // The id of the open trip once its route has loaded and been found to cross
+  // the geology map, which only covers the Three Sisters. From the whole-globe
+  // overview, or on a hike elsewhere, the layer would be too small or too far
+  // away to see, so the panel is only offered while such a hike is open.
+  const [geologyMapTripId, setGeologyMapTripId] = useState(null);
   // One { trip, lng, lat } per hike, read out of the KML files, for the overview.
   // Stored alongside the trips it was derived from so a result that no longer
   // matches the current trips is simply ignored, rather than cleared by an effect.
@@ -129,7 +164,8 @@ export default function HikeGlobe({
   // selectedTrip effect because the entities don't exist — and so have no bounding
   // sphere to fly to — until the KML resolves.
   const handleTripRouteLoad = useCallback(
-    (dataSource) => {
+    (dataSource, tripId) => {
+      setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
       if (!viewer) return;
       viewer.flyTo(dataSource, {
         duration: TRIP_OVERVIEW_DURATION_SECONDS,
@@ -254,6 +290,14 @@ export default function HikeGlobe({
     );
   }
 
+  const isGeologyAvailable =
+    !isShowingAllRoutes && selectedTrip != null && geologyMapTripId === selectedTrip.id;
+  // Layers already switched on hide while geology is unavailable and come back as
+  // they were on the next hike that crosses the map. A layer never switched on
+  // stays null, so it still isn't downloaded.
+  const visibleWhenAvailable = (visibility) =>
+    isGeologyAvailable || visibility == null ? visibility : false;
+
   // Lower index = wider range, so "+" (zoom in) steps the index up.
   const canZoomIn = zoomLevelIndex < ZOOM_LEVELS.length - 1;
   const canZoomOut = zoomLevelIndex > 0;
@@ -296,6 +340,27 @@ export default function HikeGlobe({
           </button>
         </div>
       ) : null}
+      {/* On a phone the open photo dock fills most of the globe, and the panel
+          would sit on top of it and its close button, so it steps aside until
+          the dock closes. Any geology layers stay on the map. */}
+      {!isShowingAllRoutes && selectedTrip && (isDesktop || !isPhotoViewOpen) && (
+        <HikeInfoPanel
+          trip={selectedTrip}
+          geology={
+            isGeologyAvailable
+              ? {
+                  isMapUnitsOn: mapUnitsVisibility === true,
+                  isMorainesOn: morainesVisibility === true,
+                  colorMode: geologyColorMode,
+                  onToggleMapUnits: () => setMapUnitsVisibility((visibility) => !visibility),
+                  onToggleMoraines: () => setMorainesVisibility((visibility) => !visibility),
+                  onChangeColorMode: setGeologyColorMode,
+                  hasLoadError: hasGeologyLoadError,
+                }
+              : null
+          }
+        />
+      )}
       <Viewer
         ref={handleViewerRef}
         style={{ width: '100%', height: '100%' }}
@@ -327,6 +392,12 @@ export default function HikeGlobe({
         requestRenderMode
         maximumRenderTimeChange={1}
       >
+        <GeologyLayer
+          mapUnitsVisibility={visibleWhenAvailable(mapUnitsVisibility)}
+          morainesVisibility={visibleWhenAvailable(morainesVisibility)}
+          colorMode={geologyColorMode}
+          onLoadError={handleGeologyLoadError}
+        />
         {/* Overview draws pins only — the routes themselves belong to the single-trip
             view, which is what clicking a pin opens. */}
         {isShowingAllRoutes
@@ -367,7 +438,7 @@ export default function HikeGlobe({
                 key={selectedTrip.id}
                 data={selectedTrip.url}
                 clampToGround
-                onLoad={handleTripRouteLoad}
+                onLoad={(dataSource) => handleTripRouteLoad(dataSource, selectedTrip.id)}
               />
             )}
         {hasPhotoLocation && !isShowingAllRoutes ? (

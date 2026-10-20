@@ -6,10 +6,10 @@ import HikeGlobe from '../components/hikes/HikeGlobe';
 import HikePhotoDock from '../components/hikes/HikePhotoDock';
 import HikeCoachMarks from '../components/hikes/HikeCoachMarks';
 import AdminLinkRow from '../components/layout/AdminLinkRow';
-import { fetchTrips, fetchHikePhotos } from '../lib/mediaApi';
-import { selectTripPhotos, isGeotagged } from '../lib/hikePhotos';
-import preloadImages from '../lib/preloadImages';
-import useIsDesktop from '../lib/useIsDesktop';
+import { fetchTrips, fetchHikePhotos } from '../api/mediaApi';
+import { selectTripPhotos, isGeotagged } from '../utils/hikePhotos';
+import preloadImages from '../utils/preloadImages';
+import useIsDesktop from '../hooks/useIsDesktop';
 
 export default function HikeMapPage() {
   const [trips, setTrips] = useState([]);
@@ -139,6 +139,7 @@ export default function HikeMapPage() {
               selectedPhoto={selectedPhoto}
               trips={trips}
               isShowingAllRoutes={isShowingAllRoutes}
+              isPhotoViewOpen={isPhotoViewOpen}
               onSelectTrip={handleSelectTrip}
               onReadyChange={setIsGlobeReady}
             />

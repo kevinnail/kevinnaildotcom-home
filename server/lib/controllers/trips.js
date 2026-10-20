@@ -5,6 +5,7 @@ import authenticate from '../middleware/authenticate.js';
 import requireResourceId from '../utils/resourceId.js';
 import { badRequest, notFound } from '../utils/httpError.js';
 import { mediaUrl, deleteObjectsByUrl } from '../utils/s3.js';
+import { requireRouteStats } from '../utils/routeStats.js';
 
 export default Router()
   .get('/', async (req, res, next) => {
@@ -15,28 +16,43 @@ export default Router()
       next(error);
     }
   })
-  // The KML bytes went straight to S3 via presign (?gallery=kml); this only
-  // records the resulting object as a trip the map can list.
+
   .post('/', authenticate, async (req, res, next) => {
     try {
-      const { objectKey, name, region } = req.body ?? {};
+      const { objectKey, name, region, stats } = req.body ?? {};
 
       if (typeof objectKey !== 'string' || objectKey.length === 0) {
         throw badRequest('objectKey is required');
       }
-      // A trip with no name is unpickable in the map sidebar, so it is required
-      // here even though the column has a default.
+
       if (typeof name !== 'string' || name.trim().length === 0) {
         throw badRequest('name is required');
       }
+      if (stats === undefined)
+        throw badRequest('stats is required, or null for a KML with no route');
 
       const trip = await Trip.insert({
         name: name.trim(),
         region: typeof region === 'string' ? region.trim() : '',
         url: mediaUrl(objectKey),
+        stats: stats === null ? null : requireRouteStats(stats),
       });
 
       res.status(201).json(trip);
+    } catch (error) {
+      next(error);
+    }
+  })
+
+  .put('/:id/stats', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+      const stats = requireRouteStats(req.body?.stats);
+
+      const trip = await Trip.updateStats(id, stats);
+      if (!trip) throw notFound();
+
+      res.json(trip);
     } catch (error) {
       next(error);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { requestUpload, uploadToS3, saveKml, SessionExpiredError } from '../../lib/mediaApi';
+import { requestUpload, uploadToS3, saveKml, SessionExpiredError } from '../../api/mediaApi';
+import { measureKmlRoute } from '../../utils/routeElevations';
 
 const KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml';
 const initialFields = { name: '', region: '' };
@@ -18,7 +19,7 @@ const submitButtonClass =
 export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
   const [file, setFile] = useState(null);
   const [fields, setFields] = useState(initialFields);
-  const [status, setStatus] = useState('idle'); // idle | uploading | error
+  const [status, setStatus] = useState('idle'); // idle | measuring | uploading | error
   const [error, setError] = useState('');
 
   const updateField = (name) => (event) =>
@@ -37,9 +38,17 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
       setStatus('error');
       return;
     }
-    setStatus('uploading');
     setError('');
+    // Which step a failure happened in, for the message. A local rather than the
+    // status state, which this closure would read stale.
+    let step = 'measuring';
     try {
+      // Measured before anything is uploaded, so a terrain failure stops the
+      // upload rather than leaving a trip without its distance and elevation.
+      setStatus('measuring');
+      const stats = await measureKmlRoute(await file.text());
+      step = 'uploading';
+      setStatus('uploading');
       // Browsers often report an empty MIME type for .kml. Re-wrap the file with a
       // correct type so the presigned PUT and the stored object both carry it.
       const typedFile = new File([file], file.name, { type: KML_CONTENT_TYPE });
@@ -49,6 +58,7 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
         objectKey,
         name: fields.name.trim(),
         region: fields.region.trim(),
+        stats,
       });
       onUploaded(entry);
       setFile(null);
@@ -60,12 +70,17 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
         onSessionExpired();
         return;
       }
-      setError('Upload failed. Please try again.');
+      console.error('Trail upload failed', uploadError);
+      setError(
+        step === 'measuring'
+          ? 'Could not measure the route. Please try again.'
+          : 'Upload failed. Please try again.',
+      );
       setStatus('error');
     }
   };
 
-  const uploading = status === 'uploading';
+  const uploading = status === 'measuring' || status === 'uploading';
 
   return (
     <form
@@ -95,7 +110,7 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
       />
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <button type="submit" disabled={uploading || !file} className={submitButtonClass}>
-        {uploading ? 'Uploading…' : 'Upload trail'}
+        {status === 'measuring' ? 'Measuring route…' : uploading ? 'Uploading…' : 'Upload trail'}
       </button>
     </form>
   );
