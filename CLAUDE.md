@@ -86,7 +86,7 @@ This is a canvas re-encode, which is the old "Save for Web" pipeline: EXIF, ICC,
 
 Mounted under `/api/v1` in `server/lib/app.js`:
 
-- `health`, `users` (login), `presign`, `photos`, `trips`
+- `blog`, `health`, `users` (login), `presign`, `photos`, `trips`. `blog` keeps its admin reads under `/admin`, declared above `/:slug`, so the slug `admin` is reserved.
 
 Standard controller → model → `pg` pool layering (`server/lib/{controllers,models,utils}`). Gallery-scoped routes take `?gallery=`, validated against an allowlist by `server/lib/utils/gallery.js` — an unknown gallery is a 400, never a silent default. `authenticate` middleware turns every token failure into a 401, which the client converts into `SessionExpiredError` and forces a re-login. Errors propagate to `middleware/error.js`; nothing is swallowed.
 
@@ -97,6 +97,7 @@ Standard controller → model → `pg` pool layering (`server/lib/{controllers,m
 - `users_admin` — single admin, scrypt `password_hash`.
 - `trips`: a KML trail/campsite file: `name`, `region`, `url`, plus route stats (`distance_miles`, `elevation_min_feet`, `elevation_max_feet`, `elevation_gain_feet`, `elevation_loss_feet`, and `elevation_profiles` JSONB). The six stats columns are all set or all null; null means the KML has no route line, or the trip predates stats and hasn't been measured. The API returns them as one `stats` object, or `stats: null`.
 - `photos` — `gallery` ('astro' | 'hikes'), `url`, `thumb_url` (hikes only), `alt`, `caption`, `lat`/`lng`, `taken_at` (EXIF capture time), `trip_id` (FK → `trips`, `ON DELETE CASCADE`), `sort_order`.
+- `blog_posts`: `slug` (unique, set from the title at creation and never changed), `title`, `category` (free text; a new one that differs from an existing one only in case reuses the existing spelling), `summary`, `cover_url`, `blocks` (JSONB), `published_at` (null means draft).
 
 Ordering differs per gallery and is done server-side: **astro** uses hand-curated `sort_order`; **hikes** sorts chronologically by `taken_at`, falling back to `uploaded_at`. Trips sort oldest first by their earliest photo on that same date, and a trip with no photos yet goes last. Deleting a trip cascades to its photos in the database and also purges their S3 objects.
 
@@ -120,7 +121,7 @@ Under `src/components/`:
 - `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, SectionLabel, ResumeEmbed, DiagramsSection, DecodeText
 - `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (astro only; there is deliberately no flat grid for the hikes — they are browsed on the map)
 - `hikes/`: HikeGlobe (Cesium/Resium), MapSidebar, HikePhotoDock, HikeCoachMarks, HikeInfoPanel, ElevationProfile, GeologyLayer, GeologySection
-- `dashboard/` — LoginForm, UploadForm, BulkUploadForm, KmlUploadForm, PhotoList, HikeTripList
+- `dashboard/` — LoginForm, UploadForm, BulkUploadForm, KmlUploadForm, PhotoList, HikeTripList, BlogAdmin
 
 Shared client logic, split by role (there is deliberately no frontend `lib/`, so nothing shares a folder name with `server/lib/`):
 

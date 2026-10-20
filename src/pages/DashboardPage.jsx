@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
@@ -8,6 +8,7 @@ import BulkUploadForm from '../components/dashboard/BulkUploadForm';
 import PhotoList from '../components/dashboard/PhotoList';
 import KmlUploadForm from '../components/dashboard/KmlUploadForm';
 import HikeTripList from '../components/dashboard/HikeTripList';
+import BlogAdmin from '../components/dashboard/BlogAdmin';
 import {
   fetchAstroPhotos,
   fetchHikePhotos,
@@ -26,6 +27,7 @@ import { useAdminToken, signIn, signOut } from '../hooks/adminSession';
 const GALLERY_TABS = [
   { id: 'astro', label: 'Astronomy', fetchPhotos: fetchAstroPhotos },
   { id: 'hikes', label: 'Backpacking', fetchPhotos: fetchHikePhotos },
+  { id: 'blog', label: 'Blog' },
 ];
 
 export default function DashboardPage() {
@@ -36,9 +38,9 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) return undefined;
-    let active = true;
     const loadPhotos = GALLERY_TABS.find((tab) => tab.id === gallery).fetchPhotos;
+    if (!token || !loadPhotos) return undefined;
+    let active = true;
     (async () => {
       // Clear any previous gallery's photos before the new set arrives.
       setPhotos([]);
@@ -71,10 +73,11 @@ export default function DashboardPage() {
     };
   }, [token, gallery]);
 
-  const handleSessionExpired = () => {
+  // Stable identity, because BlogAdmin's load effect depends on it.
+  const handleSessionExpired = useCallback(() => {
     setError('Session expired — please log in again.');
     signOut();
-  };
+  }, []);
 
   const handleEdit = async (id, fields) => {
     try {
@@ -214,7 +217,9 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-              {gallery === 'hikes' ? (
+              {gallery === 'blog' ? (
+                <BlogAdmin token={token} onSessionExpired={handleSessionExpired} />
+              ) : gallery === 'hikes' ? (
                 <>
                   <KmlUploadForm
                     token={token}

@@ -214,3 +214,20 @@ export function fetchHikePhotos() {
 export function fetchTrips() {
   return publicGet('/trips');
 }
+
+// --- Blog ---
+
+// Every post, drafts included, for the dashboard.
+export async function fetchAdminBlogPosts(token) {
+  const response = await authorizedFetch('/blog/admin', token);
+  return response.json();
+}
+
+export async function createBlogPost(token, { title, category }) {
+  const response = await authorizedFetch('/blog', token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title, category }),
+  });
+  return response.json(); // the created draft
+}
