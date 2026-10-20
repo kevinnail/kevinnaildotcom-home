@@ -110,6 +110,7 @@ Routes in `src/App.jsx`, all wrapped in `PageWrapper` (scroll-to-top on navigati
 - `/astrophotography` → AstrophotographyPage
 - `/backpacking/:tripId?` → **HikeMapPage** (the 3D Cesium globe). The selected hike is the URL's trip id, so a hike can be linked directly; no id is the all-hikes overview, and an id that matches no trip shows "Hike not found." over the overview. One route with an optional segment, so switching hikes never remounts the globe.
 - `/dashboard` → DashboardPage (admin)
+- `/dashboard/blog/:id` → BlogEditorPage (admin): one blog post's editor. Its state lives in the Zustand store `src/stores/blogEditorStore.js`.
 - `/*` → NotFoundPage
 
 ### Component Organization
@@ -127,6 +128,7 @@ Shared client logic, split by role (there is deliberately no frontend `lib/`, so
 
 - `src/api/`: `mediaApi` (every call to the Express API and every S3 upload).
 - `src/hooks/`: `useIsDesktop`, `adminSession` (`useAdminToken` plus `signIn`/`signOut`).
+- `src/stores/`: `blogEditorStore` (Zustand; the blog editor's title, category, summary, and blocks, with every block change as an action).
 - `src/utils/`: `resizeImage`, `exif`, `hikePhotos`, `kmlLocation`, `preloadImages`, `concurrency` (bounded parallelism for bulk upload), `trackPointer`, `resumePdf`, `cesiumIon` (sets the Ion token; imported for its side effect), `routeStats`, `routeElevations`, `routeFormat`, `geologyAge`, `geologyAgeWindows`.
 
 ### Map
