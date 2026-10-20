@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { fitWithinMaxEdge, DISPLAY_MAX_EDGE, THUMBNAIL_MAX_EDGE } from './resizeImage';
+import { fitWithinMaxEdge, DISPLAY_MAX_EDGE, THUMBNAIL_MAX_EDGE } from '../utils/resizeImage';
 
 describe('fitWithinMaxEdge', () => {
   test('scales a landscape image so its width (longest edge) hits maxEdge', () => {
