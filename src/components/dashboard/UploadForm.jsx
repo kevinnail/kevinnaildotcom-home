@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../lib/mediaApi';
+import { requestUpload, uploadToS3, savePhoto, SessionExpiredError } from '../../api/mediaApi';
 
 const initialFields = { alt: '', caption: '' };
 
