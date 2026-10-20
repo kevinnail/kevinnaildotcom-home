@@ -27,9 +27,9 @@ export default function BioSection() {
           </h2>
 
           <p className="m-0 text-[0.95rem] leading-[1.7] text-white/80">
-            I&apos;m Kevin Nail, a full-stack developer who likes building practical, reliable
-            tools with clean UX. I got into coding back in the early 2000&apos;s while running my
-            glass business: first by improving eBay listings, then by building Excel/VBA apps for
+            I&apos;m Kevin Nail, a full-stack developer who likes building practical, reliable tools
+            with clean UX. I got into coding back in the early 2000&apos;s while running my glass
+            business: first by improving eBay listings, then by building Excel/VBA apps for
             accounting, inventory, and day-to-day workflow.
           </p>
 
