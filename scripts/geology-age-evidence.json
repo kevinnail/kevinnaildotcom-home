@@ -1,0 +1,2666 @@
+{
+  "statedAges": [
+    {
+      "unit": "acc",
+      "method": "radiocarbon",
+      "ageKa": 1.5,
+      "quote": "14C age: about 1,500 calibrated yr B.P."
+    },
+    {
+      "unit": "rdc",
+      "method": "radiocarbon",
+      "ageKa": 2,
+      "quote": "14C age: about 2,000 yr B.P."
+    },
+    {
+      "unit": "rrm",
+      "method": "radiocarbon",
+      "ageKa": 2.15,
+      "errorKa": 0.15,
+      "quote": "14C age: 2,150±150 yr B.P. (preferred age of Scott, 1987)."
+    },
+    {
+      "unit": "myc",
+      "method": "authorsEstimate",
+      "ageKa": 2.5,
+      "quote": "Undated, but age is bracketed by enclosing units to roughly 2.5 ka."
+    },
+    {
+      "unit": "rpc",
+      "method": "argon",
+      "ageKa": 36.9,
+      "errorKa": 2.2,
+      "quote": "40Ar/39Ar age: 36.9±2.2 ka"
+    },
+    {
+      "unit": "dtl",
+      "method": "potassiumArgon",
+      "ageKa": 460,
+      "errorKa": 30,
+      "quote": "Whole-rock K-Ar age of 460±30 ka was given by Hill (1991)."
+    },
+    {
+      "unit": "mms",
+      "method": "authorsEstimate",
+      "ageKa": 20.3,
+      "errorKa": 2.5,
+      "quote": "Ages of so many enclosing units bracket eruptive interval to about 20 ka; statistical propagation of ages of bracketing units yields 20.3±2.5 ka."
+    },
+    {
+      "unit": "spt",
+      "method": "authorsEstimate",
+      "minKa": 175,
+      "maxKa": 195,
+      "quote": "Shevlin Park Tuff is now bracketed in age between 225±10 ka and 175±3 ka, most likely between 195±5 ka and 175±3 ka."
+    },
+    {
+      "unit": "mbt",
+      "method": "authorsEstimate",
+      "minKa": 150,
+      "maxKa": 300,
+      "quote": "edifice was built between roughly 300 ka and 150 ka."
+    },
+    {
+      "unit": "mms'",
+      "method": "sameAs",
+      "sameAs": "mms",
+      "quote": "Undated, but same age as unit mms (about 20 ka)."
+    },
+    {
+      "unit": "mmt",
+      "method": "sameAs",
+      "sameAs": "mms",
+      "quote": "Undated (but same as unit mms, about 20 ka)."
+    },
+    {
+      "unit": "dnt'",
+      "method": "sameAs",
+      "sameAs": "dnt",
+      "quote": "Undated but presumed to be virtually contemporaneous with unit dnt."
+    },
+    {
+      "unit": "rdc'",
+      "method": "sameAs",
+      "sameAs": "rdc",
+      "quote": "Southwest lobe of Rhyolite of \"Devils chain\" (unit rdc)."
+    },
+    {
+      "unit": "ahi'",
+      "method": "sameAs",
+      "sameAs": "ahi",
+      "quote": "Large dike in the Andesite intrusive complex of Hodge Crest (unit ahi)."
+    },
+    {
+      "unit": "bsb'",
+      "method": "sameAs",
+      "sameAs": "bsb",
+      "quote": "Massive plug exposed by glaciation of the Basalt of Sphinx Butte (unit bsb)."
+    },
+    {
+      "unit": "rsc'",
+      "method": "sameAs",
+      "sameAs": "rsc",
+      "quote": "what appears to be early lobe of this unit rsc."
+    }
+  ],
+  "eventBounds": [
+    {
+      "unit": "bbr",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "bes",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "bsl",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "bcc",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "mlc",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "msb",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "mec",
+      "olderThanKa": 7.7,
+      "quote": "Overlain by ... Mazama ash (7.7 ka)."
+    },
+    {
+      "unit": "bcc",
+      "youngerThanKa": 13,
+      "quote": "scoria fall from Cayuse Crater overlies till thought to represent 13-12 ka glacial readvance."
+    }
+  ],
+  "relations": [
+    {
+      "unit": "abt",
+      "olderThan": ["bcc"],
+      "describedIn": "abt",
+      "quote": "Underlain and overlain by mafic lava flows from Broken Top (unit mbt) and overlain by lavas and ejecta from Cayuse Crater (unit bcc)"
+    },
+    {
+      "unit": "adl",
+      "youngerThan": ["bwy", "mdl", "mws", "msf", "mns", "mnf", "drm"],
+      "agesOf": {
+        "mdl": [
+          {
+            "ageKa": 181,
+            "errorKa": 21
+          }
+        ],
+        "mws": [
+          {
+            "ageKa": 175,
+            "errorKa": 3
+          }
+        ],
+        "msf": [
+          {
+            "ageKa": 166,
+            "errorKa": 16
+          }
+        ],
+        "mns": [
+          {
+            "ageKa": 119,
+            "errorKa": 6
+          }
+        ],
+        "mnf": [
+          {
+            "ageKa": 48,
+            "errorKa": 10
+          }
+        ],
+        "drm": [
+          {
+            "ageKa": 29,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "adl",
+      "quote": "Overlies units bwy, mdl (181±21 ka), mws (175±3 ka), msf (166±16 ka), mns (here, 119±6 ka), mnf (48±10 ka), and drm (29±1 ka), as well as undated till at 6,060 ft elevation along North Fork Whychus Creek"
+    },
+    {
+      "unit": "adl",
+      "olderThan": ["mcl"],
+      "agesOf": {
+        "mcl": [
+          {
+            "ageKa": 16,
+            "errorKa": 10
+          },
+          {
+            "ageKa": 23,
+            "errorKa": 16
+          }
+        ]
+      },
+      "describedIn": "adl",
+      "quote": "Overlain by unit mcl (16±10 ka, 23±16 ka) and by till of last Pleistocene glaciation. 40Ar/39Ar age: 24±1 ka [TCB]"
+    },
+    {
+      "unit": "aef",
+      "olderThan": ["mhd", "mms"],
+      "agesOf": {
+        "mhd": [
+          {
+            "ageKa": 37,
+            "errorKa": 9
+          }
+        ]
+      },
+      "describedIn": "aef",
+      "quote": "Overlain by lavas of unit mhd (37±9 ka), which is, in turn, directly overlain by unit mms, which makes up upper half of east face"
+    },
+    {
+      "unit": "aeg",
+      "youngerThan": ["alg", "dcg", "dgl", "drm", "dwl", "rct", "rsw"],
+      "describedIn": "aeg",
+      "quote": "Overlies units alg, dcg, dgl, drm, dwl, rct, and rsw"
+    },
+    {
+      "unit": "aeg",
+      "olderThan": ["awf", "dcl", "dlg", "des", "mtp", "rsc"],
+      "describedIn": "aeg",
+      "quote": "Overlain by units awf, dcl, dlg, des, mtp, and rsc. 40Ar/39Ar ages: 27.0±3.2 ka (north planeze), 26.7±1.7 ka (Hodge Crest; south wall, Prouty Glacier), and 28.5±2.1 ka (north wall, Lewis Glacier) [BT, SS]"
+    },
+    {
+      "unit": "ahc",
+      "youngerThan": ["dpg", "rpg", "aph'"],
+      "agesOf": {
+        "aph'": [
+          {
+            "ageKa": 33,
+            "errorKa": 1.5
+          }
+        ]
+      },
+      "describedIn": "ahc",
+      "quote": "Overlies unit dpg, which in turn rests on units rpg (33±1.5 ka) and aph'"
+    },
+    {
+      "unit": "ahc",
+      "olderThan": ["aeg", "dlg"],
+      "agesOf": {
+        "dlg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3.2
+          },
+          {
+            "ageKa": 28.5,
+            "errorKa": 2.1
+          },
+          {
+            "ageKa": 26.7,
+            "errorKa": 1.7
+          }
+        ]
+      },
+      "describedIn": "ahc",
+      "quote": "Overlain by units aeg (27±3.2 ka, 28.5±2.1 ka, 26.7±1.7 ka) and dlg (25.3±1.4 ka, 22.3±1.6 ka)"
+    },
+    {
+      "unit": "ahc",
+      "olderThan": ["ahi"],
+      "describedIn": "ahc",
+      "quote": "Intruded by unit ahi"
+    },
+    {
+      "unit": "ahl",
+      "youngerThan": ["alc", "dlc", "mhl"],
+      "agesOf": {
+        "alc": [
+          {
+            "ageKa": 27,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "ahl",
+      "quote": "Overlies units alc (27±1 ka), dlc, and mhl"
+    },
+    {
+      "unit": "ahl",
+      "olderThan": ["mms"],
+      "describedIn": "ahl",
+      "quote": "Overlain by unit mms and probably by unit dlp (21.4±2 ka). 40Ar/39Ar total-gas age: 21±3 ka (well bracketed by ages of enclosing units) [NS]"
+    },
+    {
+      "unit": "alc",
+      "youngerThan": ["mth", "dlc", "mlb"],
+      "agesOf": {
+        "mlb": [
+          {
+            "ageKa": 48,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "alc",
+      "quote": "Overlies units mth, dlc, and mlb (~48 ka)"
+    },
+    {
+      "unit": "alc",
+      "youngerThan": ["aoc"],
+      "agesOf": {
+        "aoc": [
+          {
+            "ageKa": 49,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "alc",
+      "quote": "banks against unit aoc (49±4 ka)"
+    },
+    {
+      "unit": "alc",
+      "olderThan": ["dlp", "mms", "mmt", "ahl"],
+      "agesOf": {
+        "dlp": [
+          {
+            "ageKa": 21.4,
+            "errorKa": 1.9
+          }
+        ],
+        "ahl": [
+          {
+            "ageKa": 21,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "alc",
+      "quote": "Overlain by units dlp (21.4±1.9 ka), mms, mmt, and ahl (21±3 ka). 40Ar/39Ar ages: 26.8±1.2 ka (distal), 27.2±1 ka (proximal)"
+    },
+    {
+      "unit": "alg",
+      "olderThan": ["aeg", "dwl", "mms", "rsc"],
+      "describedIn": "alg",
+      "quote": "Overlain by units aeg and dwl directly and by units mms and rsc peripherally"
+    },
+    {
+      "unit": "alh",
+      "olderThan": ["adh"],
+      "describedIn": "alh",
+      "quote": "Overlain conformably by unit adh"
+    },
+    {
+      "unit": "als",
+      "youngerThan": ["dmn", "rct"],
+      "agesOf": {
+        "rct": [
+          {
+            "ageKa": 27.7,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "als",
+      "quote": "Overlies units dmn (here, 27.7±1.0 ka) and rct (24±5 ka, 30±8 ka)"
+    },
+    {
+      "unit": "anh",
+      "olderThan": ["mms"],
+      "describedIn": "anh",
+      "quote": "Overlain by Middle Sister lavas of unit mms. 40Ar/39Ar age: 21.0±6.3 ka [NS]"
+    },
+    {
+      "unit": "aoc",
+      "youngerThan": ["mlb"],
+      "agesOf": {
+        "mlb": [
+          {
+            "ageKa": 48,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "aoc",
+      "quote": "Overlies unit mlb (~48 ka)"
+    },
+    {
+      "unit": "aoc",
+      "olderThan": ["acc", "alc", "dlp", "mmm", "mms", "mrg", "roc"],
+      "describedIn": "aoc",
+      "quote": "Overlain by units acc, alc, dlp, mmm, mms, mrg, and roc. 40Ar/39Ar ages: 49±4 ka (proximally), 44.6±1.8 ka (at distal snout)"
+    },
+    {
+      "unit": "apc",
+      "youngerThan": ["ruc"],
+      "agesOf": {
+        "ruc": [
+          {
+            "ageKa": 169,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "apc",
+      "quote": "Overlies unit ruc (169±2 ka)"
+    },
+    {
+      "unit": "apc",
+      "olderThan": ["drm"],
+      "agesOf": {
+        "drm": [
+          {
+            "ageKa": 29,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "apc",
+      "quote": "Overlain by unit drm (29±1 ka). 40Ar/39Ar age: 31±9 ka [TCB]"
+    },
+    {
+      "unit": "aph",
+      "olderThan": ["aph'", "rpg"],
+      "agesOf": {
+        "rpg": [
+          {
+            "ageKa": 33,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "aph",
+      "quote": "Directly overlain by stratified sequence of agglutinate and breccia (unit aph'), which is, in turn, capped by unit rpg (33±2 ka)"
+    },
+    {
+      "unit": "aph'",
+      "youngerThan": ["aph", "rpg", "dpg"],
+      "agesOf": {
+        "dpg": [
+          {
+            "ageKa": 32.8,
+            "errorKa": 1.5
+          }
+        ]
+      },
+      "describedIn": "aph'",
+      "quote": "Rests on unit aph and is overlain by units rpg (32.8±1.5 ka) and dpg"
+    },
+    {
+      "unit": "asw",
+      "olderThan": ["mms"],
+      "describedIn": "asw",
+      "quote": "Overlain and largely concealed by unit mms. 40Ar/39Ar age: 25±4 ka [NS]"
+    },
+    {
+      "unit": "awa",
+      "youngerThan": ["mns"],
+      "describedIn": "awa",
+      "quote": "Overlies unit mns"
+    },
+    {
+      "unit": "awa",
+      "olderThan": ["mps"],
+      "describedIn": "awa",
+      "quote": "Overlain by pyroclastic unit mps, which buried vent for this unit"
+    },
+    {
+      "unit": "awc",
+      "youngerThan": ["dss", "mlb", "mns"],
+      "agesOf": {
+        "mlb": [
+          {
+            "ageKa": 25,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "awc",
+      "quote": "Overlies units dss (25±3 ka) and mlb (~48 ka), which here, in turn, overlies unit mns"
+    },
+    {
+      "unit": "awc",
+      "olderThan": ["mrg", "mms", "dbh"],
+      "agesOf": {
+        "mrg": [
+          {
+            "ageKa": 20,
+            "errorKa": 6
+          }
+        ],
+        "dbh": [
+          {
+            "ageKa": 18,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "awc",
+      "quote": "Overlain by units mrg (20±6 ka), mms, and dbh (18±2 ka). 40Ar/39Ar ages: 21.9±1.7 ka, 24.5±1.5 ka [NS]"
+    },
+    {
+      "unit": "awf",
+      "youngerThan": ["mpm", "aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "awf",
+      "quote": "Overlies units mpm and aeg (27±2 ka)"
+    },
+    {
+      "unit": "awf",
+      "youngerThan": ["mbt", "rpc", "drm"],
+      "agesOf": {
+        "drm": [
+          {
+            "ageKa": 29,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "awf",
+      "quote": "banks against units mbt, rpc, and drm (29±1 ka)"
+    },
+    {
+      "unit": "awm",
+      "olderThan": ["mms", "mms'"],
+      "describedIn": "awm",
+      "quote": "Overlain by units mms and mms'"
+    },
+    {
+      "unit": "awm",
+      "olderThan": ["mms", "dlp"],
+      "agesOf": {
+        "dlp": [
+          {
+            "ageKa": 21,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "awm",
+      "quote": "cut by dikes of unit mms and intruded and overlain by unit dlp (21±2 ka)"
+    },
+    {
+      "unit": "awr",
+      "olderThan": ["mrg"],
+      "agesOf": {
+        "mrg": [
+          {
+            "ageKa": 20,
+            "errorKa": 6
+          }
+        ]
+      },
+      "describedIn": "awr",
+      "quote": "Overlain by unit mrg (20±6 ka), (inferentially) by mms and dbh (18±2 ka), and extensively by glacial deposits (unit g)"
+    },
+    {
+      "unit": "awy",
+      "olderThan": ["bwy", "mwh"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "awy",
+      "quote": "Overlain by units bwy and mwh (195±5 ka)"
+    },
+    {
+      "unit": "bac",
+      "olderThan": ["mey", "mns"],
+      "describedIn": "bac",
+      "quote": "Overlain by units mey and mns"
+    },
+    {
+      "unit": "bbd",
+      "youngerThan": ["mtb"],
+      "agesOf": {
+        "mtb": [
+          {
+            "ageKa": 532,
+            "errorKa": 7
+          }
+        ]
+      },
+      "describedIn": "bbd",
+      "quote": "Banks around base of unit mtb shield (532±7 ka)"
+    },
+    {
+      "unit": "bbd",
+      "olderThan": ["bss"],
+      "describedIn": "bbd",
+      "quote": "Overlain by unit bss"
+    },
+    {
+      "unit": "bbr",
+      "youngerThan": ["bsl", "bes"],
+      "describedIn": "bbr",
+      "quote": "Overlies units bsl and bes"
+    },
+    {
+      "unit": "bbr",
+      "olderThan": ["mec"],
+      "agesOf": {
+        "mec": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "bbr",
+      "quote": "Overlain by unit mec and local remnants of Mazama ash (7.7 ka; not mapped separately)"
+    },
+    {
+      "unit": "bcc",
+      "olderThan": ["rrm", "rdc"],
+      "agesOf": {
+        "rdc": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "bcc",
+      "quote": "Overlain by remnants of Mazama ash (7.7 ka) and late Holocene pumice-fall deposits of units rrm and rdc (not mapped separately)"
+    },
+    {
+      "unit": "bes",
+      "youngerThan": ["bsl"],
+      "describedIn": "bes",
+      "quote": "Overlies unit bsl"
+    },
+    {
+      "unit": "bes",
+      "olderThan": ["bbr", "mec"],
+      "agesOf": {
+        "mec": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "bes",
+      "quote": "Overlain by units bbr and mec and by local remnants of Mazama ash (7.7 ka)"
+    },
+    {
+      "unit": "bhs",
+      "olderThan": ["msc", "ddl", "mth"],
+      "describedIn": "bhs",
+      "quote": "Overlain by units msc, ddl, and mth"
+    },
+    {
+      "unit": "bjc",
+      "youngerThan": ["dmc"],
+      "describedIn": "bjc",
+      "quote": "Overlies unit dmc"
+    },
+    {
+      "unit": "bjc",
+      "olderThan": ["ddl"],
+      "describedIn": "bjc",
+      "quote": "Overlain by unit ddl. 40Ar/39Ar age: 148±4 ka [SS]"
+    },
+    {
+      "unit": "bnf",
+      "youngerThan": ["mwh", "mws"],
+      "agesOf": {
+        "mws": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "bnf",
+      "quote": "Overlies units mwh (195±5 ka) and mws (175±3 ka)"
+    },
+    {
+      "unit": "bnf",
+      "olderThan": ["msp", "mns"],
+      "agesOf": {
+        "mns": [
+          {
+            "ageKa": 119,
+            "errorKa": 6
+          }
+        ]
+      },
+      "describedIn": "bnf",
+      "quote": "Overlain by unit msp, which is in turn overlain by lava flow of unit mns (which here gave 40Ar/39Ar age of 119±6 ka)"
+    },
+    {
+      "unit": "bsb",
+      "olderThan": ["ddl"],
+      "agesOf": {
+        "ddl": [
+          {
+            "ageKa": 32,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "bsb",
+      "quote": "Overlain by unit ddl (32±2 ka). 40Ar/39Ar age: 279±6 ka [SS]"
+    },
+    {
+      "unit": "bsl",
+      "olderThan": ["bes", "bbr"],
+      "agesOf": {
+        "bbr": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "bsl",
+      "quote": "Overlain by associated postglacial units bes and bbr and by local remnants of Mazama ash (7.7 ka)"
+    },
+    {
+      "unit": "bss",
+      "youngerThan": ["bbd", "acp", "mwh", "mtb"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ],
+        "mtb": [
+          {
+            "ageKa": 532,
+            "errorKa": 7
+          }
+        ]
+      },
+      "describedIn": "bss",
+      "quote": "Overlies units bbd, acp, and mwh (195±5 ka), wraps around scoria cone of unit acp, and banks against base of unit mtb shield (532±7 ka)"
+    },
+    {
+      "unit": "btk",
+      "olderThan": ["mlc", "rdc"],
+      "describedIn": "btk",
+      "quote": "Overlain by units mlc and rdc"
+    },
+    {
+      "unit": "bwl",
+      "youngerThan": ["mwh"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "bwl",
+      "quote": "Overlies unit mwh (195±5 ka)"
+    },
+    {
+      "unit": "bwl",
+      "olderThan": ["acp"],
+      "describedIn": "bwl",
+      "quote": "Overlain by unit acp"
+    },
+    {
+      "unit": "bwm",
+      "youngerThan": ["mmc"],
+      "describedIn": "bwm",
+      "quote": "Overlies unit mmc"
+    },
+    {
+      "unit": "bwm",
+      "olderThan": ["mpn", "myc", "myl"],
+      "describedIn": "bwm",
+      "quote": "Overlain by units mpn, myc, myl, and (inferentially) mnt (20±5 ka)"
+    },
+    {
+      "unit": "bwy",
+      "youngerThan": ["mbt", "awy"],
+      "agesOf": {
+        "awy": [
+          {
+            "ageKa": 299,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "bwy",
+      "quote": "Overlies units mbt and awy (299±1 ka)"
+    },
+    {
+      "unit": "bwy",
+      "olderThan": ["adl", "drm", "mwh", "ruc"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ],
+        "ruc": [
+          {
+            "ageKa": 169,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "bwy",
+      "quote": "Overlain by units adl, drm, mwh (195±5 ka), and ruc (169±2 ka)"
+    },
+    {
+      "unit": "dbh",
+      "youngerThan": ["awc", "dss", "mms"],
+      "agesOf": {
+        "awc": [
+          {
+            "ageKa": 22,
+            "errorKa": 2
+          }
+        ],
+        "dss": [
+          {
+            "ageKa": 25,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dbh",
+      "quote": "Overlies units awc (22±2 ka), dss (25±3 ka), and mms"
+    },
+    {
+      "unit": "dcg",
+      "youngerThan": ["bjc", "ddl", "rmc", "rsw"],
+      "agesOf": {
+        "ddl": [
+          {
+            "ageKa": 32,
+            "errorKa": 2
+          }
+        ],
+        "rmc": [
+          {
+            "ageKa": 47,
+            "errorKa": 8
+          }
+        ],
+        "rsw": [
+          {
+            "ageKa": 51,
+            "errorKa": 10
+          }
+        ]
+      },
+      "describedIn": "dcg",
+      "quote": "Overlies units bjc, ddl (32±2 ka), rmc (47±8 ka), and rsw (51±10 ka)"
+    },
+    {
+      "unit": "dcg",
+      "olderThan": ["aeg", "rct", "rrm"],
+      "agesOf": {
+        "rrm": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "dcg",
+      "quote": "Overlain by unit aeg (here, 27±2 ka) and also by units rct (24±5 ka, 30±8 ka) and rrm (~2.1 ka), which bank against it. 40Ar/39Ar age: 30.7±2.6 ka [SS]"
+    },
+    {
+      "unit": "dcl",
+      "youngerThan": ["aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dcl",
+      "quote": "Overlies unit aeg (27±3 ka), but base is rarely exposed"
+    },
+    {
+      "unit": "dcl",
+      "olderThan": ["mcl", "mms", "dig", "rdc"],
+      "agesOf": {
+        "dig": [
+          {
+            "ageKa": 14,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dcl",
+      "quote": "Overlain by units mcl, mms, and dig (14±3 ka), as well as pumice-fall remnants of unit rdc. 40Ar/39Ar age: 26±2 ka [NS, SS]"
+    },
+    {
+      "unit": "ddl",
+      "youngerThan": ["mtw", "bsb", "bhs", "bjc"],
+      "describedIn": "ddl",
+      "quote": "Overlies units mtw, bsb, bhs, and bjc"
+    },
+    {
+      "unit": "ddl",
+      "olderThan": ["dcg", "msc"],
+      "agesOf": {
+        "msc": [
+          {
+            "ageKa": 30.7,
+            "errorKa": 2.6
+          }
+        ]
+      },
+      "describedIn": "ddl",
+      "quote": "Overlain by units dcg (30.7±2.6 ka) and msc (21±6 ka). 40Ar/39Ar age: 32.3±1.8 ka [SS]"
+    },
+    {
+      "unit": "des",
+      "youngerThan": ["aeg", "dlg"],
+      "agesOf": {
+        "dlg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "des",
+      "quote": "Overlies units aeg (here, 27±3 ka) and dlg (25.3±1.4 ka, 22.3±1.6 ka)"
+    },
+    {
+      "unit": "des",
+      "olderThan": ["mtp", "dnt", "dnt'"],
+      "agesOf": {
+        "dnt": [
+          {
+            "ageKa": 23.5,
+            "errorKa": 1.1
+          }
+        ]
+      },
+      "describedIn": "des",
+      "quote": "Overlain by units mtp, dnt (23.5±1.1 ka), and dnt'"
+    },
+    {
+      "unit": "dgc",
+      "olderThan": ["rdc"],
+      "describedIn": "dgc",
+      "quote": "Intruded and overlain by unit rdc"
+    },
+    {
+      "unit": "dgc",
+      "youngerThan": ["abt"],
+      "agesOf": {
+        "abt": [
+          {
+            "ageKa": 178,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dgc",
+      "quote": "Overlies unit abt (178±1 ka, at Fall Creek). 40Ar/39Ar age: 31.6±2.0 ka [BT]"
+    },
+    {
+      "unit": "dgl",
+      "youngerThan": ["rgl"],
+      "agesOf": {
+        "rgl": [
+          {
+            "ageKa": 32,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dgl",
+      "quote": "Overlies unit rgl (32±1 ka)"
+    },
+    {
+      "unit": "dgl",
+      "olderThan": ["dmn", "aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 28,
+            "errorKa": 1
+          },
+          {
+            "ageKa": 25,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dgl",
+      "quote": "Overlain by units dmn (28±1 ka, 25±1 ka) and aeg (here, 27±2 ka)"
+    },
+    {
+      "unit": "dig",
+      "youngerThan": ["mms", "rsc", "dcl", "dsn"],
+      "agesOf": {
+        "rsc": [
+          {
+            "ageKa": 25,
+            "errorKa": 1
+          }
+        ],
+        "dcl": [
+          {
+            "ageKa": 26,
+            "errorKa": 2
+          }
+        ],
+        "dsn": [
+          {
+            "ageKa": 19,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "dig",
+      "quote": "Overlies units mms, rsc (25±1 ka), dcl (26±2 ka), and dsn (19±4 ka). 40Ar/39Ar age: 14.4±2.7 ka [NS, SS]"
+    },
+    {
+      "unit": "dlc",
+      "olderThan": ["ahl", "alc", "mhl", "mms"],
+      "agesOf": {
+        "alc": [
+          {
+            "ageKa": 27,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dlc",
+      "quote": "Overlain by units ahl, alc (27±1 ka), mhl, and mms"
+    },
+    {
+      "unit": "dlg",
+      "youngerThan": ["dbl", "ahc"],
+      "describedIn": "dlg",
+      "quote": "Overlies fragmental deposit of unit dbl in Lewis Glacier headwall and another older fragmental deposit (unit ahc) in Prouty Glacier headwall"
+    },
+    {
+      "unit": "dlg",
+      "olderThan": ["des"],
+      "describedIn": "dlg",
+      "quote": "Overlain by 150-m-thick section of phenocryst richer fragmental dacite strata (unit des)"
+    },
+    {
+      "unit": "dlg",
+      "youngerThan": ["aeg", "adh", "ahc", "alh", "dbl"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ],
+        "alh": [
+          {
+            "ageKa": 30,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dlg",
+      "quote": "Overlies or banks against units aeg (here, 27±3 ka), adh, ahc, alh (30±1 ka), and dbl"
+    },
+    {
+      "unit": "dlg",
+      "olderThan": ["des", "rdc"],
+      "describedIn": "dlg",
+      "quote": "Overlain by units des and rdc. 40Ar/39Ar ages: 25.3±1.4 ka, 22.3±1.6 ka [SS]"
+    },
+    {
+      "unit": "dlp",
+      "youngerThan": ["aoc", "alc", "ahl", "awm"],
+      "agesOf": {
+        "alc": [
+          {
+            "ageKa": 27,
+            "errorKa": 1
+          }
+        ],
+        "ahl": [
+          {
+            "ageKa": 21,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dlp",
+      "quote": "Overlies units aoc, alc (here, 27±1 ka), ahl (21±3 ka), and awm"
+    },
+    {
+      "unit": "dmc",
+      "olderThan": ["mlc", "bjc"],
+      "agesOf": {
+        "bjc": [
+          {
+            "ageKa": 148,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "dmc",
+      "quote": "Overlain by units mlc and bjc (148±4 ka)"
+    },
+    {
+      "unit": "dml",
+      "youngerThan": ["dwp"],
+      "agesOf": {
+        "dwp": [
+          {
+            "ageKa": 34,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dml",
+      "quote": "Overlies unit dwp (34±3 ka)"
+    },
+    {
+      "unit": "dml",
+      "youngerThan": ["rkb", "rdh"],
+      "agesOf": {
+        "rdh": [
+          {
+            "ageKa": 35,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "dml",
+      "quote": "Banks against units rkb and rdh (35±2 ka)"
+    },
+    {
+      "unit": "dml",
+      "olderThan": ["dmn", "dmw", "rse", "rdc"],
+      "agesOf": {
+        "dmn": [
+          {
+            "ageKa": 28,
+            "errorKa": 1
+          }
+        ],
+        "rse": [
+          {
+            "ageKa": 34,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dml",
+      "quote": "Underlies units dmn (28±1 ka), dmw, rse (34±1 ka), and rdc. 40Ar/39Ar age: 33.6±1.2 ka [BT, SS]"
+    },
+    {
+      "unit": "dmn",
+      "youngerThan": ["dgl", "dml", "dmw", "rse"],
+      "agesOf": {
+        "dml": [
+          {
+            "ageKa": 33.6,
+            "errorKa": 1.2
+          }
+        ],
+        "rse": [
+          {
+            "ageKa": 34,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dmn",
+      "quote": "Overlies units dgl, dml (33.6±1.2 ka), dmw, and rse (34±1 ka)"
+    },
+    {
+      "unit": "dmn",
+      "olderThan": ["aeg", "als", "rct"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ],
+        "rct": [
+          {
+            "ageKa": 24,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "dmn",
+      "quote": "Overlain by units aeg (here, 27±2 ka), als, and rct (24±5 ka). 40Ar/39Ar ages: 27.7±1.0 ka (west tongue), 25.2±0.8 ka (east tongue) [SS]"
+    },
+    {
+      "unit": "dms",
+      "youngerThan": ["mms"],
+      "describedIn": "dms",
+      "quote": "Rests directly on unweathered surface of unit mms"
+    },
+    {
+      "unit": "dmw",
+      "youngerThan": ["dml", "dwp"],
+      "agesOf": {
+        "dwp": [
+          {
+            "ageKa": 33.6,
+            "errorKa": 1.2
+          }
+        ]
+      },
+      "describedIn": "dmw",
+      "quote": "Overlies units dml (33.6±1.2 ka) and dwp (34±3 ka)"
+    },
+    {
+      "unit": "dmw",
+      "olderThan": ["dmn", "rct"],
+      "agesOf": {
+        "rct": [
+          {
+            "ageKa": 28,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dmw",
+      "quote": "Overlain by lithologically similar unit dmn (28±1 ka) and by unit rct (24±5 ka)"
+    },
+    {
+      "unit": "dpg",
+      "youngerThan": ["rpg", "aph'"],
+      "agesOf": {
+        "aph'": [
+          {
+            "ageKa": 32.8,
+            "errorKa": 1.5
+          }
+        ]
+      },
+      "describedIn": "dpg",
+      "quote": "Rests directly upon lava of unit rpg (32.8±1.5 ka) and unit aph'"
+    },
+    {
+      "unit": "dpg",
+      "olderThan": ["ahc", "aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dpg",
+      "quote": "Overlain unconformably by tephra-fall deposit of unit ahc and by layered scoria, agglutinate, and fountain-fed lavas of cone-building andesite unit aeg (here, 27±3 ka)"
+    },
+    {
+      "unit": "drm",
+      "youngerThan": ["apc", "rpc", "rpg", "bwy"],
+      "agesOf": {
+        "apc": [
+          {
+            "ageKa": 31,
+            "errorKa": 9
+          }
+        ],
+        "rpg": [
+          {
+            "ageKa": 32.8,
+            "errorKa": 1.5
+          }
+        ]
+      },
+      "describedIn": "drm",
+      "quote": "Overlies units apc (31±9 ka), rpc, rpg (32.8±1.5 ka), and bwy"
+    },
+    {
+      "unit": "drm",
+      "youngerThan": ["rsf"],
+      "agesOf": {
+        "rsf": [
+          {
+            "ageKa": 36,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "drm",
+      "quote": "wraps around snout of unit rsf coulee (36±2 ka)"
+    },
+    {
+      "unit": "drm",
+      "olderThan": ["adl", "awf", "aeg"],
+      "agesOf": {
+        "adl": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ],
+        "awf": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ],
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "drm",
+      "quote": "Overlain by units adl (24±1 ka), awf (24±1 ka), and, proximally, aeg (here, 27±3 ka). 40Ar/39Ar age: 28.7±0.8 ka [BT, SS, TCB]"
+    },
+    {
+      "unit": "dse",
+      "olderThan": ["btk"],
+      "describedIn": "dse",
+      "quote": "Overlain by unit btk"
+    },
+    {
+      "unit": "dsn",
+      "olderThan": ["mms", "dig"],
+      "agesOf": {
+        "dig": [
+          {
+            "ageKa": 14,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dsn",
+      "quote": "Overlain by units mms and dig (14±3 ka). 40Ar/39Ar age: 19±4 ka [NS, SS]"
+    },
+    {
+      "unit": "dss",
+      "youngerThan": ["mlb"],
+      "agesOf": {
+        "mlb": [
+          {
+            "ageKa": 48,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "dss",
+      "quote": "Overlies unit mlb (~48 ka)"
+    },
+    {
+      "unit": "dss",
+      "olderThan": ["awc", "mms", "mrg"],
+      "agesOf": {
+        "awc": [
+          {
+            "ageKa": 22,
+            "errorKa": 2
+          }
+        ],
+        "mrg": [
+          {
+            "ageKa": 20,
+            "errorKa": 6
+          }
+        ]
+      },
+      "describedIn": "dss",
+      "quote": "Overlain by units awc (22±2 ka), mms, and mrg (20±6 ka). 40Ar/39Ar age: 25±3 ka [NS]"
+    },
+    {
+      "unit": "dtl",
+      "youngerThan": ["mbl"],
+      "describedIn": "dtl",
+      "quote": "Overlies unit mbl"
+    },
+    {
+      "unit": "dwl",
+      "youngerThan": ["alg"],
+      "agesOf": {
+        "alg": [
+          {
+            "ageKa": 27,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "dwl",
+      "quote": "Overlies unit alg (27±1 ka)"
+    },
+    {
+      "unit": "dwl",
+      "olderThan": ["aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "dwl",
+      "quote": "Overlain by stack of numerous thin lavas of cone-building unit aeg (here, 27±3 ka)"
+    },
+    {
+      "unit": "dwp",
+      "olderThan": ["rct", "rkb", "rrm", "dml", "dmw", "mlc"],
+      "agesOf": {
+        "rct": [
+          {
+            "ageKa": 24,
+            "errorKa": 5
+          }
+        ],
+        "dml": [
+          {
+            "ageKa": 33.6,
+            "errorKa": 1.2
+          }
+        ]
+      },
+      "describedIn": "dwp",
+      "quote": "Overlain by units rct (24±5 ka), rkb, rrm, dml (33.6±1.2 ka), and dmw, and its snout is wrapped by postglacial unit mlc"
+    },
+    {
+      "unit": "mbc",
+      "olderThan": ["mmc"],
+      "describedIn": "mbc",
+      "quote": "Overlain by unit mmc"
+    },
+    {
+      "unit": "mbl",
+      "olderThan": ["dtl"],
+      "agesOf": {
+        "dtl": [
+          {
+            "ageKa": 460,
+            "errorKa": 30
+          }
+        ]
+      },
+      "describedIn": "mbl",
+      "quote": "Overlain by unit dtl (460±30 ka; Hill, 1991)"
+    },
+    {
+      "unit": "mbw",
+      "olderThan": ["awy", "mwh"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 299,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "mbw",
+      "quote": "Overlain by units awy (299±1 ka) and mwh (195±5 ka)"
+    },
+    {
+      "unit": "mcl",
+      "youngerThan": ["adl", "mdl", "mnf", "msf"],
+      "agesOf": {
+        "adl": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "mcl",
+      "quote": "Overlies units adl (24±1 ka), mdl, mnf, and msf"
+    },
+    {
+      "unit": "mcl",
+      "youngerThan": ["dcl"],
+      "agesOf": {
+        "dcl": [
+          {
+            "ageKa": 26,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "mcl",
+      "quote": "fills relief cut into unit dcl (26±2 ka) just northeast of largest of Chambers Lakes (UTM grid 983/868)"
+    },
+    {
+      "unit": "mcl",
+      "youngerThan": ["rsf"],
+      "agesOf": {
+        "rsf": [
+          {
+            "ageKa": 35.8,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "mcl",
+      "quote": "banks against toe of unit rsf coulee (35.8±2 ka)"
+    },
+    {
+      "unit": "mcl",
+      "olderThan": ["mms'", "mms"],
+      "describedIn": "mcl",
+      "quote": "Overlain by units mms' and mms"
+    },
+    {
+      "unit": "mcl",
+      "olderThan": ["mms"],
+      "describedIn": "mcl",
+      "quote": "cut by dikes of unit mms. 40Ar/39Ar ages: 16±10 ka, 23±16 ka [NS, TCB]"
+    },
+    {
+      "unit": "mdl",
+      "olderThan": ["mcl", "adl", "rsf"],
+      "describedIn": "mdl",
+      "quote": "Overlain by units mcl, adl, and rsf. 40Ar/39Ar age: 181±21 ka (southern window) [TCB]"
+    },
+    {
+      "unit": "mdw",
+      "olderThan": ["mec"],
+      "describedIn": "mdw",
+      "quote": "Wrapped on west by early Holocene lava flows of unit mec and on east by postglacial lavas of Mount Bachelor (Scott and Gardner, 1992)"
+    },
+    {
+      "unit": "mec",
+      "youngerThan": ["bbr"],
+      "describedIn": "mec",
+      "quote": "Overlies unit bbr and postglacial lavas of Mount Bachelor"
+    },
+    {
+      "unit": "mec",
+      "youngerThan": ["dtl", "mbl", "mdw", "mts", "rtl"],
+      "describedIn": "mec",
+      "quote": "banks against units dtl, mbl, mdw, mts, and rtl"
+    },
+    {
+      "unit": "mey",
+      "youngerThan": ["myl", "bac"],
+      "describedIn": "mey",
+      "quote": "Overlies units myl and bac (128±7 ka) and either overlies or intercalates with some clot-poor older North Sister lavas (unit mns)"
+    },
+    {
+      "unit": "mey",
+      "olderThan": ["mfy", "mwy", "mys", "mns"],
+      "describedIn": "mey",
+      "quote": "Overlain by units mfy, mwy, mys, and younger lavas of unit mns"
+    },
+    {
+      "unit": "mfy",
+      "youngerThan": ["mey", "mns", "myl"],
+      "describedIn": "mfy",
+      "quote": "Overlies units mey, mns, and myl"
+    },
+    {
+      "unit": "mfy",
+      "olderThan": ["mwa"],
+      "describedIn": "mfy",
+      "quote": "Overlain by unit mwa"
+    },
+    {
+      "unit": "mhl",
+      "youngerThan": ["dlc"],
+      "describedIn": "mhl",
+      "quote": "Overlies unit dlc"
+    },
+    {
+      "unit": "mhl",
+      "olderThan": ["ahl", "mms"],
+      "agesOf": {
+        "mms": [
+          {
+            "ageKa": 21,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "mhl",
+      "quote": "Draped by unit ahl (21±3 ka) and by great apron of unit mms that largely conceals it"
+    },
+    {
+      "unit": "mlb",
+      "olderThan": ["acc", "alc", "awc", "mmm", "msb", "dss", "roc", "aoc"],
+      "agesOf": {
+        "roc": [
+          {
+            "ageKa": 38,
+            "errorKa": 2
+          }
+        ],
+        "aoc": [
+          {
+            "minKa": 45,
+            "maxKa": 49
+          }
+        ]
+      },
+      "describedIn": "mlb",
+      "quote": "Overlain by units acc, alc, awc, mmm, msb, dss, roc (38±2 ka), and aoc (45-49 ka)"
+    },
+    {
+      "unit": "mlc",
+      "olderThan": ["rrm"],
+      "agesOf": {
+        "rrm": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "mlc",
+      "quote": "Overlain by unit rrm and Mazama ash (7.7 ka)"
+    },
+    {
+      "unit": "mls",
+      "olderThan": ["mms"],
+      "describedIn": "mls",
+      "quote": "Overlain by unit mms"
+    },
+    {
+      "unit": "mmc",
+      "youngerThan": ["mbc"],
+      "describedIn": "mmc",
+      "quote": "Overlies unit mbc"
+    },
+    {
+      "unit": "mmc",
+      "olderThan": ["bwm", "mnt"],
+      "agesOf": {
+        "mnt": [
+          {
+            "ageKa": 20,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "mmc",
+      "quote": "Overlain by units bwm and mnt (20±5 ka)"
+    },
+    {
+      "unit": "mmi",
+      "youngerThan": ["mms", "mhd"],
+      "describedIn": "mmi",
+      "quote": "Cuts stacks of lava flows of units mms and mhd, and probably underlying tephra-fall deposit of unit aef as well. 40Ar/39Ar age: 18±4 ka [NS]"
+    },
+    {
+      "unit": "mml",
+      "youngerThan": ["mps"],
+      "describedIn": "mml",
+      "quote": "Overlies unit mps"
+    },
+    {
+      "unit": "mml",
+      "olderThan": ["mmn", "mpn", "myc"],
+      "describedIn": "mml",
+      "quote": "Overlain by units mmn, mpn, and myc"
+    },
+    {
+      "unit": "mmm",
+      "youngerThan": ["aoc", "mlb", "roc"],
+      "agesOf": {
+        "roc": [
+          {
+            "ageKa": 37.8,
+            "errorKa": 1.8
+          }
+        ]
+      },
+      "describedIn": "mmm",
+      "quote": "Overlies units aoc, mlb, and roc (37.8±1.8 ka)"
+    },
+    {
+      "unit": "mmn",
+      "youngerThan": ["mml"],
+      "describedIn": "mmn",
+      "quote": "Overlies unit mml"
+    },
+    {
+      "unit": "mmn",
+      "olderThan": ["mpn", "myc"],
+      "describedIn": "mmn",
+      "quote": "Overlain by unit mpn and by postglacial lava flow from Yapoah Crater (unit myc)"
+    },
+    {
+      "unit": "mms",
+      "youngerThan": [
+        "adl",
+        "ahl",
+        "alc",
+        "alg",
+        "anh",
+        "aoc",
+        "asw",
+        "awc",
+        "awm",
+        "dcl",
+        "dlp",
+        "dsn",
+        "dss",
+        "mcl",
+        "mhl",
+        "mls",
+        "mnf",
+        "mrg",
+        "msc",
+        "mth"
+      ],
+      "agesOf": {
+        "anh": [
+          {
+            "ageKa": 21,
+            "errorKa": 6
+          }
+        ],
+        "asw": [
+          {
+            "ageKa": 24.5,
+            "errorKa": 4.2
+          }
+        ],
+        "dcl": [
+          {
+            "ageKa": 26,
+            "errorKa": 2
+          }
+        ],
+        "dsn": [
+          {
+            "ageKa": 19,
+            "errorKa": 4
+          }
+        ],
+        "dss": [
+          {
+            "ageKa": 24.5,
+            "errorKa": 3.1
+          }
+        ],
+        "mrg": [
+          {
+            "ageKa": 19.6,
+            "errorKa": 6.1
+          }
+        ],
+        "msc": [
+          {
+            "ageKa": 21.4,
+            "errorKa": 5.5
+          }
+        ]
+      },
+      "describedIn": "mms",
+      "quote": "Overlies units adl, ahl, alc, alg, anh (21±6 ka), aoc, asw (24.5±4.2 ka), awc, awm, dcl (26±2 ka), dlp, dsn (19±4 ka), dss (24.5±3.1 ka), mcl, mhl, mls, mnf, mrg (19.6±6.1 ka), msc (21.4±5.5 ka), and mth"
+    },
+    {
+      "unit": "mms",
+      "olderThan": ["dbh", "dhr", "dig", "dms", "mss"],
+      "agesOf": {
+        "dbh": [
+          {
+            "ageKa": 18,
+            "errorKa": 2
+          }
+        ],
+        "dhr": [
+          {
+            "ageKa": 19,
+            "errorKa": 2
+          }
+        ],
+        "dig": [
+          {
+            "ageKa": 14,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "mms",
+      "quote": "Overlain by units dbh (18±2 ka), dhr (19±2 ka), dig (14±3 ka), dms, and mss"
+    },
+    {
+      "unit": "mms",
+      "olderThan": ["dsw"],
+      "agesOf": {
+        "dsw": [
+          {
+            "ageKa": 17,
+            "errorKa": 15
+          }
+        ]
+      },
+      "describedIn": "mms",
+      "quote": "intruded and overlain by domes of unit dsw (17±15 ka)"
+    },
+    {
+      "unit": "mms'",
+      "youngerThan": ["awm", "dlp", "mcl"],
+      "describedIn": "mms'",
+      "quote": "Overlies units awm, dlp, and mcl"
+    },
+    {
+      "unit": "mmt",
+      "youngerThan": ["alc", "msc"],
+      "describedIn": "mmt",
+      "quote": "Overlies units alc and msc"
+    },
+    {
+      "unit": "mnf",
+      "olderThan": ["adl", "mcl", "mms"],
+      "agesOf": {
+        "adl": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "mnf",
+      "quote": "Overlain by units adl (24±1 ka), mcl, and mms"
+    },
+    {
+      "unit": "mnt",
+      "youngerThan": ["mmc", "myl"],
+      "describedIn": "mnt",
+      "quote": "Overlies units mmc and myl"
+    },
+    {
+      "unit": "mnt",
+      "olderThan": ["mpn", "mps"],
+      "describedIn": "mnt",
+      "quote": "Overlain by units mpn and mps. 40Ar/39Ar age: 20±5 ka [NS, TCB]"
+    },
+    {
+      "unit": "mpm",
+      "olderThan": ["awf"],
+      "agesOf": {
+        "awf": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "mpm",
+      "quote": "Overlain by unit awf (24±1 ka)"
+    },
+    {
+      "unit": "mpn",
+      "youngerThan": ["mml", "mmn", "mnt", "mps", "bwm"],
+      "agesOf": {
+        "mnt": [
+          {
+            "ageKa": 20.3,
+            "errorKa": 4.6
+          }
+        ]
+      },
+      "describedIn": "mpn",
+      "quote": "Overlies units mml, mmn, mnt (20.3±4.6 ka), mps, and bwm"
+    },
+    {
+      "unit": "mpn",
+      "olderThan": ["myc"],
+      "describedIn": "mpn",
+      "quote": "Overlain by postglacial unit myc"
+    },
+    {
+      "unit": "mps",
+      "youngerThan": ["awa", "mns", "mnt", "mwa", "mwy", "mys"],
+      "agesOf": {
+        "awa": [
+          {
+            "ageKa": 25,
+            "errorKa": 2
+          }
+        ],
+        "mnt": [
+          {
+            "ageKa": 20,
+            "errorKa": 5
+          }
+        ],
+        "mwa": [
+          {
+            "ageKa": 59,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "mps",
+      "quote": "Overlies units awa (25±2 ka), mns, mnt (20±5 ka), mwa (59±4 ka), mwy, and mys"
+    },
+    {
+      "unit": "mps",
+      "olderThan": ["acc", "myc", "mml", "mpn"],
+      "describedIn": "mps",
+      "quote": "Overlain by postglacial units acc and myc and by glaciated units mml and mpn"
+    },
+    {
+      "unit": "mrg",
+      "youngerThan": ["dss", "awc", "awr"],
+      "agesOf": {
+        "dss": [
+          {
+            "ageKa": 25,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "mrg",
+      "quote": "Overlies units dss (25±3 ka), awc, and awr (although extensively stripped off unit awr)"
+    },
+    {
+      "unit": "mrg",
+      "youngerThan": ["roc"],
+      "describedIn": "mrg",
+      "quote": "banks against unit roc"
+    },
+    {
+      "unit": "mrg",
+      "olderThan": ["mms"],
+      "describedIn": "mrg",
+      "quote": "Overlain by unit mms. 40Ar/39Ar age: 20±6 ka [NS]"
+    },
+    {
+      "unit": "msb",
+      "youngerThan": ["mlb"],
+      "agesOf": {
+        "mlb": [
+          {
+            "minKa": 47,
+            "maxKa": 49
+          }
+        ]
+      },
+      "describedIn": "msb",
+      "quote": "Overlies unit mlb (47-49 ka)"
+    },
+    {
+      "unit": "msb",
+      "olderThan": ["acc"],
+      "agesOf": {
+        "acc": [
+          {
+            "ageKa": 7.7,
+            "errorKa": 0
+          }
+        ]
+      },
+      "describedIn": "msb",
+      "quote": "Overlain by unit acc and Mazama ash (7.7 ka)"
+    },
+    {
+      "unit": "msc",
+      "youngerThan": ["bhs", "mth", "ddl"],
+      "agesOf": {
+        "ddl": [
+          {
+            "ageKa": 32,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "msc",
+      "quote": "Overlies units bhs, mth, and ddl (32±2 ka)"
+    },
+    {
+      "unit": "msc",
+      "youngerThan": ["alg"],
+      "agesOf": {
+        "alg": [
+          {
+            "ageKa": 27,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "msc",
+      "quote": "banks against toe of unit alg (27±1 ka)"
+    },
+    {
+      "unit": "msc",
+      "olderThan": ["mms", "mmt"],
+      "describedIn": "msc",
+      "quote": "Overlain by units mms and mmt. 40Ar/39Ar age: 21.4±5.5 ka [NS, SS]"
+    },
+    {
+      "unit": "msf",
+      "olderThan": ["adl", "mcl", "mdl"],
+      "describedIn": "msf",
+      "quote": "Overlain by units adl, mcl, and mdl. 40Ar/39Ar age: 166±16 ka [TCB]"
+    },
+    {
+      "unit": "mss",
+      "youngerThan": ["mms"],
+      "describedIn": "mss",
+      "quote": "Overlies unit mms"
+    },
+    {
+      "unit": "mss",
+      "youngerThan": ["dms"],
+      "describedIn": "mss",
+      "quote": "banks against northern remnant of unit dms"
+    },
+    {
+      "unit": "mst",
+      "youngerThan": ["mns"],
+      "describedIn": "mst",
+      "quote": "Overlies older set of distal lavas of unit mns"
+    },
+    {
+      "unit": "mst",
+      "olderThan": ["myl"],
+      "describedIn": "mst",
+      "quote": "Overlain by unit myl and, although contact is covered by till, probably also by nearby unit mey"
+    },
+    {
+      "unit": "mth",
+      "youngerThan": ["bhs"],
+      "describedIn": "mth",
+      "quote": "Overlies unit bhs, which may, in part, be an early product of The Husband center"
+    },
+    {
+      "unit": "mth",
+      "olderThan": ["acc", "alc", "mls", "mms", "msc"],
+      "describedIn": "mth",
+      "quote": "Overlain by units acc, alc, mls, mms, and msc"
+    },
+    {
+      "unit": "mtp",
+      "youngerThan": ["aeg", "dlg", "des", "dnt", "dnt'"],
+      "describedIn": "mtp",
+      "quote": "Overlies units aeg, dlg, des, dnt, and dnt'"
+    },
+    {
+      "unit": "mtw",
+      "olderThan": ["bsb", "mhr", "bjc", "ddl", "mlc", "rrm"],
+      "agesOf": {
+        "bsb": [
+          {
+            "ageKa": 279,
+            "errorKa": 6
+          }
+        ],
+        "bjc": [
+          {
+            "ageKa": 148,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "mtw",
+      "quote": "Overlain by units bsb (279±6 ka), mhr, bjc (148±4 ka), ddl, mlc, and rrm. 40Ar/39Ar age: 374±6 ka, for massive lava on east face of summit"
+    },
+    {
+      "unit": "mwa",
+      "youngerThan": ["mns"],
+      "describedIn": "mwa",
+      "quote": "Overlies units mns"
+    },
+    {
+      "unit": "mwa",
+      "youngerThan": ["mfy", "myl"],
+      "describedIn": "mwa",
+      "quote": "banks against units mfy, myl, and (probably) mys"
+    },
+    {
+      "unit": "mwa",
+      "olderThan": ["mps"],
+      "describedIn": "mwa",
+      "quote": "Overlain by unit mps and intruded by thick aphyric mps dike"
+    },
+    {
+      "unit": "mwh",
+      "youngerThan": ["awy", "mbw", "bwy"],
+      "agesOf": {
+        "awy": [
+          {
+            "ageKa": 299,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "mwh",
+      "quote": "Overlies units awy (299±1 ka), mbw, and bwy"
+    },
+    {
+      "unit": "mwh",
+      "olderThan": ["acp", "bnf", "bwl", "bss", "mws"],
+      "agesOf": {
+        "mws": [
+          {
+            "ageKa": 175,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "mwh",
+      "quote": "Overlain by units acp, bnf, bwl, bss, and mws (175±3 ka)"
+    },
+    {
+      "unit": "mws",
+      "youngerThan": ["spt", "mwh"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "mws",
+      "quote": "Overlies units spt and mwh (195±5 ka)"
+    },
+    {
+      "unit": "mws",
+      "olderThan": ["adl", "msp", "bnf", "ruc"],
+      "agesOf": {
+        "adl": [
+          {
+            "ageKa": 24,
+            "errorKa": 1
+          }
+        ],
+        "ruc": [
+          {
+            "ageKa": 169,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "mws",
+      "quote": "Overlain by units adl (24±1 ka), msp, bnf, and ruc (169±2 ka). 40Ar/39Ar age: 175±3 ka [TCB]"
+    },
+    {
+      "unit": "mwy",
+      "youngerThan": ["myl", "mys", "myw"],
+      "describedIn": "mwy",
+      "quote": "Overlies units myl, mys, and myw"
+    },
+    {
+      "unit": "myl",
+      "youngerThan": ["mst", "bwm"],
+      "describedIn": "myl",
+      "quote": "Overlies units mst and bwm"
+    },
+    {
+      "unit": "myl",
+      "olderThan": ["mey", "mfy", "mnt", "mwa", "mwy"],
+      "agesOf": {
+        "mnt": [
+          {
+            "ageKa": 20,
+            "errorKa": 5
+          }
+        ],
+        "mwa": [
+          {
+            "ageKa": 59,
+            "errorKa": 4
+          }
+        ]
+      },
+      "describedIn": "myl",
+      "quote": "Overlain by units mey, mfy, mnt (20±5 ka), and mwa (59±4 ka), as well as by scoria cone of unit mwy"
+    },
+    {
+      "unit": "mys",
+      "youngerThan": ["mey"],
+      "describedIn": "mys",
+      "quote": "Overlies units mey and, inferentially, myw"
+    },
+    {
+      "unit": "mys",
+      "olderThan": ["mwy", "mps"],
+      "describedIn": "mys",
+      "quote": "Overlain by scoria cone of unit mwy and by variably agglutinated facies of phenocryst-poor pyroclastic unit mps, which banks against west wall of vent crag"
+    },
+    {
+      "unit": "myw",
+      "olderThan": ["mwy"],
+      "describedIn": "myw",
+      "quote": "Draped and largely concealed by agglutinate of unit mwy"
+    },
+    {
+      "unit": "rct",
+      "youngerThan": ["dcg", "dmn", "dmw", "dwp", "rse"],
+      "agesOf": {
+        "dcg": [
+          {
+            "ageKa": 31,
+            "errorKa": 3
+          }
+        ],
+        "rse": [
+          {
+            "ageKa": 34,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "rct",
+      "quote": "Overlies units dcg (31±3 ka), dmn, dmw, dwp, and rse (34±1 ka)"
+    },
+    {
+      "unit": "rdh",
+      "olderThan": ["rdc"],
+      "describedIn": "rdh",
+      "quote": "Intruded, and overlain by, late Holocene domes of unit rdc"
+    },
+    {
+      "unit": "rdh",
+      "olderThan": ["rdc", "rrm", "btk"],
+      "describedIn": "rdh",
+      "quote": "Overlain by fallout associated with units rdc, rrm, and btk. 40Ar/39Ar age: 34.8±1.5 ka [BT, SS]"
+    },
+    {
+      "unit": "rgl",
+      "olderThan": ["dgl"],
+      "describedIn": "rgl",
+      "quote": "Overlain by South Sister lavas of unit dgl. 40Ar/39Ar age: 31.9±0.7 ka [BT]"
+    },
+    {
+      "unit": "rkb",
+      "youngerThan": ["dwp"],
+      "agesOf": {
+        "dwp": [
+          {
+            "ageKa": 34,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "rkb",
+      "quote": "Overlies unit dwp (34±3 ka)"
+    },
+    {
+      "unit": "rmc",
+      "olderThan": ["dcg"],
+      "agesOf": {
+        "dcg": [
+          {
+            "ageKa": 31,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "rmc",
+      "quote": "Overlain, and extensively buried, by South Sister lava flows of unit dcg (31±3 ka)"
+    },
+    {
+      "unit": "roc",
+      "youngerThan": ["mlb", "aoc"],
+      "agesOf": {
+        "aoc": [
+          {
+            "minKa": 47,
+            "maxKa": 49
+          }
+        ]
+      },
+      "describedIn": "roc",
+      "quote": "Overlies units mlb (47-49 ka) and aoc (~48 ka)"
+    },
+    {
+      "unit": "roc",
+      "olderThan": ["mrg", "acc"],
+      "agesOf": {
+        "acc": [
+          {
+            "ageKa": 20,
+            "errorKa": 6
+          }
+        ]
+      },
+      "describedIn": "roc",
+      "quote": "Abutted by unit mrg (20±6 ka) and wrapped by Holocene lava flows from Collier Cone (unit acc)"
+    },
+    {
+      "unit": "roc",
+      "olderThan": ["dss"],
+      "agesOf": {
+        "dss": [
+          {
+            "ageKa": 25,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "roc",
+      "quote": "Overlain near Sister Spring by thick lava of unit dss (25±3 ka), which drapes down across successive lithologic zones in rhyolite of this unit. 40Ar/39Ar age: 37.8±1.8 ka [NS]"
+    },
+    {
+      "unit": "rpc",
+      "olderThan": ["drm"],
+      "agesOf": {
+        "drm": [
+          {
+            "ageKa": 29,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "rpc",
+      "quote": "Overlain by unit drm (29±1 ka)"
+    },
+    {
+      "unit": "rpg",
+      "olderThan": ["aph", "aph'"],
+      "describedIn": "rpg",
+      "quote": "Underlain on Prouty Glacier headwall by units aph and aph'"
+    },
+    {
+      "unit": "rpg",
+      "olderThan": ["dpg", "ahc", "aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "rpg",
+      "quote": "overlain there by unit dpg, which is, in turn, overlain by units ahc and aeg (27±2 ka)"
+    },
+    {
+      "unit": "rsc",
+      "youngerThan": ["aeg", "alg"],
+      "agesOf": {
+        "alg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "rsc",
+      "quote": "Overlies distal flows of units aeg (here, 27±3 ka) and alg (27±1 ka) at Separation Creek"
+    },
+    {
+      "unit": "rse",
+      "youngerThan": ["asn", "dml"],
+      "agesOf": {
+        "dml": [
+          {
+            "ageKa": 34,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "rse",
+      "quote": "Overlies units asn and dml (34±1 ka)"
+    },
+    {
+      "unit": "rse",
+      "olderThan": ["dmn", "rct"],
+      "agesOf": {
+        "rct": [
+          {
+            "ageKa": 28,
+            "errorKa": 1
+          },
+          {
+            "ageKa": 25,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "rse",
+      "quote": "Overlain by units dmn (28±1 ka, 25±1 ka) and rct (30±8 ka, 24±5 ka)"
+    },
+    {
+      "unit": "rse",
+      "olderThan": ["rdc"],
+      "describedIn": "rse",
+      "quote": "intruded, and overlain, by several domes of unit rdc and heavily mantled and widely concealed by proximal pumice falls that preceded extrusion of those domes. 40Ar/39Ar ages: 35.0±2.7 ka, 33.6±0.5 ka [BT, SS]"
+    },
+    {
+      "unit": "rsf",
+      "youngerThan": ["mdl"],
+      "agesOf": {
+        "mdl": [
+          {
+            "ageKa": 181,
+            "errorKa": 21
+          }
+        ]
+      },
+      "describedIn": "rsf",
+      "quote": "Overlies unit mdl (181±21 ka)"
+    },
+    {
+      "unit": "rsf",
+      "olderThan": ["aeg", "dcn", "drm", "mcl"],
+      "agesOf": {
+        "dcn": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ],
+        "drm": [
+          {
+            "ageKa": 29,
+            "errorKa": 1
+          }
+        ]
+      },
+      "describedIn": "rsf",
+      "quote": "Overlain by unit aeg (here, 27±2 ka) and is wrapped by units dcn, drm (29±1 ka), and mcl. 40Ar/39Ar age: 35.8±2.0 ka [BT, NS, SS, TCB]"
+    },
+    {
+      "unit": "rsw",
+      "olderThan": ["dcg", "aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 31,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "rsw",
+      "quote": "Underlies units dcg (31±3 ka) and aeg. 40Ar/39Ar age: 51±10 ka [SS]"
+    },
+    {
+      "unit": "rtl",
+      "olderThan": ["mbl"],
+      "describedIn": "rtl",
+      "quote": "Abutted by younger lavas of unit mbl"
+    },
+    {
+      "unit": "ruc",
+      "youngerThan": ["bwy"],
+      "describedIn": "ruc",
+      "quote": "Overlies unit bwy"
+    },
+    {
+      "unit": "ruc",
+      "olderThan": ["apc"],
+      "describedIn": "ruc",
+      "quote": "Overlain by avalanche and glacial deposits and mafic lava flows, all derived from Broken Top, and by unit apc (31±9 ka) and probably by unit drm (29±1 ka)"
+    },
+    {
+      "unit": "spt",
+      "olderThan": ["mws"],
+      "agesOf": {
+        "mws": [
+          {
+            "ageKa": 175,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "spt",
+      "quote": "Overlain directly by lava flow of unit mws (175±3 ka)"
+    },
+    {
+      "unit": "acp",
+      "olderThan": ["bss"],
+      "describedIn": "acp",
+      "handRead": true,
+      "quote": "West toe of cone is wrapped by younger lava flows of unit bss."
+    },
+    {
+      "unit": "acp",
+      "youngerThan": ["mwh", "bwl"],
+      "agesOf": {
+        "mwh": [
+          {
+            "ageKa": 195,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "acp",
+      "handRead": true,
+      "quote": "Lava-flow apron overlies units mwh (195±5 ka) and bwl and extends unknown distance beyond east edge of map area."
+    },
+    {
+      "unit": "adh",
+      "youngerThan": ["alh"],
+      "describedIn": "ahi",
+      "handRead": true,
+      "quote": "On slope northeast of Lewis Glacier, three or four dikes cut stack of four lava flows of unit alh and also thick overlying unit adh."
+    },
+    {
+      "unit": "adh",
+      "olderThan": ["dlg", "dbl"],
+      "agesOf": {
+        "dlg": [
+          {
+            "ageKa": 25.3,
+            "errorKa": 1.4
+          },
+          {
+            "ageKa": 22.3,
+            "errorKa": 1.6
+          }
+        ]
+      },
+      "describedIn": "adh",
+      "handRead": true,
+      "quote": "Thick lava of unit dlg (25.3±1.4 ka, 22.3±1.6 ka) and fragmental unit dbl later filled paleocrater, banking against and overlying dacite dome of unit."
+    },
+    {
+      "unit": "adh",
+      "olderThan": ["aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 2
+          }
+        ]
+      },
+      "describedIn": "adh",
+      "handRead": true,
+      "quote": "Thick talus from dome directly underlies unit aeg (here, 27±2 ka; 28.5±2.1 ka, nearby)."
+    },
+    {
+      "unit": "dbl",
+      "olderThan": ["dlg"],
+      "agesOf": {
+        "dlg": [
+          {
+            "ageKa": 25.3,
+            "errorKa": 1.4
+          },
+          {
+            "ageKa": 22.3,
+            "errorKa": 1.6
+          }
+        ]
+      },
+      "describedIn": "dbl",
+      "handRead": true,
+      "quote": "Top 2 m of unit is baked brick red, contrasting starkly with black, glassy horizontal columns of overlying lava flow of unit dlg (25.3±1.4 ka, 22.3±1.6 ka)."
+    },
+    {
+      "unit": "dbl",
+      "youngerThan": ["aeg"],
+      "agesOf": {
+        "aeg": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "ahi",
+      "handRead": true,
+      "quote": "Host rocks and some dikes are truncated by west-facing wall of large paleocrater, which also truncates overlying cone-forming stacks of unit aeg (27±3 ka) and was subsequently filled by units dbl, dlg (here, 25±1 ka), and des."
+    },
+    {
+      "unit": "btk",
+      "youngerThan": ["dse", "rdh"],
+      "agesOf": {
+        "rdh": [
+          {
+            "ageKa": 34.8,
+            "errorKa": 1.5
+          }
+        ]
+      },
+      "describedIn": "btk",
+      "handRead": true,
+      "quote": "Southwest edge of Katsuk Butte overlies unit dse, and stratified ejecta of Talapus Butte (stippled on map) overlie unit rdh (34.8±1.5 ka) on slope north of Devils Lake."
+    },
+    {
+      "unit": "dse",
+      "olderThan": ["mlc"],
+      "describedIn": "dse",
+      "handRead": true,
+      "quote": "Postglacial lava flows of unit mlc bank against unit."
+    },
+    {
+      "unit": "mbl",
+      "youngerThan": ["rtl"],
+      "describedIn": "mbl",
+      "handRead": true,
+      "quote": "Lavas bank against dome of pyroxene-plag rhyodacite (unit rtl; 69.5% SiO2) southwest of Todd Lake."
+    },
+    {
+      "unit": "mdw",
+      "olderThan": ["mec"],
+      "describedIn": "mdw",
+      "handRead": true,
+      "quote": "Wrapped on west by early Holocene lava flows of unit mec."
+    },
+    {
+      "unit": "mts",
+      "olderThan": ["mec"],
+      "describedIn": "mts",
+      "handRead": true,
+      "quote": "Knoll is wrapped by postglacial lava flows of unit mec."
+    },
+    {
+      "unit": "mkm",
+      "olderThan": ["dkb", "mlc"],
+      "agesOf": {
+        "dkb": [
+          {
+            "ageKa": 27,
+            "errorKa": 3
+          }
+        ]
+      },
+      "describedIn": "mkm",
+      "handRead": true,
+      "quote": "they are intruded by domes of unit dkb (27±3 ka) and overlain by lava apron of postglacial unit mlc."
+    },
+    {
+      "unit": "mth",
+      "olderThan": ["mth'"],
+      "agesOf": {
+        "mth'": [
+          {
+            "ageKa": 149,
+            "errorKa": 5
+          }
+        ]
+      },
+      "describedIn": "mth",
+      "handRead": true,
+      "quote": "Knob 6760 ... is glaciated flank vent (unit mth') that intruded and overlies less mafic apron of this unit. 40Ar/39Ar age for lava of Knob 6760 (149±5 ka), thus, provides minimum age for The Husband edifice."
+    },
+    {
+      "unit": "rsg",
+      "youngerThan": ["mbt"],
+      "describedIn": "rsg",
+      "handRead": true,
+      "quote": "Rhyodacite (70.1% SiO2) plug that intrudes brick-red mafic (56.5% SiO2) scoria cone of unit mbt."
+    }
+  ]
+}
