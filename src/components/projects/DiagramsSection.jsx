@@ -27,10 +27,10 @@ export default function DiagramsSection() {
       <SectionTitle>System Diagrams</SectionTitle>
 
       <p className="mt-4 mb-0 max-w-[70ch] text-[0.92rem] leading-[1.65] text-white/70">
-        Mapping out complex systems is part of my process, great for OCD&apos;ing down to each
-        piece of data, and a powerful planning and communication tool for the team. These are from a
-        few of my current projects. All are Express/Node servers on Postgres; the diagrams depict
-        the data relationships and flows described below.
+        Mapping out complex systems is part of my process, great for OCD&apos;ing down to each piece
+        of data, and a powerful planning and communication tool for the team. These are from a few
+        of my current projects. All are Express/Node servers on Postgres; the diagrams depict the
+        data relationships and flows described below.
       </p>
 
       <div className="mt-6 space-y-8">
