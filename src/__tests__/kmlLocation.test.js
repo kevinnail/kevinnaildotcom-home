@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest';
-import { parseKmlLocation, fetchTripLocations } from './kmlLocation';
+import { parseKmlLocation, fetchTripLocations } from '../utils/kmlLocation';
 
 // Trimmed to the shape a Google Earth Pro export actually has: a document-level
 // LookAt above the styles, then placemarks whose coordinates are lng,lat,alt
