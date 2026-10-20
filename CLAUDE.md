@@ -98,7 +98,7 @@ Standard controller → model → `pg` pool layering (`server/lib/{controllers,m
 - `trips`: a KML trail/campsite file: `name`, `region`, `url`, plus route stats (`distance_miles`, `elevation_min_feet`, `elevation_max_feet`, `elevation_gain_feet`, `elevation_loss_feet`, and `elevation_profiles` JSONB). The six stats columns are all set or all null; null means the KML has no route line, or the trip predates stats and hasn't been measured. The API returns them as one `stats` object, or `stats: null`.
 - `photos` — `gallery` ('astro' | 'hikes'), `url`, `thumb_url` (hikes only), `alt`, `caption`, `lat`/`lng`, `taken_at` (EXIF capture time), `trip_id` (FK → `trips`, `ON DELETE CASCADE`), `sort_order`.
 
-Ordering differs per gallery and is done server-side: **astro** uses hand-curated `sort_order`; **hikes** sorts chronologically by `taken_at`, falling back to `uploaded_at`. Deleting a trip cascades to its photos in the database and also purges their S3 objects.
+Ordering differs per gallery and is done server-side: **astro** uses hand-curated `sort_order`; **hikes** sorts chronologically by `taken_at`, falling back to `uploaded_at`. Trips sort oldest first by their earliest photo on that same date, and a trip with no photos yet goes last. Deleting a trip cascades to its photos in the database and also purges their S3 objects.
 
 ### Routing
 
@@ -107,7 +107,7 @@ Routes in `src/App.jsx`, all wrapped in `PageWrapper` (scroll-to-top on navigati
 - `/` → HomePage
 - `/projects` → ProjectsPage
 - `/astrophotography` → AstrophotographyPage
-- `/backpacking` → **HikeMapPage** (the 3D Cesium globe)
+- `/backpacking/:tripId?` → **HikeMapPage** (the 3D Cesium globe). The selected hike is the URL's trip id, so a hike can be linked directly; no id is the all-hikes overview, and an id that matches no trip shows "Hike not found." over the overview. One route with an optional segment, so switching hikes never remounts the globe.
 - `/dashboard` → DashboardPage (admin)
 - `/*` → NotFoundPage
 
