@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import useInView from '../../hooks/useInView';
-import trackPointer from '../../lib/trackPointer';
+import trackPointer from '../../utils/trackPointer';
 import InspectorOverlay from './InspectorOverlay';
 import { spanClasses } from './tileSizes';
 
