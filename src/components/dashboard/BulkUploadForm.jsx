@@ -4,10 +4,10 @@ import {
   uploadToS3,
   savePhotosBatch,
   SessionExpiredError,
-} from '../../lib/mediaApi';
-import { readPhotoMeta } from '../../lib/exif';
-import { createDisplayImage, createThumbnail } from '../../lib/resizeImage';
-import { mapWithConcurrency } from '../../lib/concurrency';
+} from '../../api/mediaApi';
+import { readPhotoMeta } from '../../utils/exif';
+import { createDisplayImage, createThumbnail } from '../../utils/resizeImage';
+import { mapWithConcurrency } from '../../utils/concurrency';
 
 const MAX_BATCH = 500; // must match the Lambda's per-batch cap
 const UPLOAD_CONCURRENCY = 5;
