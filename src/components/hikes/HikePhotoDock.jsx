@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { isGeotagged } from '../../lib/hikePhotos';
+import { isGeotagged } from '../../utils/hikePhotos';
 
 // Swipe thresholds. The distance keeps a sloppy tap from counting as a swipe, and
 // the off-axis ratio rejects gestures that are really vertical — a diagonal drag
