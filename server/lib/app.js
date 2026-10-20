@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import blog from './controllers/blog.js';
 import health from './controllers/health.js';
 import photos from './controllers/photos.js';
 import presign from './controllers/presign.js';
@@ -28,6 +29,7 @@ app.use(
 );
 
 // App routes
+app.use('/api/v1/blog', blog);
 app.use('/api/v1/health', health);
 app.use('/api/v1/photos', photos);
 app.use('/api/v1/presign', presign);
