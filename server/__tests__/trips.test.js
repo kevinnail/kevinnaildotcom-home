@@ -67,36 +67,65 @@ afterAll(async () => {
 });
 
 describe('Trip routes', () => {
-  it('GET /api/v1/trips returns every trip newest first, in the manifest shape', async () => {
+  // Otherwise the map sidebar lists hikes in upload order instead of the order they were hiked.
+  it('GET /api/v1/trips returns every trip by its earliest photo, in the manifest shape', async () => {
     const { rows } = await pool.query(
       `INSERT INTO trips (name, region, url, uploaded_at) VALUES
-        ('Older Loop', 'Cascades', 'https://media.example.com/kml/older.kml', '2024-01-01T00:00:00Z'),
-        ('Newer Loop', 'Olympics', 'https://media.example.com/kml/newer.kml', '2024-02-01T00:00:00Z')
+        ('Hiked Later', 'Cascades', 'https://media.example.com/kml/later.kml', '2024-01-01T00:00:00Z'),
+        ('Hiked Earlier', 'Olympics', 'https://media.example.com/kml/earlier.kml', '2024-02-01T00:00:00Z')
        RETURNING *`,
     );
-    const [older, newer] = rows;
+    const [hikedLater, hikedEarlier] = rows;
+    await pool.query(
+      `INSERT INTO photos (gallery, url, trip_id, taken_at) VALUES
+        ('hikes', 'https://media.example.com/hikes/a.webp', $1, '2023-08-10T00:00:00Z'),
+        ('hikes', 'https://media.example.com/hikes/b.webp', $1, '2023-08-12T00:00:00Z'),
+        ('hikes', 'https://media.example.com/hikes/c.webp', $2, '2023-07-01T00:00:00Z')`,
+      [hikedLater.id, hikedEarlier.id],
+    );
 
     const response = await request(app).get('/api/v1/trips');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([
       {
-        id: newer.id,
-        name: 'Newer Loop',
+        id: hikedEarlier.id,
+        name: 'Hiked Earlier',
         region: 'Olympics',
-        url: 'https://media.example.com/kml/newer.kml',
+        url: 'https://media.example.com/kml/earlier.kml',
         uploadedAt: '2024-02-01T00:00:00.000Z',
         stats: null,
       },
       {
-        id: older.id,
-        name: 'Older Loop',
+        id: hikedLater.id,
+        name: 'Hiked Later',
         region: 'Cascades',
-        url: 'https://media.example.com/kml/older.kml',
+        url: 'https://media.example.com/kml/later.kml',
         uploadedAt: '2024-01-01T00:00:00.000Z',
         stats: null,
       },
     ]);
+  });
+
+  // A KML is uploaded before its photos, so a photoless trip must still be listed for the dashboard to assign photos to it.
+  it('lists a trip with no photos yet after the dated ones', async () => {
+    const { rows } = await pool.query(
+      `INSERT INTO trips (name, url) VALUES
+        ('Dated', 'https://media.example.com/kml/dated.kml'),
+        ('No Photos Yet', 'https://media.example.com/kml/empty.kml')
+       RETURNING *`,
+    );
+    const [dated, noPhotosYet] = rows;
+    await pool.query(
+      `INSERT INTO photos (gallery, url, trip_id, taken_at)
+       VALUES ('hikes', 'https://media.example.com/hikes/a.webp', $1, '2023-08-10T00:00:00Z')`,
+      [dated.id],
+    );
+
+    const response = await request(app).get('/api/v1/trips');
+
+    expect(response.status).toBe(200);
+    expect(response.body.map((trip) => trip.id)).toEqual([dated.id, noPhotosYet.id]);
   });
 
   // The map sidebar treats "no trips yet" as an empty list, never an error
