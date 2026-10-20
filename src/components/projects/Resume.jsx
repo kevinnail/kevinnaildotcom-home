@@ -57,7 +57,7 @@ export default function Resume() {
   async function handleDownload() {
     setDownloadState('working');
     try {
-      const { downloadResumePdf } = await import('../../lib/resumePdf');
+      const { downloadResumePdf } = await import('../../utils/resumePdf');
       downloadResumePdf({ resume, phone: localPhone });
       setDownloadState('idle');
     } catch (error) {
