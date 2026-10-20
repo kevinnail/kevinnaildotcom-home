@@ -3,6 +3,7 @@
 -- Tables are dropped and recreated on every run, so define DROP TABLE IF EXISTS
 -- statements above their CREATE TABLE counterparts as tables are added.
 
+DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS photos CASCADE;
 DROP TABLE IF EXISTS trips CASCADE;
 DROP TABLE IF EXISTS users_admin CASCADE;
@@ -48,3 +49,16 @@ CREATE TABLE photos (
 
 CREATE INDEX photos_gallery_sort_idx ON photos (gallery, sort_order);
 CREATE INDEX photos_trip_idx ON photos (trip_id);
+
+CREATE TABLE blog_posts (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug         TEXT NOT NULL UNIQUE,    -- set from the title at creation, never changed
+  title        TEXT NOT NULL,
+  category     TEXT NOT NULL,
+  summary      TEXT NOT NULL DEFAULT '',
+  cover_url    TEXT,                    -- null until a cover is chosen
+  blocks       JSONB NOT NULL DEFAULT '[]',
+  published_at TIMESTAMPTZ,             -- null means draft
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
