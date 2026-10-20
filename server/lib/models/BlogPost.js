@@ -1,5 +1,5 @@
 import pool from '../utils/pool.js';
-import { slugify } from '../utils/blogBlocks.js';
+import { slugify, toStoredBlocks } from '../utils/blogBlocks.js';
 
 // GET /api/v1/blog/admin is declared above GET /:slug, so a post slugged
 // "admin" could never be read.
@@ -24,11 +24,14 @@ const uniqueSlug = async (title) => {
 };
 
 // A category that differs from an existing one only in case reuses the existing
-// spelling, so readers never get two filters for one category.
-const matchExistingCategory = async (category) => {
+// spelling, so readers never get two filters for one category. The post being
+// saved is left out, so it can fix the case of a category only it uses.
+const matchExistingCategory = async (category, excludedPostId = null) => {
   const { rows } = await pool.query(
-    'SELECT category FROM blog_posts WHERE LOWER(category) = LOWER($1) LIMIT 1',
-    [category],
+    `SELECT category FROM blog_posts
+     WHERE LOWER(category) = LOWER($1) AND id IS DISTINCT FROM $2
+     LIMIT 1`,
+    [category, excludedPostId],
   );
   return rows[0]?.category ?? category;
 };
@@ -69,5 +72,27 @@ export default class BlogPost {
     );
 
     return rows.map((row) => new BlogPost(row));
+  }
+
+  static async getById(id) {
+    const { rows } = await pool.query('SELECT * FROM blog_posts WHERE id = $1', [id]);
+
+    return rows[0] ? new BlogPost(rows[0]) : null;
+  }
+
+  // The slug is left alone so links already shared keep working after a title edit.
+  static async update(id, { title, category, summary, blocks }) {
+    const storedCategory = await matchExistingCategory(category, id);
+
+    const { rows } = await pool.query(
+      `UPDATE blog_posts
+       SET title = $2, category = $3, summary = $4, blocks = $5, updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      // pg sends a JS array as a Postgres array, not JSON, so it is stringified.
+      [id, title, storedCategory, summary, JSON.stringify(toStoredBlocks(blocks))],
+    );
+
+    return rows[0] ? new BlogPost(rows[0]) : null;
   }
 }
