@@ -38,7 +38,7 @@ export default function App() {
           }
         />
         <Route
-          path="/backpacking"
+          path="/backpacking/:tripId?"
           element={
             <PageWrapper>
               <HikeMapPage />

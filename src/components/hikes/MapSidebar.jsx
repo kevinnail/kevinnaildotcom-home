@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './MapSidebar.css';
 
 // One hike row, shared by the desktop list and the mobile picker sheet so both
 // stay visually identical and in sync. Each row reads as its own card: a hairline
@@ -62,6 +63,7 @@ export default function MapSidebar({
   photoMessage,
   isShowingAllRoutes,
   onShowAllRoutes,
+  isTripNotFound,
 }) {
   // Mobile-only: the full hike list lives in a bottom sheet instead of a
   // sideways-scrolling strip, which is awkward to browse on a phone.
@@ -74,11 +76,13 @@ export default function MapSidebar({
     mobileTitle = selectedTrip ? selectedTrip.name : 'All hikes';
     mobileSubtitle = selectedTrip ? selectedTrip.region : 'Tap a pin to open one';
   }
+  if (isTripNotFound) mobileTitle = 'Hike not found.';
 
   return (
     <aside className="flex max-h-[55vh] w-full shrink-0 flex-col overflow-hidden border-t border-neon-blue-50 bg-black/90 text-white md:max-h-none md:w-72 md:border-r md:border-t-0">
       <div className="hidden shrink-0 border-b border-neon-blue-50 px-4 py-4 md:block">
         <h1 className="font-display text-2xl text-white">Hikes</h1>
+        {isTripNotFound && <p className="trip-not-found">Hike not found.</p>}
         <p className="font-body text-sm text-gray-300">
           {isShowingAllRoutes
             ? 'Click a pin on the map, or a hike below, to open it.'
@@ -98,7 +102,7 @@ export default function MapSidebar({
       <div className="shrink-0 border-b border-neon-blue-50 px-4 py-2 md:hidden">
         <span
           aria-live="polite"
-          className="line-clamp-2 block font-display text-xl leading-tight text-white [text-shadow:0_0_12px_var(--color-neon-blue-bright)]"
+          className={`mobile-hike-title ${isTripNotFound ? 'mobile-hike-title-not-found' : ''}`}
         >
           {mobileTitle}
         </span>

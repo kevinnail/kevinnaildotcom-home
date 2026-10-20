@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Banner from '../components/layout/Banner';
 import MapSidebar from '../components/hikes/MapSidebar';
@@ -12,20 +13,29 @@ import preloadImages from '../utils/preloadImages';
 import useIsDesktop from '../hooks/useIsDesktop';
 
 export default function HikeMapPage() {
+  const { tripId } = useParams();
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | ready | error
-  const [selectedTripId, setSelectedTripId] = useState(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
 
   const [isPhotoViewOpen, setIsPhotoViewOpen] = useState(false);
+
+  // Back and forward change the hike without a click, so the open photo is
+  // cleared here instead of in the click handlers.
+  const [photoSelectionTripId, setPhotoSelectionTripId] = useState(tripId);
+  if (tripId !== photoSelectionTripId) {
+    setPhotoSelectionTripId(tripId);
+    setSelectedPhotoId(null);
+    setIsPhotoViewOpen(false);
+  }
+
   // Reported by HikeGlobe: true once terrain, the viewer, and the overview pins are
   // all in. The trips request and the globe race each other and either can win, so
   // the page is only really loaded when both are done — see `statusMessage` below.
   const [isGlobeReady, setIsGlobeReady] = useState(false);
   const isDesktop = useIsDesktop();
-
-  const isShowingAllRoutes = selectedTripId == null;
 
   useEffect(() => {
     let active = true;
@@ -45,7 +55,10 @@ export default function HikeMapPage() {
     };
   }, []);
 
-  const selectedTrip = trips.find((trip) => trip.id === selectedTripId) ?? null;
+  const selectedTrip = trips.find((trip) => trip.id === tripId) ?? null;
+  const selectedTripId = selectedTrip?.id ?? null;
+  const isShowingAllRoutes = selectedTripId == null;
+  const isTripNotFound = status === 'ready' && tripId != null && selectedTrip == null;
   // Memoised so it is a stable value the prefetch effect below can depend on —
   // a fresh array every render would re-run the prefetch on every render.
   const tripPhotos = useMemo(
@@ -65,16 +78,14 @@ export default function HikeMapPage() {
     preloadImages([tripPhotos[selectedIndex - 1]?.url, tripPhotos[selectedIndex + 1]?.url]);
   }, [tripPhotos, selectedIndex]);
 
-  function handleSelectTrip(tripId) {
-    setSelectedTripId(tripId);
+  function handleSelectTrip(newTripId) {
     setSelectedPhotoId(null);
     setIsPhotoViewOpen(false);
+    if (newTripId !== selectedTripId) navigate(`/backpacking/${newTripId}`);
   }
 
   function handleShowAllRoutes() {
-    setSelectedTripId(null);
-    setSelectedPhotoId(null);
-    setIsPhotoViewOpen(false);
+    navigate('/backpacking');
   }
 
   function handleSelectPhoto(photoId) {
@@ -113,7 +124,10 @@ export default function HikeMapPage() {
           name="description"
           content="Explore Kevin Nail's backpacking trips on a 3D map — trails, campsites, and photos."
         />
-        <link rel="canonical" href="https://kevinnail.com/backpacking" />
+        <link
+          rel="canonical"
+          href={`https://kevinnail.com/backpacking${selectedTripId ? `/${selectedTripId}` : ''}`}
+        />
       </Helmet>
 
       <div className="flex h-dvh w-screen flex-col overflow-hidden bg-black">
@@ -132,6 +146,7 @@ export default function HikeMapPage() {
             photoMessage={photoMessage}
             isShowingAllRoutes={isShowingAllRoutes}
             onShowAllRoutes={handleShowAllRoutes}
+            isTripNotFound={isTripNotFound}
           />
           <main className="relative min-h-0 flex-1">
             <HikeGlobe
