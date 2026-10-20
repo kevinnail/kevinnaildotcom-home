@@ -1,0 +1,23 @@
+.trip-not-found {
+  margin: 0;
+  color: #f87171;
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+.mobile-hike-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.25;
+  text-shadow: 0 0 12px var(--color-neon-blue-bright);
+}
+
+.mobile-hike-title-not-found {
+  color: #f87171;
+  text-shadow: none;
+}
