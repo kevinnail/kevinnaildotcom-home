@@ -23,6 +23,32 @@ function purgedKeys() {
   return send.mock.lastCall[0].input.Delete.Objects.map((object) => object.Key);
 }
 
+// Stats as the client measures them at upload (src/utils/routeStats.js).
+const ROUTE_STATS = {
+  distanceMiles: 8.82,
+  elevationMinFeet: 5184,
+  elevationMaxFeet: 6906,
+  elevationGainFeet: 2100,
+  elevationLossFeet: 2001,
+  elevationProfiles: [
+    {
+      name: 'Obsidian TH to PCT',
+      points: [
+        [0, 5184],
+        [4.412, 6906],
+        [8.202, 5282],
+      ],
+    },
+    {
+      name: 'Chambers Lake day hike',
+      points: [
+        [0, 6594],
+        [0.621, 6759],
+      ],
+    },
+  ],
+};
+
 async function adminToken() {
   const user = await AdminUser.insert({ username: 'kevin', password: 'correct horse' });
   return signAdminToken(user);
@@ -30,8 +56,6 @@ async function adminToken() {
 
 beforeEach(async () => {
   send.mockClear();
-  // The row stores the full public URL, built from the object key the client
-  // got back from presign.
   vi.stubEnv('MEDIA_BASE_URL', 'https://media.example.com');
   vi.stubEnv('MEDIA_BUCKET', 'kevinnail-media-test');
   await setup(pool);
@@ -62,6 +86,7 @@ describe('Trip routes', () => {
         region: 'Olympics',
         url: 'https://media.example.com/kml/newer.kml',
         uploadedAt: '2024-02-01T00:00:00.000Z',
+        stats: null,
       },
       {
         id: older.id,
@@ -69,12 +94,12 @@ describe('Trip routes', () => {
         region: 'Cascades',
         url: 'https://media.example.com/kml/older.kml',
         uploadedAt: '2024-01-01T00:00:00.000Z',
+        stats: null,
       },
     ]);
   });
 
-  // The map sidebar treats "no trips yet" as an empty list, never an error —
-  // the same way a missing manifest used to read.
+  // The map sidebar treats "no trips yet" as an empty list, never an error
   it('returns an empty list when no trips exist', async () => {
     const response = await request(app).get('/api/v1/trips');
 
@@ -96,7 +121,12 @@ describe('POST /api/v1/trips', () => {
     const response = await request(app)
       .post('/api/v1/trips')
       .set('authorization', `Bearer ${token}`)
-      .send({ objectKey: 'kml/loop.kml', name: '  Timberline Loop  ', region: ' Mt Hood ' });
+      .send({
+        objectKey: 'kml/loop.kml',
+        name: '  Timberline Loop  ',
+        region: ' Mt Hood ',
+        stats: ROUTE_STATS,
+      });
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
@@ -105,6 +135,7 @@ describe('POST /api/v1/trips', () => {
       region: 'Mt Hood',
       url: 'https://media.example.com/kml/loop.kml',
       uploadedAt: expect.any(String),
+      stats: ROUTE_STATS,
     });
 
     const { rows } = await pool.query('SELECT * FROM trips');
@@ -113,7 +144,67 @@ describe('POST /api/v1/trips', () => {
       id: response.body.id,
       name: 'Timberline Loop',
       url: 'https://media.example.com/kml/loop.kml',
+      distance_miles: 8.82,
+      elevation_gain_feet: 2100,
+      elevation_profiles: ROUTE_STATS.elevationProfiles,
     });
+  });
+
+  it('stores a KML with no route line as a trip with null stats', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .post('/api/v1/trips')
+      .set('authorization', `Bearer ${token}`)
+      .send({ objectKey: 'kml/camp.kml', name: 'Campsites only', stats: null });
+
+    expect(response.status).toBe(201);
+    expect(response.body.stats).toBeNull();
+
+    const { rows } = await pool.query('SELECT distance_miles, elevation_profiles FROM trips');
+    expect(rows).toEqual([{ distance_miles: null, elevation_profiles: null }]);
+  });
+
+  it('rejects a trip sent without stats with a 400', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .post('/api/v1/trips')
+      .set('authorization', `Bearer ${token}`)
+      .send({ objectKey: 'kml/loop.kml', name: 'Timberline Loop' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('stats is required, or null for a KML with no route');
+  });
+
+  it('rejects malformed stats with a 400 and writes nothing', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .post('/api/v1/trips')
+      .set('authorization', `Bearer ${token}`)
+      .send({
+        objectKey: 'kml/loop.kml',
+        name: 'Timberline Loop',
+        stats: {
+          ...ROUTE_STATS,
+          elevationProfiles: [
+            {
+              name: 'Out of order',
+              points: [
+                [100, 1580],
+                [50, 1600],
+              ],
+            },
+          ],
+        },
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toMatch(/^stats.elevationProfiles must be/);
+
+    const { rows } = await pool.query('SELECT * FROM trips');
+    expect(rows).toHaveLength(0);
   });
 
   it('defaults an omitted region to an empty string, never null', async () => {
@@ -122,7 +213,7 @@ describe('POST /api/v1/trips', () => {
     const response = await request(app)
       .post('/api/v1/trips')
       .set('authorization', `Bearer ${token}`)
-      .send({ objectKey: 'kml/loop.kml', name: 'Timberline Loop' });
+      .send({ objectKey: 'kml/loop.kml', name: 'Timberline Loop', stats: null });
 
     expect(response.status).toBe(201);
     expect(response.body.region).toBe('');
@@ -134,7 +225,7 @@ describe('POST /api/v1/trips', () => {
     const response = await request(app)
       .post('/api/v1/trips')
       .set('authorization', `Bearer ${token}`)
-      .send({ objectKey: 'kml/loop.kml', name: '   ' });
+      .send({ objectKey: 'kml/loop.kml', name: '   ', stats: null });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('name is required');
@@ -149,7 +240,7 @@ describe('POST /api/v1/trips', () => {
     const response = await request(app)
       .post('/api/v1/trips')
       .set('authorization', `Bearer ${token}`)
-      .send({ name: 'Timberline Loop' });
+      .send({ name: 'Timberline Loop', stats: null });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('objectKey is required');
@@ -164,6 +255,91 @@ describe('POST /api/v1/trips', () => {
 
     const { rows } = await pool.query('SELECT * FROM trips');
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('PUT /api/v1/trips/:id/stats', () => {
+  async function insertUnmeasuredTrip() {
+    const { rows } = await pool.query(
+      `INSERT INTO trips (name, region, url)
+       VALUES ('Timberline Loop', 'Mt Hood', 'https://media.example.com/kml/loop.kml')
+       RETURNING *`,
+    );
+
+    return rows[0];
+  }
+
+  it('stores stats on a trip uploaded before they existed', async () => {
+    const token = await adminToken();
+    const trip = await insertUnmeasuredTrip();
+
+    const response = await request(app)
+      .put(`/api/v1/trips/${trip.id}/stats`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ stats: ROUTE_STATS });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      id: trip.id,
+      name: 'Timberline Loop',
+      stats: ROUTE_STATS,
+    });
+
+    const listed = await request(app).get('/api/v1/trips');
+    expect(listed.body[0].stats).toEqual(ROUTE_STATS);
+  });
+
+  it('rejects malformed stats with a 400 and leaves the trip unmeasured', async () => {
+    const token = await adminToken();
+    const trip = await insertUnmeasuredTrip();
+
+    const response = await request(app)
+      .put(`/api/v1/trips/${trip.id}/stats`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ stats: { ...ROUTE_STATS, distanceMiles: -5 } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('stats.distanceMiles must be a positive number');
+
+    const { rows } = await pool.query('SELECT distance_miles FROM trips');
+    expect(rows).toEqual([{ distance_miles: null }]);
+  });
+
+  it('rejects null stats, which only an upload may send', async () => {
+    const token = await adminToken();
+    const trip = await insertUnmeasuredTrip();
+
+    const response = await request(app)
+      .put(`/api/v1/trips/${trip.id}/stats`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ stats: null });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('stats must be an object');
+  });
+
+  it('returns a 404 for an unknown trip', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .put('/api/v1/trips/00000000-0000-0000-0000-000000000000/stats')
+      .set('authorization', `Bearer ${token}`)
+      .send({ stats: ROUTE_STATS });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('rejects an unauthenticated request with a 401 and writes nothing', async () => {
+    const trip = await insertUnmeasuredTrip();
+
+    const response = await request(app)
+      .put(`/api/v1/trips/${trip.id}/stats`)
+      .send({ stats: ROUTE_STATS });
+
+    expect(response.status).toBe(401);
+
+    const { rows } = await pool.query('SELECT distance_miles FROM trips');
+    expect(rows).toEqual([{ distance_miles: null }]);
   });
 });
 
