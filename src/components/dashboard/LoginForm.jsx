@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login, InvalidPasswordError, NetworkError } from '../../lib/mediaApi';
+import { login, InvalidPasswordError, NetworkError } from '../../api/mediaApi';
 
 export default function LoginForm({ onAuthenticated }) {
   const [username, setUsername] = useState('');
