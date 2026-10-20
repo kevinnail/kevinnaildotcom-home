@@ -19,11 +19,6 @@ export class SessionExpiredError extends Error {
   }
 }
 
-// Rejected credentials are the only login failure the user can act on, and the
-// API signals it with a 401. Everything else — the API URL missing, CORS, a
-// 5xx — is our problem, not theirs, and must not be reported as a bad password.
-// The server answers an unknown username and a wrong password identically, so
-// this can't say which one was wrong.
 export class InvalidPasswordError extends Error {
   constructor() {
     super('Invalid username or password');
@@ -31,12 +26,6 @@ export class InvalidPasswordError extends Error {
   }
 }
 
-// The request never got a verdict: offline, DNS/CORS failure, or no API_URL.
-// The browser deliberately hides *why* a cross-origin request was blocked —
-// fetch rejects with a bare "Failed to fetch" and the real reason is printed
-// only to the console — so the one useful detail we can still relay is which
-// URL we called. A wrong VITE_API_URL (an IP where localhost was expected)
-// looks identical to being offline until you can see the target.
 export class NetworkError extends Error {
   constructor(url, cause) {
     super(`Could not reach ${url}`);
@@ -158,13 +147,33 @@ export async function deletePhoto(token, id, gallery) {
 
 // Record an already-uploaded KML object as a trip. The bytes went straight to S3
 // via presign (?gallery=kml) + uploadToS3; this only writes the trip row.
-export async function saveKml(token, { objectKey, name, region }) {
+// `stats` is the route's measured distance and elevation (measureKmlRoute), or
+// null for a KML with no route line.
+export async function saveKml(token, { objectKey, name, region, stats }) {
   const response = await authorizedFetch('/trips', token, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ objectKey, name, region }),
+    body: JSON.stringify({ objectKey, name, region, stats }),
   });
   return response.json(); // the created trip entry
+}
+
+// Stats for a trip uploaded before they existed. Returns the updated trip.
+export async function saveTripStats(token, id, stats) {
+  const response = await authorizedFetch(`/trips/${id}/stats`, token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ stats }),
+  });
+  return response.json();
+}
+
+// The text of a trip's KML, read from its public URL, for measuring a trip that
+// was uploaded before stats existed.
+export async function fetchKmlText(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`KML request failed: ${response.status}`);
+  return response.text();
 }
 
 // Deleting a trip cascades to its photos on the server. Returns
