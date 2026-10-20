@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import AstrophotographyPage from './pages/AstrophotographyPage';
 import HikeMapPage from './pages/HikeMapPage';
 import DashboardPage from './pages/DashboardPage';
+import BlogEditorPage from './pages/BlogEditorPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <PageWrapper>
               <DashboardPage />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/dashboard/blog/:id"
+          element={
+            <PageWrapper>
+              <BlogEditorPage />
             </PageWrapper>
           }
         />

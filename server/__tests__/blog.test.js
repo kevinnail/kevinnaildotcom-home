@@ -169,3 +169,205 @@ describe('GET /api/v1/blog/admin', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('PUT /api/v1/blog/:id and GET /api/v1/blog/admin/:id', () => {
+  const textBlocks = [
+    { id: 'block-a', type: 'text', body: 'Trailhead at dawn.' },
+    { id: 'block-b', type: 'text', body: 'The **ridge** above camp.' },
+    { id: 'block-c', type: 'text', body: '' },
+  ];
+  const unknownId = '00000000-0000-4000-8000-000000000000';
+
+  async function createDraft(token, fields = { title: 'Ridge Hike', category: 'Hiking' }) {
+    const response = await createPost(token, fields);
+    return response.body;
+  }
+
+  async function savePost(token, id, fields) {
+    return request(app)
+      .put(`/api/v1/blog/${id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send(fields);
+  }
+
+  async function storedRow(id) {
+    const { rows } = await pool.query('SELECT * FROM blog_posts WHERE id = $1', [id]);
+    return rows[0];
+  }
+
+  // Otherwise the editor reopens a post with its text blocks lost or shuffled.
+  it('saves title, category, summary and blocks, and GET returns blocks in the same order', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const reordered = [textBlocks[2], textBlocks[0], textBlocks[1]];
+    await pool.query("UPDATE blog_posts SET updated_at = '2026-01-01' WHERE id = $1", [draft.id]);
+
+    const saveResponse = await savePost(token, draft.id, {
+      title: 'Ridge Hike, Day Two',
+      category: 'Backpacking',
+      summary: '  Two days up the ridge.  ',
+      blocks: reordered,
+    });
+
+    expect(saveResponse.status).toBe(200);
+    expect(saveResponse.body.title).toBe('Ridge Hike, Day Two');
+    expect(saveResponse.body.category).toBe('Backpacking');
+    expect(saveResponse.body.summary).toBe('Two days up the ridge.');
+
+    const getResponse = await request(app)
+      .get(`/api/v1/blog/admin/${draft.id}`)
+      .set('authorization', `Bearer ${token}`);
+    expect(getResponse.status).toBe(200);
+    expect(getResponse.body.blocks).toEqual(reordered);
+    expect(getResponse.body.slug).toBe('ridge-hike');
+    expect((await storedRow(draft.id)).updated_at.getTime()).toBeGreaterThan(
+      new Date('2026-01-01').getTime(),
+    );
+  });
+
+  // Otherwise fields the client tacks onto a block end up stored in the post.
+  it('stores only the id, type and body of each block', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    await savePost(token, draft.id, {
+      title: 'Ridge Hike',
+      category: 'Hiking',
+      summary: 'Two days up the ridge.',
+      blocks: [{ id: 'block-a', type: 'text', body: 'Trailhead.', isEditing: true }],
+    });
+
+    expect((await storedRow(draft.id)).blocks).toEqual([
+      { id: 'block-a', type: 'text', body: 'Trailhead.' },
+    ]);
+  });
+
+  // Otherwise editing a post's category to "hiking" splits it from the other "Hiking" posts, or a post can't fix its own capitalization.
+  it('reuses another post category case-insensitively but lets a post fix its own case', async () => {
+    const token = await adminToken();
+    await createDraft(token, { title: 'Mushroom walk', category: 'Foraging' });
+    const draft = await createDraft(token);
+
+    const joined = await savePost(token, draft.id, {
+      title: 'Ridge Hike',
+      category: 'foraging',
+      summary: 'Two days up the ridge.',
+      blocks: [],
+    });
+    expect(joined.body.category).toBe('Foraging');
+
+    const solo = await createDraft(token, { title: 'Telescope', category: 'astro' });
+    const recased = await savePost(token, solo.id, {
+      title: 'Telescope',
+      category: 'Astro',
+      summary: 'First light.',
+      blocks: [],
+    });
+    expect(recased.body.category).toBe('Astro');
+  });
+
+  // Otherwise a malformed block from the editor overwrites a good post.
+  it('returns 400 for a block missing its type and leaves the row unchanged', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await savePost(token, draft.id, {
+      title: 'Ridge Hike',
+      category: 'Hiking',
+      summary: 'Two days up the ridge.',
+      blocks: textBlocks,
+    });
+
+    const response = await savePost(token, draft.id, {
+      title: 'Should not save',
+      category: 'Hiking',
+      summary: 'Two days up the ridge.',
+      blocks: [{ id: 'block-x', body: 'No type' }],
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('Block 1 has an unknown type');
+    const row = await storedRow(draft.id);
+    expect(row.title).toBe('Ridge Hike');
+    expect(row.blocks).toEqual(textBlocks);
+  });
+
+  // Otherwise a text block with a number or null body is stored and breaks the post page.
+  it('returns 400 for a text block whose body is not a string', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await savePost(token, draft.id, {
+      title: 'Ridge Hike',
+      category: 'Hiking',
+      summary: 'Two days up the ridge.',
+      blocks: [{ id: 'block-x', type: 'text', body: 42 }],
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('Block 1 text must be a string');
+    expect((await storedRow(draft.id)).blocks).toEqual([]);
+  });
+
+  // Otherwise a save can blank out a post's title, category or summary.
+  it('returns 400 for a blank title, category or summary and leaves the row unchanged', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const validFields = {
+      title: 'Ridge Hike',
+      category: 'Hiking',
+      summary: 'Two days up the ridge.',
+      blocks: [],
+    };
+
+    const blankTitle = await savePost(token, draft.id, { ...validFields, title: '  ' });
+    const blankCategory = await savePost(token, draft.id, { ...validFields, category: '' });
+    const blankSummary = await savePost(token, draft.id, { ...validFields, summary: '   ' });
+
+    expect(blankTitle.status).toBe(400);
+    expect(blankTitle.body.message).toBe('Title is required');
+    expect(blankCategory.status).toBe(400);
+    expect(blankCategory.body.message).toBe('Category is required');
+    expect(blankSummary.status).toBe(400);
+    expect(blankSummary.body.message).toBe('Summary is required');
+    const row = await storedRow(draft.id);
+    expect(row.title).toBe('Ridge Hike');
+    expect(row.category).toBe('Hiking');
+    expect(row.summary).toBe('');
+  });
+
+  // Otherwise opening a deleted post or a mistyped editor URL shows a server error instead of not found.
+  it('returns 404 for an unknown or malformed id on GET and PUT', async () => {
+    const token = await adminToken();
+    const fields = { title: 'Ghost', category: 'General', summary: 'Nothing here.', blocks: [] };
+
+    const unknownGet = await request(app)
+      .get(`/api/v1/blog/admin/${unknownId}`)
+      .set('authorization', `Bearer ${token}`);
+    const unknownPut = await savePost(token, unknownId, fields);
+    const malformedGet = await request(app)
+      .get('/api/v1/blog/admin/not-a-uuid')
+      .set('authorization', `Bearer ${token}`);
+    const malformedPut = await savePost(token, 'not-a-uuid', fields);
+
+    expect(unknownGet.status).toBe(404);
+    expect(unknownPut.status).toBe(404);
+    expect(unknownPut.body.message).toBe('Blog post not found');
+    expect(malformedGet.status).toBe(404);
+    expect(malformedPut.status).toBe(404);
+  });
+
+  // Otherwise anyone can read drafts or rewrite posts.
+  it('returns 401 without a token and leaves the row unchanged', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const getResponse = await request(app).get(`/api/v1/blog/admin/${draft.id}`);
+    const putResponse = await request(app)
+      .put(`/api/v1/blog/${draft.id}`)
+      .send({ title: 'Hijacked', category: 'General', blocks: [] });
+
+    expect(getResponse.status).toBe(401);
+    expect(putResponse.status).toBe(401);
+    expect((await storedRow(draft.id)).title).toBe('Ridge Hike');
+  });
+});

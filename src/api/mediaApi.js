@@ -231,3 +231,18 @@ export async function createBlogPost(token, { title, category }) {
   });
   return response.json(); // the created draft
 }
+
+// One post, draft or published, for the editor.
+export async function fetchAdminBlogPost(token, id) {
+  const response = await authorizedFetch(`/blog/admin/${id}`, token);
+  return response.json();
+}
+
+export async function updateBlogPost(token, id, { title, category, summary, blocks }) {
+  const response = await authorizedFetch(`/blog/${id}`, token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title, category, summary, blocks }),
+  });
+  return response.json(); // the saved post
+}
