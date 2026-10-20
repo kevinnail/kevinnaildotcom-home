@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { selectTripPhotos, isGeotagged } from './hikePhotos';
+import { selectTripPhotos, isGeotagged } from '../utils/hikePhotos';
 
 const photos = [
   { id: 'a', tripId: 'trip-1', lat: 40, lng: -74 },
