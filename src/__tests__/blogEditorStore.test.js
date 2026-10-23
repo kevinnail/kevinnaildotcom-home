@@ -109,4 +109,91 @@ describe('blogEditorStore', () => {
       summary: 'Three days to Table Lake.',
     });
   });
+
+  describe('image blocks', () => {
+    const uploadedImages = [
+      { id: 'image-1', url: 'https://media.example.com/blog/ridge.webp' },
+      { id: 'image-2', url: 'https://media.example.com/blog/camp.webp' },
+      { id: 'image-3', url: 'https://media.example.com/blog/summit.webp' },
+    ];
+
+    const addImagesBlockWithUploads = () => {
+      useBlogEditorStore.getState().loadPost(savedPost);
+      useBlogEditorStore.getState().addImagesBlock();
+      const imagesBlock = useBlogEditorStore.getState().blocks[3];
+      useBlogEditorStore.getState().addImages(imagesBlock.id, uploadedImages);
+      return imagesBlock.id;
+    };
+
+    const imagesOf = (blockId) =>
+      useBlogEditorStore.getState().blocks.find((block) => block.id === blockId).images;
+
+    // Otherwise Add photos has nowhere to put the uploads, or adds them to the wrong place.
+    it('adds an empty images block at the end', () => {
+      useBlogEditorStore.getState().loadPost(savedPost);
+      useBlogEditorStore.getState().addImagesBlock();
+
+      const { blocks } = useBlogEditorStore.getState();
+      expect(blocks).toHaveLength(4);
+      expect(blocks[3]).toEqual({ id: expect.any(String), type: 'images', images: [] });
+    });
+
+    // Otherwise a second batch of photos replaces the first instead of joining it.
+    it('appends uploaded images with an empty caption, and later uploads after them', () => {
+      const blockId = addImagesBlockWithUploads();
+      useBlogEditorStore
+        .getState()
+        .addImages(blockId, [{ id: 'image-4', url: 'https://media.example.com/blog/lake.webp' }]);
+
+      expect(imagesOf(blockId)).toEqual([
+        { imageId: 'image-1', url: 'https://media.example.com/blog/ridge.webp', caption: '' },
+        { imageId: 'image-2', url: 'https://media.example.com/blog/camp.webp', caption: '' },
+        { imageId: 'image-3', url: 'https://media.example.com/blog/summit.webp', caption: '' },
+        { imageId: 'image-4', url: 'https://media.example.com/blog/lake.webp', caption: '' },
+      ]);
+    });
+
+    // Otherwise Remove takes out the wrong photo.
+    it('removes only the named image', () => {
+      const blockId = addImagesBlockWithUploads();
+      useBlogEditorStore.getState().removeImage(blockId, 'image-2');
+
+      expect(imagesOf(blockId).map((image) => image.imageId)).toEqual(['image-1', 'image-3']);
+    });
+
+    // Otherwise Move left and Move right put photos in the wrong place or drop one past an end.
+    it('moves an image left and right, and does nothing past either end', () => {
+      const blockId = addImagesBlockWithUploads();
+      useBlogEditorStore.getState().moveImage(blockId, 'image-3', -1);
+      expect(imagesOf(blockId).map((image) => image.imageId)).toEqual([
+        'image-1',
+        'image-3',
+        'image-2',
+      ]);
+
+      useBlogEditorStore.getState().moveImage(blockId, 'image-1', -1);
+      useBlogEditorStore.getState().moveImage(blockId, 'image-2', 1);
+      expect(imagesOf(blockId).map((image) => image.imageId)).toEqual([
+        'image-1',
+        'image-3',
+        'image-2',
+      ]);
+    });
+
+    // Otherwise typing one photo's caption changes another's.
+    it('updates the caption of only the named image', () => {
+      const blockId = addImagesBlockWithUploads();
+      useBlogEditorStore.getState().updateCaption(blockId, 'image-2', 'Camp at dusk');
+
+      expect(imagesOf(blockId).map((image) => image.caption)).toEqual(['', 'Camp at dusk', '']);
+    });
+
+    // Otherwise editing photos changes the post's text blocks.
+    it('leaves text blocks untouched while editing images', () => {
+      const blockId = addImagesBlockWithUploads();
+      useBlogEditorStore.getState().removeImage(blockId, 'image-1');
+
+      expect(useBlogEditorStore.getState().blocks.slice(0, 3)).toEqual(savedPost.blocks);
+    });
+  });
 });
