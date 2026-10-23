@@ -26,6 +26,7 @@ const UPLOAD_GALLERIES = {
   astro: { prefix: 'astro' },
   hikes: { prefix: 'hikes' },
   kml: { prefix: 'kml', requiredExtension: 'kml' },
+  blog: { prefix: 'blog' },
 };
 
 export const UPLOAD_GALLERY_NAMES = Object.keys(UPLOAD_GALLERIES);

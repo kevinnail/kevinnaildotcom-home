@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
+import AdminLinkRow from '../components/layout/AdminLinkRow';
 import { fetchBlogPosts } from '../api/mediaApi';
 import formatBlogDate from '../utils/formatBlogDate';
 import './BlogPage.css';
@@ -55,6 +56,7 @@ const BlogPage = () => {
       </Helmet>
       <div className="blog-page">
         <Banner />
+        <AdminLinkRow to="/dashboard?tab=blog" label="← Blog dashboard" />
         <main className="blog-page-content">
           <div className="blog-page-header">
             <h1 className="blog-page-title">Blog</h1>

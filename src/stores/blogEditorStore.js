@@ -11,6 +11,11 @@ const moveItem = (items, fromIndex, direction) => {
   return moved;
 };
 
+const updateImages = (blocks, blockId, changeImages) =>
+  blocks.map((block) =>
+    block.id === blockId ? { ...block, images: changeImages(block.images) } : block,
+  );
+
 export const useBlogEditorStore = create((set) => ({
   ...emptyPost,
 
@@ -36,6 +41,11 @@ export const useBlogEditorStore = create((set) => ({
       blocks: [...state.blocks, { id: crypto.randomUUID(), type: 'text', body: '' }],
     })),
 
+  addImagesBlock: () =>
+    set((state) => ({
+      blocks: [...state.blocks, { id: crypto.randomUUID(), type: 'images', images: [] }],
+    })),
+
   removeBlock: (blockId) =>
     set((state) => ({ blocks: state.blocks.filter((block) => block.id !== blockId) })),
 
@@ -51,5 +61,42 @@ export const useBlogEditorStore = create((set) => ({
   updateText: (blockId, body) =>
     set((state) => ({
       blocks: state.blocks.map((block) => (block.id === blockId ? { ...block, body } : block)),
+    })),
+
+  addImages: (blockId, uploadedImages) =>
+    set((state) => ({
+      blocks: updateImages(state.blocks, blockId, (images) => [
+        ...images,
+        ...uploadedImages.map((uploaded) => ({
+          imageId: uploaded.id,
+          url: uploaded.url,
+          caption: '',
+        })),
+      ]),
+    })),
+
+  removeImage: (blockId, imageId) =>
+    set((state) => ({
+      blocks: updateImages(state.blocks, blockId, (images) =>
+        images.filter((image) => image.imageId !== imageId),
+      ),
+    })),
+
+  moveImage: (blockId, imageId, direction) =>
+    set((state) => ({
+      blocks: updateImages(state.blocks, blockId, (images) =>
+        moveItem(
+          images,
+          images.findIndex((image) => image.imageId === imageId),
+          direction,
+        ),
+      ),
+    })),
+
+  updateCaption: (blockId, imageId, caption) =>
+    set((state) => ({
+      blocks: updateImages(state.blocks, blockId, (images) =>
+        images.map((image) => (image.imageId === imageId ? { ...image, caption } : image)),
+      ),
     })),
 }));

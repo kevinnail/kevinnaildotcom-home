@@ -79,7 +79,7 @@ const BlogPostPage = () => {
                   {post.category}
                 </Link>
               </p>
-              <BlogPostBody blocks={post.blocks} />
+              <BlogPostBody title={post.title} blocks={post.blocks} />
             </article>
           )}
         </main>

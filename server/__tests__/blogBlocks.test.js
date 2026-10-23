@@ -89,13 +89,70 @@ describe('validateBlocks', () => {
     );
     expect(validateBlocks([{ id: 'block-a', type: 'text' }])).toBe('Block 1 text must be a string');
   });
+
+  // Otherwise a post's photos can't be saved, or an unused Add photos area blocks the save.
+  it('accepts an images block whose images belong to the post, and an empty one', () => {
+    const ownedImageIds = new Set(['image-1', 'image-2']);
+
+    expect(
+      validateBlocks(
+        [
+          {
+            id: 'block-a',
+            type: 'images',
+            images: [
+              { imageId: 'image-1', caption: 'Ridge' },
+              { imageId: 'image-2', caption: '' },
+            ],
+          },
+          { id: 'block-b', type: 'images', images: [] },
+        ],
+        ownedImageIds,
+      ),
+    ).toBeNull();
+  });
+
+  // Otherwise a post can show another post's photo, which that post's save then deletes.
+  it('rejects an image that does not belong to the post', () => {
+    expect(
+      validateBlocks(
+        [{ id: 'block-a', type: 'images', images: [{ imageId: 'image-9', caption: '' }] }],
+        new Set(['image-1']),
+      ),
+    ).toBe('Block 1 image 1 is not an image uploaded to this post');
+  });
+
+  // Otherwise a malformed images block is stored and breaks the post page.
+  it('rejects images that are not a list, and a caption that is not text', () => {
+    const ownedImageIds = new Set(['image-1']);
+
+    expect(validateBlocks([{ id: 'block-a', type: 'images' }], ownedImageIds)).toBe(
+      'Block 1 images must be a list',
+    );
+    expect(
+      validateBlocks(
+        [{ id: 'block-a', type: 'images', images: [{ imageId: 'image-1', caption: null }] }],
+        ownedImageIds,
+      ),
+    ).toBe('Block 1 image 1 caption must be text');
+  });
 });
 
 describe('toStoredBlocks', () => {
-  // Otherwise whatever extra fields the client sends are saved into the post.
-  it('keeps only the id, type and body', () => {
+  // Otherwise whatever extra fields the client sends, image URLs included, are saved into the post.
+  it('keeps only the stored fields of text and images blocks', () => {
     expect(
-      toStoredBlocks([{ id: 'block-a', type: 'text', body: 'Trailhead.', extra: true }]),
-    ).toEqual([{ id: 'block-a', type: 'text', body: 'Trailhead.' }]);
+      toStoredBlocks([
+        { id: 'block-a', type: 'text', body: 'Trailhead.', extra: true },
+        {
+          id: 'block-b',
+          type: 'images',
+          images: [{ imageId: 'image-1', caption: 'Ridge', url: 'https://media.example.com/a' }],
+        },
+      ]),
+    ).toEqual([
+      { id: 'block-a', type: 'text', body: 'Trailhead.' },
+      { id: 'block-b', type: 'images', images: [{ imageId: 'image-1', caption: 'Ridge' }] },
+    ]);
   });
 });

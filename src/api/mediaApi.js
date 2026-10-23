@@ -255,6 +255,16 @@ export async function updateBlogPost(token, id, { title, category, summary, bloc
   return response.json(); // the saved post
 }
 
+// Records photos already uploaded to S3 under the blog prefix.
+export async function addBlogImages(token, id, objectKeys) {
+  const response = await authorizedFetch(`/blog/${id}/images`, token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ objectKeys }),
+  });
+  return response.json(); // [{ id, url }]
+}
+
 export async function publishBlogPost(token, id) {
   const response = await authorizedFetch(`/blog/${id}/publish`, token, { method: 'PATCH' });
   return response.json(); // the post with its publishedAt

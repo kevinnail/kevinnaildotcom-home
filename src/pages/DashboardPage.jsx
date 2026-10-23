@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import UploadForm from '../components/dashboard/UploadForm';
@@ -32,7 +32,11 @@ const GALLERY_TABS = [
 
 export default function DashboardPage() {
   const token = useAdminToken();
-  const [gallery, setGallery] = useState('astro');
+  // The open tab lives in `?tab=`, so a link can land on any tab; anything
+  // missing or unknown opens Astronomy.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const gallery = GALLERY_TABS.some((tab) => tab.id === requestedTab) ? requestedTab : 'astro';
   const [photos, setPhotos] = useState([]);
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState('');
@@ -186,6 +190,12 @@ export default function DashboardPage() {
                 >
                   Hike map
                 </Link>
+                <Link
+                  to="/blog"
+                  className="text-sm text-neon-blue-bright hover:text-white underline"
+                >
+                  Blog
+                </Link>
                 <button
                   onClick={signOut}
                   className="text-sm text-neutral-400 hover:text-white underline cursor-pointer"
@@ -206,7 +216,7 @@ export default function DashboardPage() {
                     key={tab.id}
                     role="tab"
                     aria-selected={gallery === tab.id}
-                    onClick={() => setGallery(tab.id)}
+                    onClick={() => setSearchParams({ tab: tab.id }, { replace: true })}
                     className={`px-4 py-1.5 rounded-full text-sm font-bold cursor-pointer ${
                       gallery === tab.id
                         ? 'bg-neon-blue text-white'

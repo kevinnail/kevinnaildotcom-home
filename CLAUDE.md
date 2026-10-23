@@ -57,7 +57,7 @@ Three tiers, and the split matters:
 This is the most important thing to understand before touching upload code. **Image bytes never pass through the Express server.**
 
 1. Admin signs in → `POST /api/v1/users/sessions` → server verifies the scrypt hash and returns a JWT. The token is held in `sessionStorage` (never `localStorage`) and exposed app-wide via `useAdminToken()` in `src/hooks/adminSession.js`, which wraps `useSyncExternalStore`.
-2. Client asks for an upload slot → `POST /api/v1/presign?gallery=<astro|hikes|kml>` with `Authorization: Bearer <token>`. The server validates the token, mints a uuid object key, and uses **its own IAM role** to sign an S3 `PutObject` URL (`server/lib/utils/s3.js`). TTL is 5 minutes.
+2. Client asks for an upload slot → `POST /api/v1/presign?gallery=<astro|hikes|kml|blog>` with `Authorization: Bearer <token>`. The server validates the token, mints a uuid object key, and uses **its own IAM role** to sign an S3 `PutObject` URL (`server/lib/utils/s3.js`). TTL is 5 minutes.
 3. Client `PUT`s the file **straight to S3** at that URL (`uploadToS3` in `src/api/mediaApi.js`). The `content-type` and `cache-control` headers are signed into the URL and must be echoed verbatim or S3 rejects the PUT with a 403.
 4. Client posts the resulting `objectKey` back to `POST /api/v1/photos` (or `/trips`) to write the database row.
 
@@ -98,6 +98,7 @@ Standard controller → model → `pg` pool layering (`server/lib/{controllers,m
 - `trips`: a KML trail/campsite file: `name`, `region`, `url`, plus route stats (`distance_miles`, `elevation_min_feet`, `elevation_max_feet`, `elevation_gain_feet`, `elevation_loss_feet`, and `elevation_profiles` JSONB). The six stats columns are all set or all null; null means the KML has no route line, or the trip predates stats and hasn't been measured. The API returns them as one `stats` object, or `stats: null`.
 - `photos` — `gallery` ('astro' | 'hikes'), `url`, `thumb_url` (hikes only), `alt`, `caption`, `lat`/`lng`, `taken_at` (EXIF capture time), `trip_id` (FK → `trips`, `ON DELETE CASCADE`), `sort_order`.
 - `blog_posts`: `slug` (unique, set from the title at creation and never changed), `title`, `category` (free text; a new one that differs from an existing one only in case reuses the existing spelling), `summary`, `cover_url`, `blocks` (JSONB), `published_at` (null means draft).
+- `blog_images`: `post_id` (FK → `blog_posts`, `ON DELETE CASCADE`), `url`. One row per photo uploaded to a post; images blocks store only `imageId` and `caption`, and reads add each `url`. A save deletes the rows its blocks no longer use and purges their S3 objects.
 
 Ordering differs per gallery and is done server-side: **astro** uses hand-curated `sort_order`; **hikes** sorts chronologically by `taken_at`, falling back to `uploaded_at`. Trips sort oldest first by their earliest photo on that same date, and a trip with no photos yet goes last. Deleting a trip cascades to its photos in the database and also purges their S3 objects.
 
