@@ -36,6 +36,21 @@ const matchExistingCategory = async (category, excludedPostId = null) => {
   return rows[0]?.category ?? category;
 };
 
+// Images blocks store only each image's id; reads add its url beside it.
+const withImageUrls = async (post) => {
+  const { rows } = await pool.query('SELECT id, url FROM blog_images WHERE post_id = $1', [
+    post.id,
+  ]);
+  const urlsById = new Map(rows.map((row) => [row.id, row.url]));
+
+  post.blocks = post.blocks.map((block) => {
+    if (block.type !== 'images') return block;
+    const images = block.images.map((image) => ({ ...image, url: urlsById.get(image.imageId) }));
+    return { ...block, images };
+  });
+  return post;
+};
+
 export default class BlogPost {
   constructor(row) {
     this.id = row.id;
@@ -77,23 +92,70 @@ export default class BlogPost {
   static async getById(id) {
     const { rows } = await pool.query('SELECT * FROM blog_posts WHERE id = $1', [id]);
 
-    return rows[0] ? new BlogPost(rows[0]) : null;
+    return rows[0] ? withImageUrls(new BlogPost(rows[0])) : null;
+  }
+
+  static async getImageIds(postId) {
+    const { rows } = await pool.query('SELECT id FROM blog_images WHERE post_id = $1', [postId]);
+
+    return new Set(rows.map((row) => row.id));
+  }
+
+  // The bytes are already in S3; this records one row per uploaded photo.
+  static async insertImages(postId, urls) {
+    const { rows } = await pool.query(
+      `INSERT INTO blog_images (post_id, url)
+       SELECT $1, url FROM unnest($2::text[]) AS uploaded(url)
+       RETURNING id, url`,
+      [postId, urls],
+    );
+
+    return rows;
   }
 
   // The slug is left alone so links already shared keep working after a title edit.
+  // Images the new blocks no longer use are deleted in the same transaction, and
+  // their URLs are returned so the caller can purge them from S3 after commit.
   static async update(id, { title, category, summary, blocks }) {
     const storedCategory = await matchExistingCategory(category, id);
+    const storedBlocks = toStoredBlocks(blocks);
+    const keptImageIds = storedBlocks
+      .filter((block) => block.type === 'images')
+      .flatMap((block) => block.images.map((image) => image.imageId));
 
-    const { rows } = await pool.query(
-      `UPDATE blog_posts
-       SET title = $2, category = $3, summary = $4, blocks = $5, updated_at = now()
-       WHERE id = $1
-       RETURNING *`,
-      // pg sends a JS array as a Postgres array, not JSON, so it is stringified.
-      [id, title, storedCategory, summary, JSON.stringify(toStoredBlocks(blocks))],
-    );
+    const client = await pool.connect();
 
-    return rows[0] ? new BlogPost(rows[0]) : null;
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query(
+        `UPDATE blog_posts
+         SET title = $2, category = $3, summary = $4, blocks = $5, updated_at = now()
+         WHERE id = $1
+         RETURNING *`,
+        // pg sends a JS array as a Postgres array, not JSON, so it is stringified.
+        [id, title, storedCategory, summary, JSON.stringify(storedBlocks)],
+      );
+      const { rows: removedRows } = await client.query(
+        `DELETE FROM blog_images
+         WHERE post_id = $1 AND NOT (id = ANY($2::uuid[]))
+         RETURNING url`,
+        [id, keptImageIds],
+      );
+
+      await client.query('COMMIT');
+      if (!rows[0]) return null;
+
+      return {
+        post: await withImageUrls(new BlogPost(rows[0])),
+        removedUrls: removedRows.map((row) => row.url),
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   // Publishing again keeps the first publish date.
@@ -105,7 +167,7 @@ export default class BlogPost {
       [id],
     );
 
-    return rows[0] ? new BlogPost(rows[0]) : null;
+    return rows[0] ? withImageUrls(new BlogPost(rows[0])) : null;
   }
 
   // The list page needs no blocks, so they are left out of every visitor's download.
@@ -133,6 +195,6 @@ export default class BlogPost {
       [slug],
     );
 
-    return rows[0] ? new BlogPost(rows[0]) : null;
+    return rows[0] ? withImageUrls(new BlogPost(rows[0])) : null;
   }
 }
