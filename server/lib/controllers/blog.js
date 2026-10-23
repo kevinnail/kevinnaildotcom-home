@@ -4,6 +4,10 @@ import authenticate from '../middleware/authenticate.js';
 import requireResourceId from '../utils/resourceId.js';
 import { badRequest, notFound } from '../utils/httpError.js';
 import { slugify, validateBlocks } from '../utils/blogBlocks.js';
+import { mediaUrl, deleteObjectsByUrl } from '../utils/s3.js';
+
+// Postgres foreign-key violation: an image insert naming a post that doesn't exist.
+const FOREIGN_KEY_VIOLATION = '23503';
 
 const trimmedText = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -79,15 +83,38 @@ export default Router()
       });
       const blocks = req.body?.blocks;
 
-      const blocksError = validateBlocks(blocks);
+      const blocksError = validateBlocks(blocks, await BlogPost.getImageIds(id));
       if (blocksError) throw badRequest(blocksError);
 
-      const post = await BlogPost.update(id, { title, category, summary, blocks });
-      if (!post) throw notFound('Blog post not found');
+      const saved = await BlogPost.update(id, { title, category, summary, blocks });
+      if (!saved) throw notFound('Blog post not found');
 
-      res.json(post);
+      await deleteObjectsByUrl(saved.removedUrls);
+      res.json(saved.post);
     } catch (error) {
       next(error);
+    }
+  })
+  // The bytes are already in S3: the client presigned each PUT, uploaded
+  // directly, and sends back only the keys it was given.
+  .post('/:id/images', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+      const objectKeys = req.body?.objectKeys;
+
+      if (
+        !Array.isArray(objectKeys) ||
+        objectKeys.length === 0 ||
+        !objectKeys.every((objectKey) => typeof objectKey === 'string' && objectKey)
+      ) {
+        throw badRequest('objectKeys must be a non-empty list of object keys');
+      }
+
+      const images = await BlogPost.insertImages(id, objectKeys.map(mediaUrl));
+
+      res.status(201).json(images);
+    } catch (error) {
+      next(error.code === FOREIGN_KEY_VIOLATION ? notFound('Blog post not found') : error);
     }
   })
   .patch('/:id/publish', authenticate, async (req, res, next) => {
