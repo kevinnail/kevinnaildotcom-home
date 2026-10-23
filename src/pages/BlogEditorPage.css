@@ -225,3 +225,90 @@
   gap: 0.5rem;
   margin-top: 1.25rem;
 }
+
+.blog-editor-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.75rem, 1fr));
+  gap: 1rem;
+}
+
+.blog-editor-image {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.blog-editor-image-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background-color: #000000;
+}
+
+/* The native file input stays in the page for the keyboard and screen readers,
+   but the label around it is what shows and what gets clicked. */
+.blog-editor-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A group with photos: a button-style "Add more photos" under them. */
+.blog-editor-photo-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--color-neon-blue-50);
+  border-radius: 4px;
+  background-color: #000000;
+  color: var(--color-neon-blue-bright);
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.blog-editor-photo-picker:hover,
+.blog-editor-photo-picker:focus-within {
+  border-color: var(--color-neon-blue-bright);
+}
+
+/* A new, empty group: one large target that fills the group. */
+.blog-editor-photo-picker-empty {
+  align-self: stretch;
+  align-items: center;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--color-neon-blue-50);
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.blog-editor-photo-picker-empty:hover,
+.blog-editor-photo-picker-empty:focus-within {
+  background-color: rgb(255 255 255 / 0.04);
+}
+
+.blog-editor-photo-picker-disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.blog-editor-photo-picker-text {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.blog-editor-photo-picker-empty .blog-editor-photo-picker-text {
+  font-size: 1.25rem;
+}
+
+.blog-editor-photo-picker-hint {
+  color: #d4d4d4;
+  font-size: 1rem;
+}
