@@ -3,6 +3,7 @@
 -- Tables are dropped and recreated on every run, so define DROP TABLE IF EXISTS
 -- statements above their CREATE TABLE counterparts as tables are added.
 
+DROP TABLE IF EXISTS blog_images CASCADE;
 DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS photos CASCADE;
 DROP TABLE IF EXISTS trips CASCADE;
@@ -62,3 +63,14 @@ CREATE TABLE blog_posts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- One row per photo uploaded to a post. The post's images blocks reference
+-- these ids; a save drops the rows its blocks no longer use.
+CREATE TABLE blog_images (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id    UUID NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+  url        TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX blog_images_post_idx ON blog_images (post_id);
