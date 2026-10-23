@@ -95,4 +95,44 @@ export default class BlogPost {
 
     return rows[0] ? new BlogPost(rows[0]) : null;
   }
+
+  // Publishing again keeps the first publish date.
+  static async publish(id) {
+    const { rows } = await pool.query(
+      `UPDATE blog_posts SET published_at = COALESCE(published_at, now())
+       WHERE id = $1
+       RETURNING *`,
+      [id],
+    );
+
+    return rows[0] ? new BlogPost(rows[0]) : null;
+  }
+
+  // The list page needs no blocks, so they are left out of every visitor's download.
+  static async getPublishedList() {
+    const { rows } = await pool.query(
+      `SELECT slug, title, category, summary, cover_url, published_at
+       FROM blog_posts
+       WHERE published_at IS NOT NULL
+       ORDER BY published_at DESC`,
+    );
+
+    return rows.map((row) => ({
+      slug: row.slug,
+      title: row.title,
+      category: row.category,
+      summary: row.summary,
+      coverUrl: row.cover_url,
+      publishedAt: row.published_at.toISOString(),
+    }));
+  }
+
+  static async getPublishedBySlug(slug) {
+    const { rows } = await pool.query(
+      'SELECT * FROM blog_posts WHERE slug = $1 AND published_at IS NOT NULL',
+      [slug],
+    );
+
+    return rows[0] ? new BlogPost(rows[0]) : null;
+  }
 }
