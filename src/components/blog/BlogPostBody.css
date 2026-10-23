@@ -81,3 +81,36 @@
   background-color: #171717;
   font-size: 1rem;
 }
+
+.blog-post-body-images {
+  margin: 0 0 1.25rem;
+}
+
+.blog-post-body-images-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.blog-post-body-figure {
+  margin: 0;
+}
+
+.blog-post-body-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.blog-post-body-caption {
+  margin-top: 0.5rem;
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 767px) {
+  .blog-post-body-images-grid {
+    grid-template-columns: 1fr;
+  }
+}
