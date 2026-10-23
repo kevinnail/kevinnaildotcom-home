@@ -36,6 +36,24 @@ export default Router()
       next(error);
     }
   })
+  .get('/', async (req, res, next) => {
+    try {
+      const posts = await BlogPost.getPublishedList();
+      res.json(posts);
+    } catch (error) {
+      next(error);
+    }
+  })
+  .get('/:slug', async (req, res, next) => {
+    try {
+      const post = await BlogPost.getPublishedBySlug(req.params.slug);
+      if (!post) throw notFound('Blog post not found');
+
+      res.json(post);
+    } catch (error) {
+      next(error);
+    }
+  })
   .post('/', authenticate, async (req, res, next) => {
     try {
       const title = trimmedText(req.body?.title);
@@ -65,6 +83,16 @@ export default Router()
       if (blocksError) throw badRequest(blocksError);
 
       const post = await BlogPost.update(id, { title, category, summary, blocks });
+      if (!post) throw notFound('Blog post not found');
+
+      res.json(post);
+    } catch (error) {
+      next(error);
+    }
+  })
+  .patch('/:id/publish', authenticate, async (req, res, next) => {
+    try {
+      const post = await BlogPost.publish(requireResourceId(req));
       if (!post) throw notFound('Blog post not found');
 
       res.json(post);
