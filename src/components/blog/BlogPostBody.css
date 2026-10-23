@@ -1,0 +1,83 @@
+/* The elements react-markdown produces. Tailwind's base styles strip margins,
+   list markers and heading sizes, so each one is set here. */
+
+.blog-post-body {
+  max-width: 70ch;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.blog-post-body-text p {
+  margin: 0 0 1.25rem;
+  font-size: 1.125rem;
+}
+
+.blog-post-body-text h1,
+.blog-post-body-text h2,
+.blog-post-body-text h3 {
+  margin: 2rem 0 1rem;
+  color: var(--color-neon-blue-bright);
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+.blog-post-body-text h1 {
+  font-size: 2.25rem;
+}
+
+.blog-post-body-text h2 {
+  font-size: 1.75rem;
+}
+
+.blog-post-body-text h3 {
+  font-size: 1.5rem;
+}
+
+.blog-post-body-text a {
+  color: var(--color-neon-blue-bright);
+  font-size: 1.125rem;
+  text-decoration: underline;
+}
+
+.blog-post-body-text a:hover {
+  color: #ffffff;
+}
+
+.blog-post-body-text ul,
+.blog-post-body-text ol {
+  margin: 0 0 1.25rem;
+  padding-left: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.blog-post-body-text ul {
+  list-style: disc;
+}
+
+.blog-post-body-text ol {
+  list-style: decimal;
+}
+
+.blog-post-body-text blockquote {
+  margin: 0 0 1.25rem 1.5rem;
+  font-size: 1.125rem;
+  font-style: italic;
+}
+
+.blog-post-body-text code {
+  background-color: #171717;
+  font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 1rem;
+}
+
+/* Long lines in a code block scroll inside the block instead of widening the page. */
+.blog-post-body-text pre {
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid var(--color-mid-gray);
+  background-color: #171717;
+  font-size: 1rem;
+}

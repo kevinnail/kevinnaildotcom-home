@@ -7,6 +7,8 @@ import AstrophotographyPage from './pages/AstrophotographyPage';
 import HikeMapPage from './pages/HikeMapPage';
 import DashboardPage from './pages/DashboardPage';
 import BlogEditorPage from './pages/BlogEditorPage';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -43,6 +45,22 @@ export default function App() {
           element={
             <PageWrapper>
               <HikeMapPage />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <PageWrapper>
+              <BlogPage />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/blog/:slug"
+          element={
+            <PageWrapper>
+              <BlogPostPage />
             </PageWrapper>
           }
         />

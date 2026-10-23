@@ -371,3 +371,99 @@ describe('PUT /api/v1/blog/:id and GET /api/v1/blog/admin/:id', () => {
     expect((await storedRow(draft.id)).title).toBe('Ridge Hike');
   });
 });
+
+describe('publishing and the public blog', () => {
+  const unknownId = '00000000-0000-4000-8000-000000000000';
+
+  async function createDraft(token, title = 'Ridge Hike') {
+    const response = await createPost(token, { title, category: 'Hiking' });
+    return response.body;
+  }
+
+  async function publish(token, id) {
+    return request(app).patch(`/api/v1/blog/${id}/publish`).set('authorization', `Bearer ${token}`);
+  }
+
+  // Otherwise half-written drafts show up on the public blog.
+  it('hides a draft from the public list and its slug until it is published', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const listBefore = await request(app).get('/api/v1/blog');
+    const postBefore = await request(app).get('/api/v1/blog/ridge-hike');
+    expect(listBefore.body).toEqual([]);
+    expect(postBefore.status).toBe(404);
+
+    const publishResponse = await publish(token, draft.id);
+    expect(publishResponse.status).toBe(200);
+    expect(publishResponse.body.publishedAt).toEqual(expect.any(String));
+
+    const listAfter = await request(app).get('/api/v1/blog');
+    const postAfter = await request(app).get('/api/v1/blog/ridge-hike');
+    expect(listAfter.body).toEqual([
+      {
+        slug: 'ridge-hike',
+        title: 'Ridge Hike',
+        category: 'Hiking',
+        summary: '',
+        coverUrl: null,
+        publishedAt: publishResponse.body.publishedAt,
+      },
+    ]);
+    expect(postAfter.status).toBe(200);
+    expect(postAfter.body).toMatchObject({ id: draft.id, title: 'Ridge Hike', blocks: [] });
+  });
+
+  // Otherwise the blog page lists old posts above new ones.
+  it('lists published posts newest first', async () => {
+    await pool.query(
+      `INSERT INTO blog_posts (slug, title, category, published_at) VALUES
+        ('older-trip', 'Older trip', 'Hiking', '2026-01-01T00:00:00Z'),
+        ('newer-trip', 'Newer trip', 'Hiking', '2026-02-01T00:00:00Z')`,
+    );
+
+    const response = await request(app).get('/api/v1/blog');
+
+    expect(response.status).toBe(200);
+    expect(response.body.map((post) => post.slug)).toEqual(['newer-trip', 'older-trip']);
+  });
+
+  // Otherwise publishing a post a second time moves it to the top of the blog as if it were new.
+  it('keeps the original publish date when a post is published again', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await pool.query("UPDATE blog_posts SET published_at = '2026-01-01T00:00:00Z' WHERE id = $1", [
+      draft.id,
+    ]);
+
+    const response = await publish(token, draft.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body.publishedAt).toBe('2026-01-01T00:00:00.000Z');
+  });
+
+  // Otherwise publishing a deleted post or a mistyped id shows a server error instead of not found.
+  it('returns 404 when publishing an unknown or malformed id', async () => {
+    const token = await adminToken();
+
+    const unknown = await publish(token, unknownId);
+    const malformed = await publish(token, 'not-a-uuid');
+
+    expect(unknown.status).toBe(404);
+    expect(malformed.status).toBe(404);
+  });
+
+  // Otherwise anyone can put a draft live.
+  it('returns 401 without a token and the post stays a draft', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await request(app).patch(`/api/v1/blog/${draft.id}/publish`);
+
+    expect(response.status).toBe(401);
+    const { rows } = await pool.query('SELECT published_at FROM blog_posts WHERE id = $1', [
+      draft.id,
+    ]);
+    expect(rows[0].published_at).toBeNull();
+  });
+});

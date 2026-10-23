@@ -35,6 +35,13 @@ export class NetworkError extends Error {
   }
 }
 
+export class NotFoundError extends Error {
+  constructor() {
+    super('Not found');
+    this.name = 'NotFoundError';
+  }
+}
+
 export async function login(username, password) {
   const loginUrl = `${API_URL}/users/sessions`;
   if (!API_URL) throw new NetworkError(loginUrl, new Error('VITE_API_URL is not set'));
@@ -196,6 +203,7 @@ async function publicGet(path) {
     throw new NetworkError(url, fetchError);
   }
 
+  if (response.status === 404) throw new NotFoundError();
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
   return response.json();
 }
@@ -245,4 +253,19 @@ export async function updateBlogPost(token, id, { title, category, summary, bloc
     body: JSON.stringify({ title, category, summary, blocks }),
   });
   return response.json(); // the saved post
+}
+
+export async function publishBlogPost(token, id) {
+  const response = await authorizedFetch(`/blog/${id}/publish`, token, { method: 'PATCH' });
+  return response.json(); // the post with its publishedAt
+}
+
+// Published posts only, newest first, without their blocks.
+export function fetchBlogPosts() {
+  return publicGet('/blog');
+}
+
+// A published post by its slug. A draft or unknown slug rejects with NotFoundError.
+export function fetchBlogPost(slug) {
+  return publicGet(`/blog/${encodeURIComponent(slug)}`);
 }
