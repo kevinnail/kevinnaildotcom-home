@@ -13,6 +13,15 @@ const homeCards = [
     size: 'hero',
   },
   {
+    title: 'Blog',
+    label: 'New',
+    image: '/images/blog-cover-1.png',
+    href: '/blog',
+    external: false,
+    hoverBg: '/images/me-hiking.JPEG',
+    size: 'hero',
+  },
+  {
     // `inspector` swaps the hover payoff for the devtools self-teardown in
     // InspectorOverlay. It replaced a 21MB screen-capture GIF, and is the only
     // card that opts in — on the photography tiles it would just be noise.
@@ -24,7 +33,7 @@ const homeCards = [
     size: 'hero',
   },
   {
-    title: 'Backpacking',
+    title: 'Backpacking Trips',
     label: 'New',
     image: '/images/goat-lake.JPG',
     href: '/backpacking',
