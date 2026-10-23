@@ -1,10 +1,22 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import pool from '../lib/utils/pool.js';
 import setup from '../data/setup.js';
 import app from '../lib/app.js';
 import AdminUser from '../lib/models/AdminUser.js';
 import { signAdminToken } from '../lib/utils/token.js';
+
+// A save that drops a photo purges its S3 object, and no test may ever reach
+// S3. Only the client's `send` is replaced, so a test can assert on exactly
+// what was purged.
+const { send } = vi.hoisted(() => ({ send: vi.fn(async () => ({})) }));
+
+vi.mock('@aws-sdk/client-s3', async (importOriginal) => ({
+  ...(await importOriginal()),
+  S3Client: class {
+    send = send;
+  },
+}));
 
 async function adminToken() {
   const user = await AdminUser.insert({ username: 'kevin', password: 'correct horse' });
@@ -21,10 +33,14 @@ async function createPost(token, fields) {
 }
 
 beforeEach(async () => {
+  send.mockClear();
+  vi.stubEnv('MEDIA_BASE_URL', 'https://media.example.com');
+  vi.stubEnv('MEDIA_BUCKET', 'kevinnail-media-test');
   await setup(pool);
 });
 
 afterAll(async () => {
+  vi.unstubAllEnvs();
   await pool.end();
 });
 
@@ -465,5 +481,171 @@ describe('publishing and the public blog', () => {
       draft.id,
     ]);
     expect(rows[0].published_at).toBeNull();
+  });
+});
+
+describe('blog images', () => {
+  const unknownId = '00000000-0000-4000-8000-000000000000';
+  const fields = { title: 'Ridge Hike', category: 'Hiking', summary: 'Two days up the ridge.' };
+
+  async function createDraft(token, title = 'Ridge Hike') {
+    const response = await createPost(token, { title, category: 'Hiking' });
+    return response.body;
+  }
+
+  async function addImages(token, postId, objectKeys) {
+    return request(app)
+      .post(`/api/v1/blog/${postId}/images`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ objectKeys });
+  }
+
+  async function savePost(token, id, blocks) {
+    return request(app)
+      .put(`/api/v1/blog/${id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ ...fields, blocks });
+  }
+
+  async function imageRowsFor(postId) {
+    const { rows } = await pool.query(
+      'SELECT id, url FROM blog_images WHERE post_id = $1 ORDER BY url',
+      [postId],
+    );
+    return rows;
+  }
+
+  async function storedBlocks(postId) {
+    const { rows } = await pool.query('SELECT blocks FROM blog_posts WHERE id = $1', [postId]);
+    return rows[0].blocks;
+  }
+
+  // Otherwise an uploaded photo has no row to reference, or its URL points somewhere S3 never stored it.
+  it('records a row per object key with its public URL under the blog prefix', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await addImages(token, draft.id, ['blog/ridge.webp', 'blog/camp.webp']);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual([
+      { id: expect.any(String), url: 'https://media.example.com/blog/ridge.webp' },
+      { id: expect.any(String), url: 'https://media.example.com/blog/camp.webp' },
+    ]);
+    const rows = await imageRowsFor(draft.id);
+    expect(rows.map((row) => row.id).sort()).toEqual(
+      response.body.map((image) => image.id).sort(),
+    );
+  });
+
+  // Otherwise a request with nothing to record is accepted as if photos were added.
+  it('returns 400 for an empty or missing list and records nothing', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const empty = await addImages(token, draft.id, []);
+    const missing = await addImages(token, draft.id, undefined);
+
+    expect(empty.status).toBe(400);
+    expect(empty.body.message).toBe('objectKeys must be a non-empty list of object keys');
+    expect(missing.status).toBe(400);
+    expect(await imageRowsFor(draft.id)).toEqual([]);
+  });
+
+  // Otherwise adding photos to a deleted post or a mistyped id shows a server error instead of not found.
+  it('returns 404 for an unknown or malformed post id', async () => {
+    const token = await adminToken();
+
+    const unknown = await addImages(token, unknownId, ['blog/ridge.webp']);
+    const malformed = await addImages(token, 'not-a-uuid', ['blog/ridge.webp']);
+
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.message).toBe('Blog post not found');
+    expect(malformed.status).toBe(404);
+  });
+
+  // Otherwise one post can show another post's photo, and either post's save deletes it from the other.
+  it('returns 400 for a save that uses an image uploaded to a different post', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const otherDraft = await createDraft(token, 'Other Hike');
+    const [otherImage] = (await addImages(token, otherDraft.id, ['blog/other.webp'])).body;
+
+    const response = await savePost(token, draft.id, [
+      { id: 'block-a', type: 'images', images: [{ imageId: otherImage.id, caption: '' }] },
+    ]);
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('Block 1 image 1 is not an image uploaded to this post');
+    expect(await storedBlocks(draft.id)).toEqual([]);
+  });
+
+  // Otherwise a photo removed in the editor stays in S3 forever, or a kept one is deleted.
+  it('deletes the row and S3 object of an image a save drops, and keeps the rest', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const [keptImage] = (
+      await addImages(token, draft.id, ['blog/kept.webp', 'blog/dropped.webp'])
+    ).body;
+
+    const response = await savePost(token, draft.id, [
+      {
+        id: 'block-a',
+        type: 'images',
+        images: [{ imageId: keptImage.id, caption: 'Kept', url: keptImage.url }],
+      },
+    ]);
+
+    expect(response.status).toBe(200);
+    expect(await imageRowsFor(draft.id)).toEqual([keptImage]);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.lastCall[0].input.Delete.Objects).toEqual([{ Key: 'blog/dropped.webp' }]);
+    expect(await storedBlocks(draft.id)).toEqual([
+      { id: 'block-a', type: 'images', images: [{ imageId: keptImage.id, caption: 'Kept' }] },
+    ]);
+  });
+
+  // Otherwise readers see broken photos, or photos in a different order than the post was written.
+  it('returns each image url in block order on the public post', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const [firstImage, secondImage, thirdImage] = (
+      await addImages(token, draft.id, ['blog/one.webp', 'blog/two.webp', 'blog/three.webp'])
+    ).body;
+    await savePost(token, draft.id, [
+      { id: 'block-a', type: 'text', body: 'Trailhead.' },
+      {
+        id: 'block-b',
+        type: 'images',
+        images: [
+          { imageId: thirdImage.id, caption: 'Summit' },
+          { imageId: firstImage.id, caption: '' },
+        ],
+      },
+      { id: 'block-c', type: 'images', images: [{ imageId: secondImage.id, caption: 'Camp' }] },
+    ]);
+    await request(app)
+      .patch(`/api/v1/blog/${draft.id}/publish`)
+      .set('authorization', `Bearer ${token}`);
+
+    const response = await request(app).get('/api/v1/blog/ridge-hike');
+
+    expect(response.status).toBe(200);
+    expect(response.body.blocks).toEqual([
+      { id: 'block-a', type: 'text', body: 'Trailhead.' },
+      {
+        id: 'block-b',
+        type: 'images',
+        images: [
+          { imageId: thirdImage.id, caption: 'Summit', url: thirdImage.url },
+          { imageId: firstImage.id, caption: '', url: firstImage.url },
+        ],
+      },
+      {
+        id: 'block-c',
+        type: 'images',
+        images: [{ imageId: secondImage.id, caption: 'Camp', url: secondImage.url }],
+      },
+    ]);
   });
 });
