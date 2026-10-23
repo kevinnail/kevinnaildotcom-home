@@ -9,11 +9,143 @@ import {
   fetchAdminBlogPosts,
   updateBlogPost,
   publishBlogPost,
+  addBlogImages,
+  requestUpload,
+  uploadToS3,
   SessionExpiredError,
 } from '../api/mediaApi';
 import { useAdminToken, signIn, signOut } from '../hooks/adminSession';
 import { useBlogEditorStore } from '../stores/blogEditorStore';
+import { createDisplayImage } from '../utils/resizeImage';
 import './BlogEditorPage.css';
+
+const ImagesBlockEditor = ({
+  token,
+  postId,
+  block,
+  disabled,
+  setUploadingCount,
+  onSessionExpired,
+}) => {
+  const { addImages, removeImage, moveImage, updateCaption } = useBlogEditorStore();
+  const [failedNames, setFailedNames] = useState([]);
+  // { done, total } while this group's photos upload.
+  const [progress, setProgress] = useState(null);
+  const isEmpty = block.images.length === 0;
+  const isPickerDisabled = disabled || progress !== null;
+
+  // One file at a time, so photos appear as each finishes and a failure only
+  // affects its own file.
+  const handleFilesChange = async (event) => {
+    const files = [...event.target.files];
+    event.target.value = '';
+    setFailedNames([]);
+    setUploadingCount((count) => count + 1);
+    try {
+      for (const [index, file] of files.entries()) {
+        setProgress({ done: index, total: files.length });
+        try {
+          const displayImage = await createDisplayImage(file);
+          const upload = await requestUpload(token, displayImage, 'blog');
+          await uploadToS3(upload.uploadUrl, displayImage, upload.cacheControl);
+          addImages(block.id, await addBlogImages(token, postId, [upload.objectKey]));
+        } catch (uploadError) {
+          if (uploadError instanceof SessionExpiredError) {
+            onSessionExpired();
+            return;
+          }
+          console.error(`Uploading ${file.name} failed`, uploadError);
+          setFailedNames((names) => [...names, file.name]);
+        }
+      }
+    } finally {
+      setProgress(null);
+      setUploadingCount((count) => count - 1);
+    }
+  };
+
+  const pickerText = progress
+    ? `Uploading ${progress.done + 1} of ${progress.total}…`
+    : isEmpty
+      ? 'Choose photos'
+      : 'Add more photos';
+
+  return (
+    <>
+      {block.images.length > 0 && (
+        <div className="blog-editor-images">
+          {block.images.map((image, imageIndex) => (
+            <div key={image.imageId} className="blog-editor-image">
+              <img
+                src={image.url}
+                alt={image.caption || `Photo ${imageIndex + 1}`}
+                className="blog-editor-image-thumbnail"
+              />
+              <input
+                type="text"
+                value={image.caption}
+                onChange={(event) => updateCaption(block.id, image.imageId, event.target.value)}
+                placeholder="Caption (optional)"
+                aria-label={`Caption for photo ${imageIndex + 1}`}
+                disabled={disabled}
+                className="blog-editor-input"
+              />
+              <div className="blog-editor-block-controls">
+                <button
+                  type="button"
+                  onClick={() => moveImage(block.id, image.imageId, -1)}
+                  disabled={disabled || imageIndex === 0}
+                  className="blog-editor-button"
+                >
+                  Move left
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveImage(block.id, image.imageId, 1)}
+                  disabled={disabled || imageIndex === block.images.length - 1}
+                  className="blog-editor-button"
+                >
+                  Move right
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeImage(block.id, image.imageId)}
+                  disabled={disabled}
+                  className="blog-editor-button blog-editor-remove-button"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <label
+        className={`blog-editor-photo-picker ${isEmpty ? 'blog-editor-photo-picker-empty' : ''} ${isPickerDisabled ? 'blog-editor-photo-picker-disabled' : ''}`}
+      >
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFilesChange}
+          disabled={isPickerDisabled}
+          className="blog-editor-file-input"
+        />
+        <span className="blog-editor-photo-picker-text">{pickerText}</span>
+        {isEmpty && !progress && (
+          <span className="blog-editor-photo-picker-hint">
+            Select one or several. One photo fills the width, two or more sit side by side.
+          </span>
+        )}
+      </label>
+      {failedNames.length > 0 && (
+        <p className="blog-editor-error">
+          Could not upload {failedNames.join(', ')}. Please try again.
+        </p>
+      )}
+    </>
+  );
+};
 
 const BlogEditorPage = () => {
   const { id } = useParams();
@@ -29,6 +161,7 @@ const BlogEditorPage = () => {
     setCategory,
     setSummary,
     addTextBlock,
+    addImagesBlock,
     removeBlock,
     moveBlock,
     updateText,
@@ -39,6 +172,7 @@ const BlogEditorPage = () => {
   const [existingCategories, setExistingCategories] = useState([]);
   const [view, setView] = useState('edit'); // edit | preview
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [saveMessage, setSaveMessage] = useState(null); // { isError, text }
   const [sessionMessage, setSessionMessage] = useState('');
   // { title, message, confirmLabel, isDanger, onConfirm } while the confirmation box is open.
@@ -48,6 +182,10 @@ const BlogEditorPage = () => {
     setSessionMessage('Session expired, please log in again.');
     signOut();
   }, []);
+
+  // A save during an upload would delete the photo the server just stored,
+  // because the blocks being saved don't reference it yet.
+  const isUploading = uploadingCount > 0;
 
   useEffect(() => {
     if (!token) return undefined;
@@ -131,13 +269,16 @@ const BlogEditorPage = () => {
   };
 
   const handleRemove = (block) => {
-    if (!block.body.trim()) {
+    const isImages = block.type === 'images';
+    if (isImages ? block.images.length === 0 : !block.body.trim()) {
       removeBlock(block.id);
       return;
     }
     setConfirmation({
-      title: 'Remove this text block?',
-      message: 'Its text comes out of the post when you save.',
+      title: isImages ? 'Remove this photo group?' : 'Remove this text block?',
+      message: isImages
+        ? 'Its photos come out of the post when you save.'
+        : 'Its text comes out of the post when you save.',
       confirmLabel: 'Remove',
       isDanger: true,
       onConfirm: () => removeBlock(block.id),
@@ -158,7 +299,7 @@ const BlogEditorPage = () => {
       <div className="blog-editor-page">
         <Banner />
         <div className="blog-editor-content">
-          <Link to="/dashboard" className="blog-editor-back-link">
+          <Link to="/dashboard?tab=blog" className="blog-editor-back-link">
             ← Dashboard
           </Link>
           <h1 className="blog-editor-heading">Edit post</h1>
@@ -220,21 +361,34 @@ const BlogEditorPage = () => {
                 ))}
               </div>
 
-              {view === 'preview' && <BlogPostBody blocks={blocks} />}
+              {view === 'preview' && <BlogPostBody title={title} blocks={blocks} />}
 
               {view === 'edit' &&
                 blocks.map((block, index) => (
                   <div key={block.id} className="blog-editor-block">
-                    <textarea
-                      value={block.body}
-                      onChange={(event) => updateText(block.id, event.target.value)}
-                      aria-label={`Text block ${index + 1}`}
-                      disabled={isSaving}
-                      className="blog-editor-textarea"
-                    />
-                    <p className="blog-editor-hint">
-                      Markdown: [link text](https://example.com), **bold**, `code`
-                    </p>
+                    {block.type === 'images' ? (
+                      <ImagesBlockEditor
+                        token={token}
+                        postId={id}
+                        block={block}
+                        disabled={isSaving}
+                        setUploadingCount={setUploadingCount}
+                        onSessionExpired={handleSessionExpired}
+                      />
+                    ) : (
+                      <>
+                        <textarea
+                          value={block.body}
+                          onChange={(event) => updateText(block.id, event.target.value)}
+                          aria-label={`Text block ${index + 1}`}
+                          disabled={isSaving}
+                          className="blog-editor-textarea"
+                        />
+                        <p className="blog-editor-hint">
+                          Markdown: [link text](https://example.com), **bold**, `code`
+                        </p>
+                      </>
+                    )}
                     <div className="blog-editor-block-controls">
                       <button
                         type="button"
@@ -258,21 +412,31 @@ const BlogEditorPage = () => {
                         disabled={isSaving}
                         className="blog-editor-button blog-editor-remove-button"
                       >
-                        Remove
+                        {block.type === 'images' ? 'Remove photo group' : 'Remove'}
                       </button>
                     </div>
                   </div>
                 ))}
 
               {view === 'edit' && (
-                <button
-                  type="button"
-                  onClick={addTextBlock}
-                  disabled={isSaving}
-                  className="blog-editor-button"
-                >
-                  Add text
-                </button>
+                <div className="blog-editor-block-controls">
+                  <button
+                    type="button"
+                    onClick={addTextBlock}
+                    disabled={isSaving}
+                    className="blog-editor-button"
+                  >
+                    Add text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addImagesBlock}
+                    disabled={isSaving}
+                    className="blog-editor-button"
+                  >
+                    Add photos
+                  </button>
+                </div>
               )}
 
               {saveMessage && (
@@ -281,8 +445,12 @@ const BlogEditorPage = () => {
                 </p>
               )}
               <div className="blog-editor-actions">
-                <button type="submit" disabled={isSaving} className="blog-editor-save-button">
-                  {isSaving ? 'Saving…' : 'Save'}
+                <button
+                  type="submit"
+                  disabled={isSaving || isUploading}
+                  className="blog-editor-save-button"
+                >
+                  {isUploading ? 'Uploading…' : isSaving ? 'Saving…' : 'Save'}
                 </button>
                 {savedPost.publishedAt ? (
                   <Link to={`/blog/${savedPost.slug}`} className="blog-editor-button">
@@ -292,7 +460,7 @@ const BlogEditorPage = () => {
                   <button
                     type="button"
                     onClick={handlePublish}
-                    disabled={isSaving}
+                    disabled={isSaving || isUploading}
                     className="blog-editor-button"
                   >
                     Publish
