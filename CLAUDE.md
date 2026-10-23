@@ -109,6 +109,8 @@ Routes in `src/App.jsx`, all wrapped in `PageWrapper` (scroll-to-top on navigati
 - `/projects` → ProjectsPage
 - `/astrophotography` → AstrophotographyPage
 - `/backpacking/:tripId?` → **HikeMapPage** (the 3D Cesium globe). The selected hike is the URL's trip id, so a hike can be linked directly; no id is the all-hikes overview, and an id that matches no trip shows "Hike not found." over the overview. One route with an optional segment, so switching hikes never remounts the globe.
+- `/blog` → BlogPage (published posts, `?category=` filter)
+- `/blog/:slug` → BlogPostPage (a published post; unknown or draft slugs render NotFoundPage)
 - `/dashboard` → DashboardPage (admin)
 - `/dashboard/blog/:id` → BlogEditorPage (admin): one blog post's editor. Its state lives in the Zustand store `src/stores/blogEditorStore.js`.
 - `/*` → NotFoundPage
@@ -119,6 +121,7 @@ Under `src/components/`:
 
 - `layout/` — PageWrapper, Banner, ScrollToTop, AdminLinkRow
 - `home/` — CardGrid, Card
+- `blog/`: BlogPostBody (renders a post's blocks; shared by BlogPostPage and the editor preview)
 - `projects/` — ProjectList, ProjectCard, AnchorNav, BioSection, ContactLinks, SectionHeader, SectionLabel, ResumeEmbed, DiagramsSection, DecodeText
 - `astrophotography/` — GalleryGrid, GalleryItem, LightboxModal (astro only; there is deliberately no flat grid for the hikes — they are browsed on the map)
 - `hikes/`: HikeGlobe (Cesium/Resium), MapSidebar, HikePhotoDock, HikeCoachMarks, HikeInfoPanel, ElevationProfile, GeologyLayer, GeologySection
