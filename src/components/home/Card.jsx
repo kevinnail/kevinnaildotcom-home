@@ -67,7 +67,7 @@ export default function Card({ card, index = 0 }) {
         className={
           'pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t ' +
           (isHero
-            ? 'from-black via-black/55 to-black/10 lg:bg-gradient-to-r lg:from-black lg:via-black/60 lg:to-transparent'
+            ? 'from-black via-black/55 to-black/10 lg:bg-gradient-to-r lg:from-black lg:via-black/25 lg:to-transparent'
             : 'from-black via-black/45 to-transparent')
         }
         aria-hidden="true"
