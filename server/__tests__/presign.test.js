@@ -89,6 +89,19 @@ describe('POST /api/v1/presign', () => {
     expect(response.body.objectKey).toMatch(/^hikes\/[0-9a-f-]{36}\.jpeg$/);
   });
 
+  // Otherwise the blog editor can't upload photos.
+  it('uses the blog prefix for blog photos', async () => {
+    const token = await adminToken();
+
+    const response = await request(app)
+      .post('/api/v1/presign?gallery=blog')
+      .set('authorization', `Bearer ${token}`)
+      .send({ filename: 'display.webp', contentType: 'image/webp' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.objectKey).toMatch(/^blog\/[0-9a-f-]{36}\.webp$/);
+  });
+
   it('accepts a .kml file under the kml prefix', async () => {
     const token = await adminToken();
 
@@ -123,7 +136,7 @@ describe('POST /api/v1/presign', () => {
       .send({ filename: 'orion.jpg', contentType: 'image/jpeg' });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('gallery must be one of: astro, hikes, kml');
+    expect(response.body.message).toBe('gallery must be one of: astro, hikes, kml, blog');
     expect(getSignedUrl).not.toHaveBeenCalled();
   });
 
