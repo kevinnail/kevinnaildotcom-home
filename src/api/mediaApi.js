@@ -270,6 +270,28 @@ export async function publishBlogPost(token, id) {
   return response.json(); // the post with its publishedAt
 }
 
+// Sets the cover to a picture already uploaded to S3 under the blog prefix,
+// replacing any earlier one.
+export async function setBlogCover(token, id, objectKey) {
+  const response = await authorizedFetch(`/blog/${id}/cover`, token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ objectKey }),
+  });
+  return response.json(); // { coverUrl }
+}
+
+export async function removeBlogCover(token, id) {
+  const response = await authorizedFetch(`/blog/${id}/cover`, token, { method: 'DELETE' });
+  return response.json(); // { coverUrl: null }
+}
+
+// Deletes the post along with its photos and cover in S3.
+export async function deleteBlogPost(token, id) {
+  const response = await authorizedFetch(`/blog/${id}`, token, { method: 'DELETE' });
+  return response.json(); // the deleted post
+}
+
 // Published posts only, newest first, without their blocks.
 export function fetchBlogPosts() {
   return publicGet('/blog');
