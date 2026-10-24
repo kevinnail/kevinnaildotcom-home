@@ -108,6 +108,11 @@
   color: #f87171;
 }
 
+/* Set apart at the far end of the row, away from Save and Publish. */
+.blog-editor-delete-button {
+  margin-left: auto;
+}
+
 .blog-editor-save-button {
   align-self: flex-start;
   padding: 0.5rem 1rem;
@@ -311,4 +316,13 @@
 .blog-editor-photo-picker-hint {
   color: #d4d4d4;
   font-size: 1rem;
+}
+
+.blog-editor-cover-thumbnail {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background-color: #000000;
 }
