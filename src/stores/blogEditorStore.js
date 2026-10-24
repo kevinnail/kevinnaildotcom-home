@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const emptyPost = { title: '', category: '', summary: '', blocks: [] };
+const emptyPost = { title: '', category: '', summary: '', coverUrl: null, blocks: [] };
 
 const moveItem = (items, fromIndex, direction) => {
   const toIndex = fromIndex + direction;
@@ -24,6 +24,7 @@ export const useBlogEditorStore = create((set) => ({
       title: post.title,
       category: post.category,
       summary: post.summary,
+      coverUrl: post.coverUrl,
       blocks: post.blocks,
     }),
 
@@ -35,6 +36,8 @@ export const useBlogEditorStore = create((set) => ({
   setCategory: (category) => set({ category }),
 
   setSummary: (summary) => set({ summary }),
+
+  setCoverUrl: (coverUrl) => set({ coverUrl }),
 
   addTextBlock: () =>
     set((state) => ({

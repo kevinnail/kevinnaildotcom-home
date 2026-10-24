@@ -89,15 +89,25 @@ const BlogPage = () => {
             <ul className="blog-post-list">
               {visiblePosts.map((post) => (
                 <li key={post.slug} className="blog-card">
-                  <h2 className="blog-card-title">
-                    <Link to={`/blog/${post.slug}`} className="blog-card-link">
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <p className="blog-card-summary">{post.summary}</p>
-                  <p className="blog-card-details">
-                    {formatBlogDate(post.publishedAt)} in {post.category}
-                  </p>
+                  <Link to={`/blog/${post.slug}`}>
+                    <img
+                      src={post.coverUrl}
+                      alt={post.title}
+                      loading="lazy"
+                      className="blog-card-cover"
+                    />
+                  </Link>
+                  <div>
+                    <h2 className="blog-card-title">
+                      <Link to={`/blog/${post.slug}`} className="blog-card-link">
+                        {post.title}
+                      </Link>
+                    </h2>
+                    <p className="blog-card-summary">{post.summary}</p>
+                    <p className="blog-card-details">
+                      {formatBlogDate(post.publishedAt)} in {post.category}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
