@@ -158,6 +158,50 @@ export default class BlogPost {
     }
   }
 
+  // Sets the cover, or clears it with a null `coverUrl`. Returns the replaced
+  // URL (null when there was no cover) for the caller to purge from S3, or null
+  // when the post doesn't exist.
+  static async setCover(id, coverUrl) {
+    const { rows } = await pool.query(
+      `WITH previous AS (SELECT cover_url FROM blog_posts WHERE id = $1)
+       UPDATE blog_posts SET cover_url = $2
+       WHERE id = $1
+       RETURNING (SELECT cover_url FROM previous) AS previous_url`,
+      [id, coverUrl],
+    );
+
+    return rows[0] ? { previousUrl: rows[0].previous_url } : null;
+  }
+
+  // The image rows are deleted first so their URLs come back for the caller to
+  // purge from S3 after commit, along with the cover's.
+  static async deleteById(id) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const { rows: imageRows } = await client.query(
+        'DELETE FROM blog_images WHERE post_id = $1 RETURNING url',
+        [id],
+      );
+      const { rows } = await client.query('DELETE FROM blog_posts WHERE id = $1 RETURNING *', [id]);
+
+      await client.query('COMMIT');
+      if (!rows[0]) return null;
+
+      return {
+        post: new BlogPost(rows[0]),
+        removedUrls: [...imageRows.map((row) => row.url), rows[0].cover_url],
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   // Publishing again keeps the first publish date.
   static async publish(id) {
     const { rows } = await pool.query(
