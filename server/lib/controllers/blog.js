@@ -83,6 +83,9 @@ export default Router()
       });
       const blocks = req.body?.blocks;
 
+      // Read first so an unknown post is a 404, not a failed photo ownership check.
+      if (!(await BlogPost.getById(id))) throw notFound('Blog post not found');
+
       const blocksError = validateBlocks(blocks, await BlogPost.getImageIds(id));
       if (blocksError) throw badRequest(blocksError);
 
@@ -123,6 +126,47 @@ export default Router()
       if (!post) throw notFound('Blog post not found');
 
       res.json(post);
+    } catch (error) {
+      next(error);
+    }
+  })
+  // Like the photos, the cover's bytes are already in S3 under the blog prefix.
+  .put('/:id/cover', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+      const objectKey = req.body?.objectKey;
+
+      if (typeof objectKey !== 'string' || !objectKey) throw badRequest('objectKey is required');
+
+      const coverUrl = mediaUrl(objectKey);
+      const replaced = await BlogPost.setCover(id, coverUrl);
+      if (!replaced) throw notFound('Blog post not found');
+
+      await deleteObjectsByUrl([replaced.previousUrl]);
+      res.json({ coverUrl });
+    } catch (error) {
+      next(error);
+    }
+  })
+  .delete('/:id/cover', authenticate, async (req, res, next) => {
+    try {
+      const replaced = await BlogPost.setCover(requireResourceId(req), null);
+      if (!replaced) throw notFound('Blog post not found');
+
+      await deleteObjectsByUrl([replaced.previousUrl]);
+      res.json({ coverUrl: null });
+    } catch (error) {
+      next(error);
+    }
+  })
+  .delete('/:id', authenticate, async (req, res, next) => {
+    try {
+      const deleted = await BlogPost.deleteById(requireResourceId(req));
+      if (!deleted) throw notFound('Blog post not found');
+
+      // A null cover drops out inside deleteObjectsByUrl.
+      await deleteObjectsByUrl(deleted.removedUrls);
+      res.json(deleted.post);
     } catch (error) {
       next(error);
     }
