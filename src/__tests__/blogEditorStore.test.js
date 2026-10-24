@@ -7,6 +7,7 @@ const savedPost = {
   title: 'Ridge Hike',
   category: 'Hiking',
   summary: 'Two days up the ridge.',
+  coverUrl: 'https://media.example.com/blog/cover.webp',
   blocks: [
     { id: 'block-a', type: 'text', body: 'Trailhead at dawn.' },
     { id: 'block-b', type: 'text', body: 'The ridge above camp.' },
@@ -22,13 +23,14 @@ describe('blogEditorStore', () => {
   });
 
   // Otherwise the editor opens a saved post with empty fields.
-  it('loads a saved post title, category, summary and blocks', () => {
+  it('loads a saved post title, category, summary, cover and blocks', () => {
     useBlogEditorStore.getState().loadPost(savedPost);
 
-    const { title, category, summary, blocks } = useBlogEditorStore.getState();
+    const { title, category, summary, coverUrl, blocks } = useBlogEditorStore.getState();
     expect(title).toBe('Ridge Hike');
     expect(category).toBe('Hiking');
     expect(summary).toBe('Two days up the ridge.');
+    expect(coverUrl).toBe('https://media.example.com/blog/cover.webp');
     expect(blocks).toEqual(savedPost.blocks);
   });
 
@@ -37,11 +39,12 @@ describe('blogEditorStore', () => {
     useBlogEditorStore.getState().loadPost(savedPost);
     useBlogEditorStore.getState().reset();
 
-    const { title, category, summary, blocks } = useBlogEditorStore.getState();
-    expect({ title, category, summary, blocks }).toEqual({
+    const { title, category, summary, coverUrl, blocks } = useBlogEditorStore.getState();
+    expect({ title, category, summary, coverUrl, blocks }).toEqual({
       title: '',
       category: '',
       summary: '',
+      coverUrl: null,
       blocks: [],
     });
   });
@@ -108,6 +111,15 @@ describe('blogEditorStore', () => {
       category: 'Backpacking',
       summary: 'Three days to Table Lake.',
     });
+  });
+
+  // Otherwise a new or removed cover doesn't show in the editor, and Save still thinks it's missing.
+  it('sets and clears the cover', () => {
+    useBlogEditorStore.getState().setCoverUrl('https://media.example.com/blog/new.webp');
+    expect(useBlogEditorStore.getState().coverUrl).toBe('https://media.example.com/blog/new.webp');
+
+    useBlogEditorStore.getState().setCoverUrl(null);
+    expect(useBlogEditorStore.getState().coverUrl).toBeNull();
   });
 
   describe('image blocks', () => {
