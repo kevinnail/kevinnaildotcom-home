@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
 import LoginForm from '../components/dashboard/LoginForm';
 import BlogPostBody from '../components/blog/BlogPostBody';
@@ -9,7 +9,10 @@ import {
   fetchAdminBlogPosts,
   updateBlogPost,
   publishBlogPost,
+  deleteBlogPost,
   addBlogImages,
+  setBlogCover,
+  removeBlogCover,
   requestUpload,
   uploadToS3,
   SessionExpiredError,
@@ -147,13 +150,121 @@ const ImagesBlockEditor = ({
   );
 };
 
+// The cover shows on the /blog list card only, never inside the post.
+const CoverEditor = ({
+  token,
+  postId,
+  disabled,
+  isPublished,
+  setUploadingCount,
+  onSessionExpired,
+}) => {
+  const { coverUrl, setCoverUrl } = useBlogEditorStore();
+  // The picker's text while a change is in flight, null otherwise.
+  const [busyText, setBusyText] = useState(null);
+  const [coverError, setCoverError] = useState('');
+  const isPickerDisabled = disabled || busyText !== null;
+
+  // Save is held during a cover change, so a save response landing after it
+  // can't put the old cover back in the editor.
+  const runCoverChange = async (changeCover, { pendingText, failureText }) => {
+    setCoverError('');
+    setBusyText(pendingText);
+    setUploadingCount((count) => count + 1);
+    try {
+      setCoverUrl(await changeCover());
+    } catch (coverChangeError) {
+      if (coverChangeError instanceof SessionExpiredError) {
+        onSessionExpired();
+        return;
+      }
+      console.error(failureText, coverChangeError);
+      setCoverError(`${failureText} Please try again.`);
+    } finally {
+      setBusyText(null);
+      setUploadingCount((count) => count - 1);
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const [file] = event.target.files;
+    event.target.value = '';
+    runCoverChange(
+      async () => {
+        const displayImage = await createDisplayImage(file);
+        const upload = await requestUpload(token, displayImage, 'blog');
+        await uploadToS3(upload.uploadUrl, displayImage, upload.cacheControl);
+        return (await setBlogCover(token, postId, upload.objectKey)).coverUrl;
+      },
+      { pendingText: 'Uploading cover…', failureText: 'Could not upload the cover.' },
+    );
+  };
+
+  const handleRemove = () =>
+    runCoverChange(async () => (await removeBlogCover(token, postId)).coverUrl, {
+      pendingText: 'Removing cover…',
+      failureText: 'Could not remove the cover.',
+    });
+
+  const picker = (
+    <label
+      className={`blog-editor-photo-picker ${coverUrl ? '' : 'blog-editor-photo-picker-empty'} ${isPickerDisabled ? 'blog-editor-photo-picker-disabled' : ''}`}
+    >
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        disabled={isPickerDisabled}
+        className="blog-editor-file-input"
+      />
+      <span className="blog-editor-photo-picker-text">
+        {busyText ?? (coverUrl ? 'Replace cover' : 'Choose a cover picture')}
+      </span>
+      {!coverUrl && !busyText && (
+        <span className="blog-editor-photo-picker-hint">
+          Shown on the blog list card, not inside the post.
+        </span>
+      )}
+    </label>
+  );
+
+  return (
+    <div className="blog-editor-block">
+      {coverUrl ? (
+        <>
+          <img src={coverUrl} alt="Cover for the blog list" className="blog-editor-cover-thumbnail" />
+          <div className="blog-editor-block-controls">
+            {picker}
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isPickerDisabled || isPublished}
+              className="blog-editor-button blog-editor-remove-button"
+            >
+              Remove cover
+            </button>
+          </div>
+          {isPublished && (
+            <p className="blog-editor-hint">A published post keeps its cover; replace it instead.</p>
+          )}
+        </>
+      ) : (
+        picker
+      )}
+      {coverError && <p className="blog-editor-error">{coverError}</p>}
+    </div>
+  );
+};
+
 const BlogEditorPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const token = useAdminToken();
   const {
     title,
     category,
     summary,
+    coverUrl,
     blocks,
     loadPost,
     reset,
@@ -219,8 +330,11 @@ const BlogEditorPage = () => {
   }, [token, id, loadPost, reset, handleSessionExpired]);
 
   const hasRequiredFields = () => {
-    if (title.trim() && category.trim() && summary.trim()) return true;
-    setSaveMessage({ isError: true, text: 'Title, category and summary are required.' });
+    if (title.trim() && category.trim() && summary.trim() && coverUrl) return true;
+    setSaveMessage({
+      isError: true,
+      text: 'Title, category, summary and cover picture are required.',
+    });
     return false;
   };
 
@@ -265,6 +379,32 @@ const BlogEditorPage = () => {
           successText: 'Published.',
           failureText: 'Could not publish.',
         }),
+    });
+  };
+
+  const handleDelete = () => {
+    setConfirmation({
+      title: 'Delete this post?',
+      message: 'The post and its photos are removed for good. This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDanger: true,
+      onConfirm: async () => {
+        setIsSaving(true);
+        setSaveMessage(null);
+        try {
+          await deleteBlogPost(token, id);
+          navigate('/dashboard?tab=blog');
+        } catch (deleteError) {
+          if (deleteError instanceof SessionExpiredError) {
+            handleSessionExpired();
+            return;
+          }
+          console.error('Could not delete.', deleteError);
+          setSaveMessage({ isError: true, text: 'Could not delete. Please try again.' });
+        } finally {
+          setIsSaving(false);
+        }
+      },
     });
   };
 
@@ -345,6 +485,14 @@ const BlogEditorPage = () => {
                 aria-label="Summary"
                 disabled={isSaving}
                 className="blog-editor-textarea blog-editor-summary"
+              />
+              <CoverEditor
+                token={token}
+                postId={id}
+                disabled={isSaving}
+                isPublished={Boolean(savedPost.publishedAt)}
+                setUploadingCount={setUploadingCount}
+                onSessionExpired={handleSessionExpired}
               />
 
               <div className="blog-editor-view-toggle">
@@ -466,6 +614,14 @@ const BlogEditorPage = () => {
                     Publish
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isSaving || isUploading}
+                  className="blog-editor-button blog-editor-remove-button blog-editor-delete-button"
+                >
+                  Delete post
+                </button>
               </div>
             </form>
           )}
