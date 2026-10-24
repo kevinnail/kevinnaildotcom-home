@@ -564,6 +564,18 @@ describe('blog images', () => {
     expect(malformed.status).toBe(404);
   });
 
+  // Otherwise saving a deleted post with photos in it says the photos are wrong instead of not found.
+  it('returns 404 for an unknown post even when the blocks reference images', async () => {
+    const token = await adminToken();
+
+    const response = await savePost(token, unknownId, [
+      { id: 'block-a', type: 'images', images: [{ imageId: unknownId, caption: '' }] },
+    ]);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Blog post not found');
+  });
+
   // Otherwise one post can show another post's photo, and either post's save deletes it from the other.
   it('returns 400 for a save that uses an image uploaded to a different post', async () => {
     const token = await adminToken();
@@ -646,6 +658,242 @@ describe('blog images', () => {
         type: 'images',
         images: [{ imageId: secondImage.id, caption: 'Camp', url: secondImage.url }],
       },
+    ]);
+  });
+});
+
+describe('DELETE /api/v1/blog/:id', () => {
+  const unknownId = '00000000-0000-4000-8000-000000000000';
+
+  async function deletePost(token, id) {
+    return request(app).delete(`/api/v1/blog/${id}`).set('authorization', `Bearer ${token}`);
+  }
+
+  async function imageRowCount() {
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM blog_images');
+    return rows[0].count;
+  }
+
+  // Otherwise a deleted post leaves its photo rows behind and its photos in S3 forever.
+  it('deletes the post and its image rows and purges their S3 objects', async () => {
+    const token = await adminToken();
+    const draft = (await createPost(token, { title: 'Ridge Hike', category: 'Hiking' })).body;
+    const keptDraft = (await createPost(token, { title: 'Other Hike', category: 'Hiking' })).body;
+    for (const [postId, objectKeys] of [
+      [draft.id, ['blog/one.webp', 'blog/two.webp']],
+      [keptDraft.id, ['blog/other.webp']],
+    ]) {
+      await request(app)
+        .post(`/api/v1/blog/${postId}/images`)
+        .set('authorization', `Bearer ${token}`)
+        .send({ objectKeys });
+    }
+
+    const response = await deletePost(token, draft.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(draft.id);
+    expect(await blogRowCount()).toBe(1);
+    expect(await imageRowCount()).toBe(1);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(
+      send.mock.lastCall[0].input.Delete.Objects.map((object) => object.Key).sort(),
+    ).toEqual(['blog/one.webp', 'blog/two.webp']);
+  });
+
+  // Otherwise deleting an already-deleted post or a mistyped id shows a server error instead of not found.
+  it('returns 404 for an unknown or malformed id and purges nothing', async () => {
+    const token = await adminToken();
+
+    const unknown = await deletePost(token, unknownId);
+    const malformed = await deletePost(token, 'not-a-uuid');
+
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.message).toBe('Blog post not found');
+    expect(malformed.status).toBe(404);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  // Otherwise anyone can delete posts.
+  it('returns 401 without a token and keeps the post', async () => {
+    const token = await adminToken();
+    const draft = (await createPost(token, { title: 'Ridge Hike', category: 'Hiking' })).body;
+
+    const response = await request(app).delete(`/api/v1/blog/${draft.id}`);
+
+    expect(response.status).toBe(401);
+    expect(await blogRowCount()).toBe(1);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('blog cover picture', () => {
+  const unknownId = '00000000-0000-4000-8000-000000000000';
+
+  async function createDraft(token) {
+    const response = await createPost(token, { title: 'Ridge Hike', category: 'Hiking' });
+    return response.body;
+  }
+
+  async function setCover(token, id, objectKey) {
+    return request(app)
+      .put(`/api/v1/blog/${id}/cover`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ objectKey });
+  }
+
+  async function removeCover(token, id) {
+    return request(app).delete(`/api/v1/blog/${id}/cover`).set('authorization', `Bearer ${token}`);
+  }
+
+  async function storedCoverUrl(id) {
+    const { rows } = await pool.query('SELECT cover_url FROM blog_posts WHERE id = $1', [id]);
+    return rows[0].cover_url;
+  }
+
+  function purgedKeys() {
+    return send.mock.lastCall[0].input.Delete.Objects.map((object) => object.Key);
+  }
+
+  // Otherwise the blog list card has no picture, or one pointing somewhere S3 never stored it.
+  it('stores the cover URL and the editor reads it back', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await setCover(token, draft.id, 'blog/cover.webp');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ coverUrl: 'https://media.example.com/blog/cover.webp' });
+    expect(await storedCoverUrl(draft.id)).toBe('https://media.example.com/blog/cover.webp');
+    expect(send).not.toHaveBeenCalled();
+    const getResponse = await request(app)
+      .get(`/api/v1/blog/admin/${draft.id}`)
+      .set('authorization', `Bearer ${token}`);
+    expect(getResponse.body.coverUrl).toBe('https://media.example.com/blog/cover.webp');
+  });
+
+  // Otherwise every replaced cover stays in S3 forever.
+  it('replaces the cover and purges the previous one from S3', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/first.webp');
+
+    const response = await setCover(token, draft.id, 'blog/second.webp');
+
+    expect(response.status).toBe(200);
+    expect(await storedCoverUrl(draft.id)).toBe('https://media.example.com/blog/second.webp');
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(purgedKeys()).toEqual(['blog/first.webp']);
+  });
+
+  // Otherwise a removed cover still shows on the blog list, or stays in S3 forever.
+  it('removes the cover and purges it from S3', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/cover.webp');
+
+    const response = await removeCover(token, draft.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ coverUrl: null });
+    expect(await storedCoverUrl(draft.id)).toBeNull();
+    expect(purgedKeys()).toEqual(['blog/cover.webp']);
+  });
+
+  // Otherwise a cover request with no key stores a URL that points at nothing.
+  it('returns 400 for a missing object key and leaves the cover alone', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await setCover(token, draft.id, undefined);
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('objectKey is required');
+    expect(await storedCoverUrl(draft.id)).toBeNull();
+  });
+
+  // Otherwise setting or removing the cover of a deleted post shows a server error instead of not found.
+  it('returns 404 for an unknown or malformed post id', async () => {
+    const token = await adminToken();
+
+    const unknownSet = await setCover(token, unknownId, 'blog/cover.webp');
+    const unknownRemove = await removeCover(token, unknownId);
+    const malformedSet = await setCover(token, 'not-a-uuid', 'blog/cover.webp');
+
+    expect(unknownSet.status).toBe(404);
+    expect(unknownSet.body.message).toBe('Blog post not found');
+    expect(unknownRemove.status).toBe(404);
+    expect(malformedSet.status).toBe(404);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  // Otherwise anyone can change or remove a post's cover.
+  it('returns 401 without a token and leaves the cover alone', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/cover.webp');
+
+    const setResponse = await request(app)
+      .put(`/api/v1/blog/${draft.id}/cover`)
+      .send({ objectKey: 'blog/other.webp' });
+    const removeResponse = await request(app).delete(`/api/v1/blog/${draft.id}/cover`);
+
+    expect(setResponse.status).toBe(401);
+    expect(removeResponse.status).toBe(401);
+    expect(await storedCoverUrl(draft.id)).toBe('https://media.example.com/blog/cover.webp');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  // Otherwise saving the post's text wipes out its cover.
+  it('keeps the cover when the post is saved', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/cover.webp');
+
+    const response = await request(app)
+      .put(`/api/v1/blog/${draft.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ title: 'Ridge Hike', category: 'Hiking', summary: 'Two days.', blocks: [] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.coverUrl).toBe('https://media.example.com/blog/cover.webp');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  // Otherwise a deleted post's cover stays in S3 forever.
+  it('purges the cover from S3 when the post is deleted', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/cover.webp');
+
+    const response = await request(app)
+      .delete(`/api/v1/blog/${draft.id}`)
+      .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(purgedKeys()).toEqual(['blog/cover.webp']);
+  });
+
+  // Otherwise the blog list cards have no summary or picture to show.
+  it('returns each published post summary and cover on the public list', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await setCover(token, draft.id, 'blog/cover.webp');
+    await request(app)
+      .put(`/api/v1/blog/${draft.id}`)
+      .set('authorization', `Bearer ${token}`)
+      .send({ title: 'Ridge Hike', category: 'Hiking', summary: 'Two days.', blocks: [] });
+    await request(app)
+      .patch(`/api/v1/blog/${draft.id}/publish`)
+      .set('authorization', `Bearer ${token}`);
+
+    const response = await request(app).get('/api/v1/blog');
+
+    expect(response.body).toEqual([
+      expect.objectContaining({
+        summary: 'Two days.',
+        coverUrl: 'https://media.example.com/blog/cover.webp',
+      }),
     ]);
   });
 });
