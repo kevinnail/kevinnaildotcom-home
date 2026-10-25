@@ -294,6 +294,12 @@ const BlogEditorPage = () => {
     signOut();
   }, []);
 
+  // The session-expired message is only true until the next sign-in.
+  const handleAuthenticated = (newToken) => {
+    setSessionMessage('');
+    signIn(newToken);
+  };
+
   // A save during an upload would delete the photo the server just stored,
   // because the blocks being saved don't reference it yet.
   const isUploading = uploadingCount > 0;
@@ -446,7 +452,7 @@ const BlogEditorPage = () => {
 
           {sessionMessage && <p className="blog-editor-error">{sessionMessage}</p>}
 
-          {!token && <LoginForm onAuthenticated={signIn} />}
+          {!token && <LoginForm onAuthenticated={handleAuthenticated} />}
           {token && status === 'loading' && <p className="blog-editor-message">Loading post…</p>}
           {token && status === 'error' && (
             <p className="blog-editor-error">Could not load the post.</p>
