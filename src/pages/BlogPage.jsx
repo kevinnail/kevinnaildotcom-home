@@ -89,10 +89,12 @@ const BlogPage = () => {
             <ul className="blog-post-list">
               {visiblePosts.map((post) => (
                 <li key={post.slug} className="blog-card">
-                  <Link to={`/blog/${post.slug}`}>
+                  {/* The title link right after it goes to the same post, so the cover is
+                      left out for screen readers and keyboards rather than read twice. */}
+                  <Link to={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1}>
                     <img
                       src={post.coverUrl}
-                      alt={post.title}
+                      alt=""
                       loading="lazy"
                       className="blog-card-cover"
                     />
