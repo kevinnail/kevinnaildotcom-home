@@ -89,13 +89,8 @@ const BlogPage = () => {
             <ul className="blog-post-list">
               {visiblePosts.map((post) => (
                 <li key={post.slug} className="blog-card">
-                  <Link to={`/blog/${post.slug}`}>
-                    <img
-                      src={post.coverUrl}
-                      alt={post.title}
-                      loading="lazy"
-                      className="blog-card-cover"
-                    />
+                  <Link to={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1}>
+                    <img src={post.coverUrl} alt="" loading="lazy" className="blog-card-cover" />
                   </Link>
                   <div>
                     <h2 className="blog-card-title">

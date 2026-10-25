@@ -83,6 +83,12 @@ export default function DashboardPage() {
     signOut();
   }, []);
 
+  // The session-expired message is only true until the next sign-in.
+  const handleAuthenticated = (newToken) => {
+    setError('');
+    signIn(newToken);
+  };
+
   const handleEdit = async (id, fields) => {
     try {
       const updated = await updatePhoto(token, id, fields, gallery);
@@ -285,7 +291,7 @@ export default function DashboardPage() {
               )}
             </>
           ) : (
-            <LoginForm onAuthenticated={signIn} />
+            <LoginForm onAuthenticated={handleAuthenticated} />
           )}
         </div>
       </div>
