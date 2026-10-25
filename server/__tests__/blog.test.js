@@ -701,6 +701,18 @@ describe('DELETE /api/v1/blog/:id', () => {
     ).toEqual(['blog/one.webp', 'blog/two.webp']);
   });
 
+  // Otherwise a link shared to a deleted post opens the next post with the same title.
+  it('keeps a deleted post slug taken for later posts', async () => {
+    const token = await adminToken();
+    const draft = (await createPost(token, { title: 'Ridge Hike', category: 'Hiking' })).body;
+
+    await deletePost(token, draft.id);
+    const replacement = await createPost(token, { title: 'Ridge Hike', category: 'Hiking' });
+
+    expect(replacement.status).toBe(201);
+    expect(replacement.body.slug).toBe('ridge-hike-2');
+  });
+
   // Otherwise deleting an already-deleted post or a mistyped id shows a server error instead of not found.
   it('returns 404 for an unknown or malformed id and purges nothing', async () => {
     const token = await adminToken();

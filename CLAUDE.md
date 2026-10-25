@@ -99,6 +99,7 @@ Standard controller → model → `pg` pool layering (`server/lib/{controllers,m
 - `photos` — `gallery` ('astro' | 'hikes'), `url`, `thumb_url` (hikes only), `alt`, `caption`, `lat`/`lng`, `taken_at` (EXIF capture time), `trip_id` (FK → `trips`, `ON DELETE CASCADE`), `sort_order`.
 - `blog_posts`: `slug` (unique, set from the title at creation and never changed), `title`, `category` (free text; a new one that differs from an existing one only in case reuses the existing spelling), `summary`, `cover_url`, `blocks` (JSONB), `published_at` (null means draft).
 - `blog_images`: `post_id` (FK → `blog_posts`, `ON DELETE CASCADE`), `url`. One row per photo uploaded to a post; images blocks store only `imageId` and `caption`, and reads add each `url`. A save deletes the rows its blocks no longer use and purges their S3 objects.
+- `blog_retired_slugs`: `slug`. Deleting a post adds its slug here, and new posts never take one, so an old link never opens a different post.
 
 Ordering differs per gallery and is done server-side: **astro** uses hand-curated `sort_order`; **hikes** sorts chronologically by `taken_at`, falling back to `uploaded_at`. Trips sort oldest first by their earliest photo on that same date, and a trip with no photos yet goes last. Deleting a trip cascades to its photos in the database and also purges their S3 objects.
 

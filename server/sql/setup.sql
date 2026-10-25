@@ -4,6 +4,7 @@
 -- statements above their CREATE TABLE counterparts as tables are added.
 
 DROP TABLE IF EXISTS blog_images CASCADE;
+DROP TABLE IF EXISTS blog_retired_slugs CASCADE;
 DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS photos CASCADE;
 DROP TABLE IF EXISTS trips CASCADE;
@@ -62,6 +63,11 @@ CREATE TABLE blog_posts (
   published_at TIMESTAMPTZ,             -- null means draft
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Slugs of deleted posts, kept so a new post never takes over an old link.
+CREATE TABLE blog_retired_slugs (
+  slug TEXT PRIMARY KEY
 );
 
 -- One row per photo uploaded to a post. The post's images blocks reference

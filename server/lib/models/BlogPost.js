@@ -5,10 +5,15 @@ import { slugify, toStoredBlocks } from '../utils/blogBlocks.js';
 // "admin" could never be read.
 const RESERVED_SLUGS = ['admin'];
 
+// A deleted post's slug stays taken, so a link already shared never opens a different post.
 const uniqueSlug = async (title) => {
   const baseSlug = slugify(title);
   const { rows } = await pool.query(
-    `SELECT slug FROM blog_posts
+    `SELECT slug FROM (
+       SELECT slug FROM blog_posts
+       UNION ALL
+       SELECT slug FROM blog_retired_slugs
+     ) AS used_slugs
      WHERE slug = $1 OR slug ~ ('^' || $1 || '-[0-9]+$')`,
     [baseSlug],
   );
@@ -185,7 +190,12 @@ export default class BlogPost {
         'DELETE FROM blog_images WHERE post_id = $1 RETURNING url',
         [id],
       );
-      const { rows } = await client.query('DELETE FROM blog_posts WHERE id = $1 RETURNING *', [id]);
+      const { rows } = await client.query(
+        `WITH deleted AS (DELETE FROM blog_posts WHERE id = $1 RETURNING *),
+         retired AS (INSERT INTO blog_retired_slugs (slug) SELECT slug FROM deleted)
+         SELECT * FROM deleted`,
+        [id],
+      );
 
       await client.query('COMMIT');
       if (!rows[0]) return null;
