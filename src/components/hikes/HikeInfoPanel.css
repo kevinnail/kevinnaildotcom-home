@@ -107,6 +107,35 @@
   margin: 0;
 }
 
+/* Map layers any hike can show, separated from the hike details above by a
+   rule. */
+.hike-panel-layers {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+}
+
+/* Rounded and blue, lit while the layer is on. The geology section's layer
+   toggles use it too. */
+.hike-layer-toggle {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background-color: rgb(0 0 0 / 0.7);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.5;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.hike-layer-toggle:hover,
+.hike-layer-toggle[aria-pressed='true'] {
+  background-color: var(--color-neon-blue-50);
+  color: var(--color-neon-blue-bright);
+}
+
 /* One chart per route line, stacked. */
 .elevation-profiles {
   display: flex;
