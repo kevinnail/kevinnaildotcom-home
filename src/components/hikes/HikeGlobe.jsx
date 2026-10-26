@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Viewer, KmlDataSource, Entity, ScreenSpaceCameraController } from 'resium';
+import { Viewer, KmlDataSource, Entity, ImageryLayer, ScreenSpaceCameraController } from 'resium';
 import {
   createWorldTerrainAsync,
   Cartesian2,
@@ -12,6 +12,7 @@ import {
   LabelStyle,
   Matrix4,
   Transforms,
+  UrlTemplateImageryProvider,
   VerticalOrigin,
   sampleTerrainMostDetailed,
   Math as CesiumMath,
@@ -84,6 +85,16 @@ const FLY_ALONG_INTRO_SECONDS = 2;
 // eases toward it, so the zigzags in a hand-drawn line don't jerk the view.
 const FLY_ALONG_LOOK_AHEAD_MILES = 0.25;
 const FLY_ALONG_TURN_SECONDS = 1.5;
+
+// The USGS National Map topo, with contours, trails, and place names, laid over
+// the satellite imagery. Public domain and needs no key. Its tiles stop at level
+// 16, so past that Cesium stretches the level 16 tile instead of asking for
+// tiles that don't exist.
+const USGS_TOPO_IMAGERY = new UrlTemplateImageryProvider({
+  url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+  maximumLevel: 16,
+  credit: 'USGS The National Map',
+});
 
 // The overview pin's label sits above its dot rather than on it.
 const PIN_LABEL_OFFSET = new Cartesian2(0, -16);
@@ -179,6 +190,8 @@ export default function HikeGlobe({
   const [terrainProvider, setTerrainProvider] = useState('pending');
   const [zoomLevelIndex, setZoomLevelIndex] = useState(DEFAULT_ZOOM_LEVEL_INDEX);
   const [isHoveringPin, setIsHoveringPin] = useState(false);
+  // The trip the topo map was switched on for, or null while it is off.
+  const [topoTripId, setTopoTripId] = useState(null);
   // Geology layers: null until first switched on, then true or false. See
   // GeologyLayer for why null is distinct from false.
   const [mapUnitsVisibility, setMapUnitsVisibility] = useState(null);
@@ -385,6 +398,19 @@ export default function HikeGlobe({
   if (flyAlong && (flyAlong.tripId !== selectedTrip?.id || flyAlong.photoId !== photoId)) {
     setFlyAlong(null);
   }
+  // Opening another hike switches the topo map off. Left on, it kept the new
+  // hike's route from flying into view.
+  if (topoTripId != null && topoTripId !== selectedTrip?.id) {
+    setTopoTripId(null);
+  }
+  const isTopoOn = topoTripId != null;
+
+  // The globe renders on demand (requestRenderMode), so adding or removing the
+  // topo layer has to ask for the frame that shows the change.
+  useEffect(() => {
+    viewer?.scene.requestRender();
+  }, [viewer, isTopoOn]);
+
   const routeLines =
     loadedRoute != null && loadedRoute.tripId === selectedTrip?.id
       ? loadedRoute.lines
@@ -520,7 +546,7 @@ export default function HikeGlobe({
       {/* The zoom level only drives the photo fly-to, so the control is dead
           weight until a photo is selected — hide it until then. */}
       {hasPhotoLocation ? (
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-neon-blue-50 bg-black/80 px-2 py-1 font-body text-white shadow-lg backdrop-blur">
+        <div className="hike-photo-zoom flex items-center gap-2 rounded-full border border-neon-blue-50 bg-black/80 px-2 py-1 font-body text-white shadow-lg backdrop-blur">
           <button
             type="button"
             onClick={() => setZoomLevelIndex((index) => index - 1)}
@@ -560,6 +586,8 @@ export default function HikeGlobe({
       {!isShowingAllRoutes && selectedTrip && (isDesktop || !isPhotoViewOpen) && (
         <HikeInfoPanel
           trip={selectedTrip}
+          isTopoOn={isTopoOn}
+          onToggleTopo={() => setTopoTripId(isTopoOn ? null : selectedTrip.id)}
           geology={
             isGeologyAvailable
               ? {
@@ -609,6 +637,9 @@ export default function HikeGlobe({
         {/* The visitor's camera controls are off while the trail plays, so a
             drag can't fight its frames. */}
         <ScreenSpaceCameraController enableInputs={!flyAlong} />
+        {/* Mounted only while on, so a visitor who never opens it never
+            downloads its tiles. */}
+        {isTopoOn && <ImageryLayer imageryProvider={USGS_TOPO_IMAGERY} />}
         <GeologyLayer
           mapUnitsVisibility={visibleWhenAvailable(mapUnitsVisibility)}
           morainesVisibility={visibleWhenAvailable(morainesVisibility)}
