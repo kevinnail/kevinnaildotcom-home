@@ -140,6 +140,8 @@ Shared client logic, split by role (there is deliberately no frontend `lib/`, so
 
 The backpacking map is Cesium via Resium, bundled with `vite-plugin-cesium`. KML trip files are uploaded through the same presign path (`?gallery=kml`, extension-restricted to `.kml`) and loaded by the globe from their CloudFront URL.
 
+The "Topo map" button in `HikeInfoPanel` lays the USGS National Map topo (contours, trails, names) over the satellite imagery, straight from USGS's public tile service (`basemap.nationalmap.gov`, no key, cached to level 16). Nothing is hosted or proxied, and the layer only mounts once switched on. Opening another hike switches it off; left on, it kept the new route from flying into view.
+
 Opening a hike shows `HikeInfoPanel` in the globe's top-right corner: the trip's name, region, route stats, and one `ElevationProfile` chart per route line, each spanning its own line's lowest to highest point with labeled height lines. It starts open on desktop and collapsed on a phone, and on a phone it steps aside while the photo dock is open.
 
 ### Route stats
