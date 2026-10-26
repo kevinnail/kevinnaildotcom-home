@@ -1,6 +1,5 @@
-/* Starts and stops the fly-along. Top left, at the height of the hike panel's
-   opener on the right, so it sits below the photo zoom control and clear of
-   Cesium's toolbar. Lit while it plays. */
+/* Starts and stops the fly-along. Top left, clear of Cesium's toolbar. Lit
+   while it plays. */
 .hike-fly-along {
   position: absolute;
   top: 0.5rem;
@@ -21,4 +20,13 @@
 .hike-fly-along[aria-pressed='true'] {
   background-color: var(--color-neon-blue-50);
   color: var(--color-neon-blue-bright);
+}
+
+/* The photo zoom control, below the fly the trail button. HikeCoachMarks
+   places its callout under this spot, so move that with it. */
+.hike-photo-zoom {
+  position: absolute;
+  top: 3.25rem;
+  left: 0.45rem;
+  z-index: 10;
 }
