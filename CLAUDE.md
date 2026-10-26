@@ -140,7 +140,7 @@ Shared client logic, split by role (there is deliberately no frontend `lib/`, so
 
 The backpacking map is Cesium via Resium, bundled with `vite-plugin-cesium`. KML trip files are uploaded through the same presign path (`?gallery=kml`, extension-restricted to `.kml`) and loaded by the globe from their CloudFront URL.
 
-Opening a hike shows `HikeInfoPanel` in the globe's top-right corner: the trip's name, region, route stats, and one `ElevationProfile` chart per route line, all on the trip's shared height scale. It starts open on desktop and collapsed on a phone, and on a phone it steps aside while the photo dock is open.
+Opening a hike shows `HikeInfoPanel` in the globe's top-right corner: the trip's name, region, route stats, and one `ElevationProfile` chart per route line, each spanning its own line's lowest to highest point with labeled height lines. It starts open on desktop and collapsed on a phone, and on a phone it steps aside while the photo dock is open.
 
 ### Route stats
 
