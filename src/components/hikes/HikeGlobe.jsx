@@ -10,12 +10,15 @@ import {
   HeadingPitchRange,
   HeightReference,
   LabelStyle,
+  Matrix4,
+  Transforms,
   VerticalOrigin,
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
 import '../../utils/cesiumIon';
 import { isGeotagged } from '../../utils/hikePhotos';
+import { FEET_PER_METER, formatFeet } from '../../utils/routeFormat';
 import { isInGeologyMapArea } from '../../utils/geologyAge';
 import { fetchTripLocations } from '../../utils/kmlLocation';
 import useIsDesktop from '../../hooks/useIsDesktop';
@@ -26,20 +29,24 @@ import HikeInfoPanel from './HikeInfoPanel';
 // view instead of inheriting whatever zoom/tilt the user left. The user picks a
 // level with the +/− buttons and it sticks across photos, so stepping to the
 // next pin keeps the framing they chose rather than snapping back to a default.
-// - rangeMeters: how far the camera sits from the pin. Widest level first.
+// - rangeFeet: how far the camera sits from the pin, in round miles or feet so
+//   the label beside the buttons reads cleanly. Widest level first.
 // - pitchDegrees: viewing angle, measured downward from horizontal (0 = level,
 //   -90 = straight down). It steepens as the range closes: a shallow oblique is
 //   readable from far out, but up close it drags the camera down into whatever
 //   ridge sits between it and the pin, so we look further over the top instead.
+const FEET_PER_MILE = 5280;
 const ZOOM_LEVELS = [
-  { rangeMeters: 40000, pitchDegrees: -20 },
-  { rangeMeters: 26000, pitchDegrees: -20 },
-  { rangeMeters: 13000, pitchDegrees: -20 },
-  { rangeMeters: 6500, pitchDegrees: -30 },
-  { rangeMeters: 2500, pitchDegrees: -38 },
-  { rangeMeters: 500, pitchDegrees: -45 },
+  { rangeFeet: 25 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 15 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 8 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 4 * FEET_PER_MILE, pitchDegrees: -30 },
+  { rangeFeet: 1.5 * FEET_PER_MILE, pitchDegrees: -38 },
+  { rangeFeet: 1500, pitchDegrees: -45 },
 ];
-const DEFAULT_ZOOM_LEVEL_INDEX = ZOOM_LEVELS.findIndex((level) => level.rangeMeters === 13000);
+const DEFAULT_ZOOM_LEVEL_INDEX = ZOOM_LEVELS.findIndex(
+  (level) => level.rangeFeet === 8 * FEET_PER_MILE,
+);
 
 // Framing for the route overview flown on trip select. Heading 0 is north-up so
 // every hike is introduced from the same orientation, and range 0 tells Cesium to
@@ -68,6 +75,13 @@ const PIN_LABEL_FONT = {
   touch: '19px "Open Sans", sans-serif',
 };
 
+// On a phone the open photo dock covers the bottom of the globe: at most 40% of
+// the screen plus 1rem of padding above and below it, HikePhotoDock's
+// max-h-[40vh] and p-4. If the dock's size changes, change this with it.
+function phoneDockHeightPixels() {
+  return window.innerHeight * 0.4 + 32;
+}
+
 // Stable empty list, so "no pins on screen" never looks like a change to the
 // effect that frames them.
 const NO_PINS = [];
@@ -95,8 +109,14 @@ function routeTouchesGeologyMapArea(dataSource) {
   return false;
 }
 
-function formatRange(rangeMeters) {
-  return rangeMeters >= 1000 ? `${(rangeMeters / 1000).toFixed(1)} km` : `${rangeMeters} m`;
+// Whole miles without a trailing ".0", so the levels read 25 mi and 1.5 mi.
+const rangeMilesFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+// Miles, or feet under a mile.
+function formatRange(rangeFeet) {
+  return rangeFeet >= FEET_PER_MILE
+    ? `${rangeMilesFormat.format(rangeFeet / FEET_PER_MILE)} mi`
+    : formatFeet(rangeFeet);
 }
 
 export default function HikeGlobe({
@@ -137,7 +157,8 @@ export default function HikeGlobe({
   const [pinResult, setPinResult] = useState(null);
   const fetchedTripsRef = useRef(null);
   const isDesktop = useIsDesktop();
-  const { rangeMeters, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
+  const { rangeFeet, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
+  const rangeMeters = rangeFeet / FEET_PER_METER;
   const pinSizing = isDesktop ? 'desktop' : 'touch';
 
   // World terrain loads asynchronously (createWorldTerrain was removed in Cesium
@@ -247,6 +268,9 @@ export default function HikeGlobe({
   const photoId = isGeotagged(selectedPhoto) ? selectedPhoto.id : null;
   const photoLng = selectedPhoto?.lng;
   const photoLat = selectedPhoto?.lat;
+  // Opening or closing the dock on a phone re-frames the photo, so the pin moves
+  // out from under the dock and back to the middle when it closes.
+  const isDockCoveringGlobe = !isDesktop && isPhotoViewOpen;
   useEffect(() => {
     if (photoId == null || !viewer) return undefined;
     let cancelled = false;
@@ -254,17 +278,35 @@ export default function HikeGlobe({
     function flyToGroundTarget(targetHeightMeters) {
       if (cancelled) return;
       const { camera } = viewer;
-      camera.flyToBoundingSphere(
-        new BoundingSphere(Cartesian3.fromDegrees(photoLng, photoLat, targetHeightMeters), 0),
-        {
-          offset: new HeadingPitchRange(
-            camera.heading,
-            CesiumMath.toRadians(pitchDegrees),
-            rangeMeters,
-          ),
-          duration: 1.2,
-        },
+      const target = Cartesian3.fromDegrees(photoLng, photoLat, targetHeightMeters);
+      const { heading } = camera;
+      const pitch = CesiumMath.toRadians(pitchDegrees);
+      // The camera sits back along its line of sight to the pin, at the zoom
+      // level's range and pitch, in the pin's east-north-up frame.
+      const lineOfSight = new Cartesian3(
+        Math.sin(heading) * Math.cos(pitch),
+        Math.cos(heading) * Math.cos(pitch),
+        Math.sin(pitch),
       );
+      const cameraOffset = Matrix4.multiplyByPointAsVector(
+        Transforms.eastNorthUpToFixedFrame(target),
+        Cartesian3.multiplyByScalar(lineOfSight, -rangeMeters, new Cartesian3()),
+        new Cartesian3(),
+      );
+      // From that same spot, look further down by the angle that lifts the pin
+      // half the dock's height up the screen, to the middle of the globe left
+      // above the dock.
+      const dockTiltRadians = isDockCoveringGlobe
+        ? Math.atan(
+            (phoneDockHeightPixels() / viewer.canvas.clientHeight) *
+              Math.tan(camera.frustum.fovy / 2.5),
+          )
+        : 0;
+      camera.flyTo({
+        destination: Cartesian3.add(target, cameraOffset, new Cartesian3()),
+        orientation: { heading, pitch: pitch - dockTiltRadians, roll: 0 },
+        duration: 1.2,
+      });
     }
 
     if (!terrainProvider) {
@@ -280,7 +322,16 @@ export default function HikeGlobe({
     return () => {
       cancelled = true;
     };
-  }, [photoId, photoLng, photoLat, rangeMeters, pitchDegrees, terrainProvider, viewer]);
+  }, [
+    photoId,
+    photoLng,
+    photoLat,
+    rangeMeters,
+    pitchDegrees,
+    isDockCoveringGlobe,
+    terrainProvider,
+    viewer,
+  ]);
 
   if (terrainProvider === 'pending') {
     return (
@@ -327,7 +378,7 @@ export default function HikeGlobe({
             −
           </button>
           <span className="min-w-14 text-center text-xs tabular-nums">
-            {formatRange(rangeMeters)}
+            {formatRange(rangeFeet)}
           </span>
           <button
             type="button"

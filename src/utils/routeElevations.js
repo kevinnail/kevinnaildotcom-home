@@ -1,8 +1,7 @@
 import { createWorldTerrainAsync, sampleTerrainMostDetailed, Cartographic } from 'cesium';
 import './cesiumIon';
 import { parseKmlRouteLines, resampleRoute, buildRouteStats } from './routeStats';
-
-const FEET_PER_METER = 3.28084;
+import { FEET_PER_METER } from './routeFormat';
 
 async function groundHeightsFeet(points) {
   const terrainProvider = await createWorldTerrainAsync();
