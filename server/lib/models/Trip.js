@@ -47,8 +47,9 @@ export default class Trip {
     return new Trip(rows[0]);
   }
 
-  // Chronological by each trip's earliest photo, using the same capture time
-  // the hike photos sort by. A trip whose photos aren't uploaded yet goes last.
+  // Newest hike first, by each trip's earliest photo, using the same capture
+  // time the hike photos sort by. A trip whose photos aren't uploaded yet goes
+  // last, newest upload first.
   static async getAll() {
     const { rows } = await pool.query(
       `SELECT * FROM trips
@@ -56,7 +57,7 @@ export default class Trip {
          SELECT MIN(COALESCE(photos.taken_at, photos.uploaded_at))
          FROM photos
          WHERE photos.trip_id = trips.id
-       ) ASC NULLS LAST, trips.uploaded_at ASC`,
+       ) DESC NULLS LAST, trips.uploaded_at DESC`,
     );
 
     return rows.map((row) => new Trip(row));

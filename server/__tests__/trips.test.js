@@ -67,8 +67,8 @@ afterAll(async () => {
 });
 
 describe('Trip routes', () => {
-  // Otherwise the map sidebar lists hikes in upload order instead of the order they were hiked.
-  it('GET /api/v1/trips returns every trip by its earliest photo, in the manifest shape', async () => {
+  // Otherwise the map sidebar lists hikes in upload order instead of newest hike first.
+  it('GET /api/v1/trips returns every trip newest first by its earliest photo, in the manifest shape', async () => {
     const { rows } = await pool.query(
       `INSERT INTO trips (name, region, url, uploaded_at) VALUES
         ('Hiked Later', 'Cascades', 'https://media.example.com/kml/later.kml', '2024-01-01T00:00:00Z'),
@@ -89,14 +89,6 @@ describe('Trip routes', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual([
       {
-        id: hikedEarlier.id,
-        name: 'Hiked Earlier',
-        region: 'Olympics',
-        url: 'https://media.example.com/kml/earlier.kml',
-        uploadedAt: '2024-02-01T00:00:00.000Z',
-        stats: null,
-      },
-      {
         id: hikedLater.id,
         name: 'Hiked Later',
         region: 'Cascades',
@@ -104,7 +96,31 @@ describe('Trip routes', () => {
         uploadedAt: '2024-01-01T00:00:00.000Z',
         stats: null,
       },
+      {
+        id: hikedEarlier.id,
+        name: 'Hiked Earlier',
+        region: 'Olympics',
+        url: 'https://media.example.com/kml/earlier.kml',
+        uploadedAt: '2024-02-01T00:00:00.000Z',
+        stats: null,
+      },
     ]);
+  });
+
+  // Otherwise trips still waiting on photos come back in no fixed order, and the newest KML isn't at the top of them.
+  it('lists trips with no photos yet newest upload first', async () => {
+    const { rows } = await pool.query(
+      `INSERT INTO trips (name, url, uploaded_at) VALUES
+        ('Uploaded Earlier', 'https://media.example.com/kml/earlier.kml', '2024-01-01T00:00:00Z'),
+        ('Uploaded Later', 'https://media.example.com/kml/later.kml', '2024-02-01T00:00:00Z')
+       RETURNING *`,
+    );
+    const [uploadedEarlier, uploadedLater] = rows;
+
+    const response = await request(app).get('/api/v1/trips');
+
+    expect(response.status).toBe(200);
+    expect(response.body.map((trip) => trip.id)).toEqual([uploadedLater.id, uploadedEarlier.id]);
   });
 
   // A KML is uploaded before its photos, so a photoless trip must still be listed for the dashboard to assign photos to it.
