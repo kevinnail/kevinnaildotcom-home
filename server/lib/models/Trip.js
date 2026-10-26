@@ -56,7 +56,7 @@ export default class Trip {
          SELECT MIN(COALESCE(photos.taken_at, photos.uploaded_at))
          FROM photos
          WHERE photos.trip_id = trips.id
-       ) ASC NULLS LAST, trips.uploaded_at DESC`,
+       ) ASC NULLS LAST, trips.uploaded_at ASC`,
     );
 
     return rows.map((row) => new Trip(row));
