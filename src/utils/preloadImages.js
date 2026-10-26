@@ -16,9 +16,9 @@ export default function preloadImages(urls) {
   for (const url of urls) {
     if (!url) continue;
     const image = new Image();
+    // Fetch only, never decode(). A decoded 2048px photo is about 12 MB that the
+    // browser keeps cached, and on an iPhone that memory on top of Cesium's froze
+    // the page within a few steps. Only the photo on screen should be decoded.
     image.src = url;
-    // decode() also gets the image decoded off the main thread, so the swap is a
-    // paint rather than a decode. It rejects if the fetch failed — see above.
-    image.decode?.().catch(() => {});
   }
 }
