@@ -35,7 +35,7 @@ function RouteStats({ stats }) {
 
 // `geology` is null for a hike outside the geology map, otherwise the props for
 // GeologySection.
-export default function HikeInfoPanel({ trip, geology }) {
+export default function HikeInfoPanel({ trip, isTopoOn, onToggleTopo, geology }) {
   const isDesktop = useIsDesktop();
   // null until the visitor opens or closes it, so the panel starts open where
   // there is room for it and collapsed on a phone, where it would cover most of
@@ -71,13 +71,21 @@ export default function HikeInfoPanel({ trip, geology }) {
         </button>
       </div>
       {trip.region && <p className="hike-panel-region">{trip.region}</p>}
-      {(trip.stats || geology) && (
-        <div className="hike-panel-body">
-          {/* Null for a KML with no route line, or a trip not yet measured. */}
-          {trip.stats && <RouteStats stats={trip.stats} />}
-          {geology && <GeologySection {...geology} />}
+      <div className="hike-panel-body">
+        {/* Null for a KML with no route line, or a trip not yet measured. */}
+        {trip.stats && <RouteStats stats={trip.stats} />}
+        <div className="hike-panel-layers">
+          <button
+            type="button"
+            className="hike-layer-toggle"
+            aria-pressed={isTopoOn}
+            onClick={onToggleTopo}
+          >
+            Topo map
+          </button>
         </div>
-      )}
+        {geology && <GeologySection {...geology} />}
+      </div>
     </div>
   );
 }

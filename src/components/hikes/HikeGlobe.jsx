@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Viewer, KmlDataSource, Entity } from 'resium';
+import { Viewer, KmlDataSource, Entity, ImageryLayer, ScreenSpaceCameraController } from 'resium';
 import {
   createWorldTerrainAsync,
   Cartesian2,
@@ -10,36 +10,52 @@ import {
   HeadingPitchRange,
   HeightReference,
   LabelStyle,
+  Matrix4,
+  Transforms,
+  UrlTemplateImageryProvider,
   VerticalOrigin,
   sampleTerrainMostDetailed,
   Math as CesiumMath,
 } from 'cesium';
 import '../../utils/cesiumIon';
 import { isGeotagged } from '../../utils/hikePhotos';
+import { FEET_PER_METER, formatFeet } from '../../utils/routeFormat';
+import { resampleRoute } from '../../utils/routeStats';
+import {
+  joinRouteLines,
+  pointAlongPath,
+  bearingRadians,
+  turnToward,
+} from '../../utils/routeFlyAlong';
 import { isInGeologyMapArea } from '../../utils/geologyAge';
 import { fetchTripLocations } from '../../utils/kmlLocation';
 import useIsDesktop from '../../hooks/useIsDesktop';
 import GeologyLayer from './GeologyLayer';
 import HikeInfoPanel from './HikeInfoPanel';
+import './HikeGlobe.css';
 
 // Fly-to framing used for every photo, so each pin gets the same, predictable
 // view instead of inheriting whatever zoom/tilt the user left. The user picks a
 // level with the +/− buttons and it sticks across photos, so stepping to the
 // next pin keeps the framing they chose rather than snapping back to a default.
-// - rangeMeters: how far the camera sits from the pin. Widest level first.
+// - rangeFeet: how far the camera sits from the pin, in round miles or feet so
+//   the label beside the buttons reads cleanly. Widest level first.
 // - pitchDegrees: viewing angle, measured downward from horizontal (0 = level,
 //   -90 = straight down). It steepens as the range closes: a shallow oblique is
 //   readable from far out, but up close it drags the camera down into whatever
 //   ridge sits between it and the pin, so we look further over the top instead.
+const FEET_PER_MILE = 5280;
 const ZOOM_LEVELS = [
-  { rangeMeters: 40000, pitchDegrees: -20 },
-  { rangeMeters: 26000, pitchDegrees: -20 },
-  { rangeMeters: 13000, pitchDegrees: -20 },
-  { rangeMeters: 6500, pitchDegrees: -30 },
-  { rangeMeters: 2500, pitchDegrees: -38 },
-  { rangeMeters: 500, pitchDegrees: -45 },
+  { rangeFeet: 25 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 15 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 8 * FEET_PER_MILE, pitchDegrees: -20 },
+  { rangeFeet: 4 * FEET_PER_MILE, pitchDegrees: -30 },
+  { rangeFeet: 1.5 * FEET_PER_MILE, pitchDegrees: -38 },
+  { rangeFeet: 1500, pitchDegrees: -45 },
 ];
-const DEFAULT_ZOOM_LEVEL_INDEX = ZOOM_LEVELS.findIndex((level) => level.rangeMeters === 13000);
+const DEFAULT_ZOOM_LEVEL_INDEX = ZOOM_LEVELS.findIndex(
+  (level) => level.rangeFeet === 8 * FEET_PER_MILE,
+);
 
 // Framing for the route overview flown on trip select. Heading 0 is north-up so
 // every hike is introduced from the same orientation, and range 0 tells Cesium to
@@ -56,6 +72,30 @@ const ALL_ROUTES_PITCH_DEGREES = -75;
 const ALL_ROUTES_DURATION_SECONDS = 2.5;
 const SINGLE_PIN_RANGE_METERS = 60000;
 
+// Fly the trail: the camera follows the route from behind and above, looking
+// down the trail. Its length sets the speed, so a short loop and a long
+// traverse both play in a watchable time.
+const FLY_ALONG_RANGE_FEET = FEET_PER_MILE;
+const FLY_ALONG_PITCH_DEGREES = -30;
+const FLY_ALONG_SECONDS_PER_MILE = 4;
+const FLY_ALONG_MINIMUM_SECONDS = 20;
+const FLY_ALONG_MAXIMUM_SECONDS = 120;
+const FLY_ALONG_INTRO_SECONDS = 2;
+// The camera faces the spot this far ahead rather than the next sample, and
+// eases toward it, so the zigzags in a hand-drawn line don't jerk the view.
+const FLY_ALONG_LOOK_AHEAD_MILES = 0.25;
+const FLY_ALONG_TURN_SECONDS = 1.5;
+
+// The USGS National Map topo, with contours, trails, and place names, laid over
+// the satellite imagery. Public domain and needs no key. Its tiles stop at level
+// 16, so past that Cesium stretches the level 16 tile instead of asking for
+// tiles that don't exist.
+const USGS_TOPO_IMAGERY = new UrlTemplateImageryProvider({
+  url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+  maximumLevel: 16,
+  credit: 'USGS The National Map',
+});
+
 // The overview pin's label sits above its dot rather than on it.
 const PIN_LABEL_OFFSET = new Cartesian2(0, -16);
 
@@ -68,9 +108,17 @@ const PIN_LABEL_FONT = {
   touch: '19px "Open Sans", sans-serif',
 };
 
-// Stable empty list, so "no pins on screen" never looks like a change to the
-// effect that frames them.
+// On a phone the open photo dock covers the bottom of the globe: at most 40% of
+// the screen plus 1rem of padding above and below it, HikePhotoDock's
+// max-h-[40vh] and p-4. If the dock's size changes, change this with it.
+function phoneDockHeightPixels() {
+  return window.innerHeight * 0.4 + 32;
+}
+
+// Stable empty lists, so "no pins on screen" or "no route" never looks like a
+// change to the effects that use them.
 const NO_PINS = [];
+const NO_ROUTE_LINES = [];
 
 // Whether any point of a loaded KML route falls inside the area the USGS geology
 // map covers. Checks the route's own lines and placemarks rather than the
@@ -95,8 +143,31 @@ function routeTouchesGeologyMapArea(dataSource) {
   return false;
 }
 
-function formatRange(rangeMeters) {
-  return rangeMeters >= 1000 ? `${(rangeMeters / 1000).toFixed(1)} km` : `${rangeMeters} m`;
+// The route lines the globe draws, as { points: [{ lng, lat }] } for
+// resampleRoute. A line switched off in Google Earth is left out here too.
+function visibleRouteLines(dataSource) {
+  return dataSource.entities.values
+    .filter((entity) => entity.polyline && entity.isShowing)
+    .map((entity) => ({
+      points: entity.polyline.positions.getValue().map((position) => {
+        const cartographic = Cartographic.fromCartesian(position);
+        return {
+          lng: CesiumMath.toDegrees(cartographic.longitude),
+          lat: CesiumMath.toDegrees(cartographic.latitude),
+        };
+      }),
+    }))
+    .filter((line) => line.points.length >= 2);
+}
+
+// Whole miles without a trailing ".0", so the levels read 25 mi and 1.5 mi.
+const rangeMilesFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+// Miles, or feet under a mile.
+function formatRange(rangeFeet) {
+  return rangeFeet >= FEET_PER_MILE
+    ? `${rangeMilesFormat.format(rangeFeet / FEET_PER_MILE)} mi`
+    : formatFeet(rangeFeet);
 }
 
 export default function HikeGlobe({
@@ -119,6 +190,8 @@ export default function HikeGlobe({
   const [terrainProvider, setTerrainProvider] = useState('pending');
   const [zoomLevelIndex, setZoomLevelIndex] = useState(DEFAULT_ZOOM_LEVEL_INDEX);
   const [isHoveringPin, setIsHoveringPin] = useState(false);
+  // The trip the topo map was switched on for, or null while it is off.
+  const [topoTripId, setTopoTripId] = useState(null);
   // Geology layers: null until first switched on, then true or false. See
   // GeologyLayer for why null is distinct from false.
   const [mapUnitsVisibility, setMapUnitsVisibility] = useState(null);
@@ -131,13 +204,20 @@ export default function HikeGlobe({
   // overview, or on a hike elsewhere, the layer would be too small or too far
   // away to see, so the panel is only offered while such a hike is open.
   const [geologyMapTripId, setGeologyMapTripId] = useState(null);
+  // The route lines of the last trip whose KML loaded, kept with that trip's id
+  // so they are only used while that trip is open.
+  const [loadedRoute, setLoadedRoute] = useState(null);
+  // The trip and photo open when the fly-along started, or null when none is
+  // playing.
+  const [flyAlong, setFlyAlong] = useState(null);
   // One { trip, lng, lat } per hike, read out of the KML files, for the overview.
   // Stored alongside the trips it was derived from so a result that no longer
   // matches the current trips is simply ignored, rather than cleared by an effect.
   const [pinResult, setPinResult] = useState(null);
   const fetchedTripsRef = useRef(null);
   const isDesktop = useIsDesktop();
-  const { rangeMeters, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
+  const { rangeFeet, pitchDegrees } = ZOOM_LEVELS[zoomLevelIndex];
+  const rangeMeters = rangeFeet / FEET_PER_METER;
   const pinSizing = isDesktop ? 'desktop' : 'touch';
 
   // World terrain loads asynchronously (createWorldTerrain was removed in Cesium
@@ -166,6 +246,7 @@ export default function HikeGlobe({
   const handleTripRouteLoad = useCallback(
     (dataSource, tripId) => {
       setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
+      setLoadedRoute({ tripId, lines: visibleRouteLines(dataSource) });
       if (!viewer) return;
       viewer.flyTo(dataSource, {
         duration: TRIP_OVERVIEW_DURATION_SECONDS,
@@ -247,6 +328,9 @@ export default function HikeGlobe({
   const photoId = isGeotagged(selectedPhoto) ? selectedPhoto.id : null;
   const photoLng = selectedPhoto?.lng;
   const photoLat = selectedPhoto?.lat;
+  // Opening or closing the dock on a phone re-frames the photo, so the pin moves
+  // out from under the dock and back to the middle when it closes.
+  const isDockCoveringGlobe = !isDesktop && isPhotoViewOpen;
   useEffect(() => {
     if (photoId == null || !viewer) return undefined;
     let cancelled = false;
@@ -254,17 +338,35 @@ export default function HikeGlobe({
     function flyToGroundTarget(targetHeightMeters) {
       if (cancelled) return;
       const { camera } = viewer;
-      camera.flyToBoundingSphere(
-        new BoundingSphere(Cartesian3.fromDegrees(photoLng, photoLat, targetHeightMeters), 0),
-        {
-          offset: new HeadingPitchRange(
-            camera.heading,
-            CesiumMath.toRadians(pitchDegrees),
-            rangeMeters,
-          ),
-          duration: 1.2,
-        },
+      const target = Cartesian3.fromDegrees(photoLng, photoLat, targetHeightMeters);
+      const { heading } = camera;
+      const pitch = CesiumMath.toRadians(pitchDegrees);
+      // The camera sits back along its line of sight to the pin, at the zoom
+      // level's range and pitch, in the pin's east-north-up frame.
+      const lineOfSight = new Cartesian3(
+        Math.sin(heading) * Math.cos(pitch),
+        Math.cos(heading) * Math.cos(pitch),
+        Math.sin(pitch),
       );
+      const cameraOffset = Matrix4.multiplyByPointAsVector(
+        Transforms.eastNorthUpToFixedFrame(target),
+        Cartesian3.multiplyByScalar(lineOfSight, -rangeMeters, new Cartesian3()),
+        new Cartesian3(),
+      );
+      // From that same spot, look further down by the angle that lifts the pin
+      // half the dock's height up the screen, to the middle of the globe left
+      // above the dock.
+      const dockTiltRadians = isDockCoveringGlobe
+        ? Math.atan(
+            (phoneDockHeightPixels() / viewer.canvas.clientHeight) *
+              Math.tan(camera.frustum.fovy / 2.5),
+          )
+        : 0;
+      camera.flyTo({
+        destination: Cartesian3.add(target, cameraOffset, new Cartesian3()),
+        orientation: { heading, pitch: pitch - dockTiltRadians, roll: 0 },
+        duration: 1.2,
+      });
     }
 
     if (!terrainProvider) {
@@ -280,7 +382,135 @@ export default function HikeGlobe({
     return () => {
       cancelled = true;
     };
-  }, [photoId, photoLng, photoLat, rangeMeters, pitchDegrees, terrainProvider, viewer]);
+  }, [
+    photoId,
+    photoLng,
+    photoLat,
+    rangeMeters,
+    pitchDegrees,
+    isDockCoveringGlobe,
+    terrainProvider,
+    viewer,
+  ]);
+
+  // Picking a photo or another hike hands the camera back. The fly-along ends
+  // for good, rather than starting over when that photo closes.
+  if (flyAlong && (flyAlong.tripId !== selectedTrip?.id || flyAlong.photoId !== photoId)) {
+    setFlyAlong(null);
+  }
+  // Opening another hike switches the topo map off. Left on, it kept the new
+  // hike's route from flying into view.
+  if (topoTripId != null && topoTripId !== selectedTrip?.id) {
+    setTopoTripId(null);
+  }
+  const isTopoOn = topoTripId != null;
+
+  // The globe renders on demand (requestRenderMode), so adding or removing the
+  // topo layer has to ask for the frame that shows the change.
+  useEffect(() => {
+    viewer?.scene.requestRender();
+  }, [viewer, isTopoOn]);
+
+  const routeLines =
+    loadedRoute != null && loadedRoute.tripId === selectedTrip?.id
+      ? loadedRoute.lines
+      : NO_ROUTE_LINES;
+
+  // Fly in behind the start of the route, follow it to the end, then fly back
+  // out to the whole route. The camera targets the trail's ground height, so
+  // the heights come from the terrain first.
+  useEffect(() => {
+    if (!flyAlong) return undefined;
+    const { camera } = viewer;
+    const pitch = CesiumMath.toRadians(FLY_ALONG_PITCH_DEGREES);
+    const flyAlongRangeMeters = FLY_ALONG_RANGE_FEET / FEET_PER_METER;
+    const samples = joinRouteLines(resampleRoute(routeLines));
+    const totalMiles = samples.at(-1).distanceMiles;
+    const durationSeconds = Math.min(
+      FLY_ALONG_MAXIMUM_SECONDS,
+      Math.max(FLY_ALONG_MINIMUM_SECONDS, totalMiles * FLY_ALONG_SECONDS_PER_MILE),
+    );
+    const milesPerSecond = totalMiles / durationSeconds;
+    const cartographics = samples.map((sample) => Cartographic.fromDegrees(sample.lng, sample.lat));
+    const toCartesian = (point) => Cartesian3.fromDegrees(point.lng, point.lat, point.heightMeters);
+    let frameId = null;
+    let hasFinished = false;
+    let cancelled = false;
+
+    function fly(path) {
+      if (cancelled) return;
+      let distanceMiles = 0;
+      let heading = bearingRadians(path[0], pointAlongPath(path, FLY_ALONG_LOOK_AHEAD_MILES));
+      let previousFrameTime = null;
+
+      function step(frameTime) {
+        const elapsedSeconds =
+          previousFrameTime == null ? 0 : (frameTime - previousFrameTime) / 1000;
+        previousFrameTime = frameTime;
+        distanceMiles = Math.min(totalMiles, distanceMiles + elapsedSeconds * milesPerSecond);
+        const point = pointAlongPath(path, distanceMiles);
+        // Near the end there is nothing far enough ahead to face, so the
+        // heading holds.
+        if (distanceMiles + FLY_ALONG_LOOK_AHEAD_MILES < totalMiles) {
+          const ahead = pointAlongPath(path, distanceMiles + FLY_ALONG_LOOK_AHEAD_MILES);
+          heading = turnToward(
+            heading,
+            bearingRadians(point, ahead),
+            1 - Math.exp(-elapsedSeconds / FLY_ALONG_TURN_SECONDS),
+          );
+        }
+        camera.lookAt(
+          toCartesian(point),
+          new HeadingPitchRange(heading, pitch, flyAlongRangeMeters),
+        );
+        if (distanceMiles < totalMiles) {
+          frameId = requestAnimationFrame(step);
+          return;
+        }
+        hasFinished = true;
+        camera.lookAtTransform(Matrix4.IDENTITY);
+        camera.flyToBoundingSphere(BoundingSphere.fromPoints(path.map(toCartesian)), {
+          duration: TRIP_OVERVIEW_DURATION_SECONDS,
+          offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
+        });
+        setFlyAlong(null);
+      }
+
+      // Ends exactly where the first frame puts the camera, so the hand-off to
+      // the frames is seamless.
+      camera.flyToBoundingSphere(new BoundingSphere(toCartesian(path[0]), 0), {
+        offset: new HeadingPitchRange(heading, pitch, flyAlongRangeMeters),
+        duration: FLY_ALONG_INTRO_SECONDS,
+        complete: () => {
+          frameId = requestAnimationFrame(step);
+        },
+      });
+    }
+
+    // With no terrain the globe is the flat ellipsoid, so height 0 is the ground.
+    const groundedReady = terrainProvider
+      ? sampleTerrainMostDetailed(terrainProvider, cartographics, true)
+      : Promise.resolve(cartographics);
+    groundedReady
+      .then((grounded) =>
+        fly(samples.map((sample, index) => ({ ...sample, heightMeters: grounded[index].height }))),
+      )
+      .catch((error) => {
+        console.error('Fly the trail failed', error);
+        if (!cancelled) setFlyAlong(null);
+      });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+      // Leaving the page can tear the viewer down before this runs.
+      if (viewer.isDestroyed()) return;
+      // Finished, the camera is already flying back out to the whole route.
+      if (hasFinished) return;
+      camera.cancelFlight();
+      camera.lookAtTransform(Matrix4.IDENTITY);
+    };
+  }, [flyAlong, routeLines, terrainProvider, viewer]);
 
   if (terrainProvider === 'pending') {
     return (
@@ -316,7 +546,7 @@ export default function HikeGlobe({
       {/* The zoom level only drives the photo fly-to, so the control is dead
           weight until a photo is selected — hide it until then. */}
       {hasPhotoLocation ? (
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-neon-blue-50 bg-black/80 px-2 py-1 font-body text-white shadow-lg backdrop-blur">
+        <div className="hike-photo-zoom flex items-center gap-2 rounded-full border border-neon-blue-50 bg-black/80 px-2 py-1 font-body text-white shadow-lg backdrop-blur">
           <button
             type="button"
             onClick={() => setZoomLevelIndex((index) => index - 1)}
@@ -327,7 +557,7 @@ export default function HikeGlobe({
             −
           </button>
           <span className="min-w-14 text-center text-xs tabular-nums">
-            {formatRange(rangeMeters)}
+            {formatRange(rangeFeet)}
           </span>
           <button
             type="button"
@@ -340,12 +570,24 @@ export default function HikeGlobe({
           </button>
         </div>
       ) : null}
+      {routeLines.length > 0 && (
+        <button
+          type="button"
+          className="hike-fly-along"
+          aria-pressed={flyAlong != null}
+          onClick={() => setFlyAlong(flyAlong ? null : { tripId: selectedTrip.id, photoId })}
+        >
+          {flyAlong ? 'Stop' : 'Fly the trail'}
+        </button>
+      )}
       {/* On a phone the open photo dock fills most of the globe, and the panel
           would sit on top of it and its close button, so it steps aside until
           the dock closes. Any geology layers stay on the map. */}
       {!isShowingAllRoutes && selectedTrip && (isDesktop || !isPhotoViewOpen) && (
         <HikeInfoPanel
           trip={selectedTrip}
+          isTopoOn={isTopoOn}
+          onToggleTopo={() => setTopoTripId(isTopoOn ? null : selectedTrip.id)}
           geology={
             isGeologyAvailable
               ? {
@@ -392,6 +634,12 @@ export default function HikeGlobe({
         requestRenderMode
         maximumRenderTimeChange={1}
       >
+        {/* The visitor's camera controls are off while the trail plays, so a
+            drag can't fight its frames. */}
+        <ScreenSpaceCameraController enableInputs={!flyAlong} />
+        {/* Mounted only while on, so a visitor who never opens it never
+            downloads its tiles. */}
+        {isTopoOn && <ImageryLayer imageryProvider={USGS_TOPO_IMAGERY} />}
         <GeologyLayer
           mapUnitsVisibility={visibleWhenAvailable(mapUnitsVisibility)}
           morainesVisibility={visibleWhenAvailable(morainesVisibility)}

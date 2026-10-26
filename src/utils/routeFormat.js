@@ -1,3 +1,5 @@
+export const FEET_PER_METER = 3.28084;
+
 const wholeNumber = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 const oneDecimal = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,

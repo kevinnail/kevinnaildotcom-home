@@ -25,7 +25,7 @@ const SAMPLE_SWATCH_COLOR = YEARS_CLASSES[4].color;
 
 function LayerToggle({ label, isOn, onToggle }) {
   return (
-    <button type="button" className="geology-layer-toggle" aria-pressed={isOn} onClick={onToggle}>
+    <button type="button" className="hike-layer-toggle" aria-pressed={isOn} onClick={onToggle}>
       {label}
     </button>
   );
