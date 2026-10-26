@@ -69,8 +69,8 @@ export default function HikeMapPage() {
   const selectedPhoto = selectedIndex >= 0 ? tripPhotos[selectedIndex] : null;
 
   // Warm the photos on either side of the open one. Prev/next is the common way
-  // through a hike, so by the time an arrow is clicked its image is already fetched
-  // and decoded and the swap is just a paint. Only the immediate neighbours: a
+  // through a hike, so by the time an arrow is clicked its image is already in the
+  // browser cache and the swap skips the network. Only the immediate neighbours: a
   // wider window would have a long hike speculatively pulling down photos most
   // visitors never reach.
   useEffect(() => {

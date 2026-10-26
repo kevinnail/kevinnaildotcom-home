@@ -1,0 +1,85 @@
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.92);
+}
+
+.photo-viewer-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* A set width and height, not a maximum, so a photo smaller than the screen is
+   scaled up to fill it; object-fit keeps its proportions inside that box. */
+.photo-viewer-image {
+  display: block;
+  width: calc(100vw - 8rem);
+  height: calc(100dvh - 6rem);
+  object-fit: contain;
+}
+
+.photo-viewer-caption {
+  max-width: 70ch;
+  margin-top: 0.5rem;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.photo-viewer-close,
+.photo-viewer-step {
+  position: absolute;
+  padding: 0.25rem 0.75rem;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 2.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.photo-viewer-close:hover,
+.photo-viewer-step:hover {
+  color: var(--color-neon-blue-bright);
+}
+
+.photo-viewer-close {
+  top: 1rem;
+  right: 1rem;
+}
+
+.photo-viewer-step {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.photo-viewer-previous {
+  left: 1rem;
+}
+
+.photo-viewer-next {
+  right: 1rem;
+}
+
+/* On a phone the photo takes the full width and the arrows sit over its edges. */
+@media (max-width: 767px) {
+  .photo-viewer-image {
+    width: 100vw;
+  }
+
+  .photo-viewer-previous {
+    left: 0;
+  }
+
+  .photo-viewer-next {
+    right: 0;
+  }
+}
