@@ -5,8 +5,8 @@ import { useState } from 'react';
 // (bottom-centre). Each step dims the map and shows a bright callout with a
 // pointer aimed at the element it describes.
 //
-// Positions mirror the targets' own placement — the zoom control's `left-3 top-3`
-// in HikeGlobe and the dock's bottom strip (max-h-[40vh] + p-4) in HikePhotoDock.
+// Positions mirror the targets' own placement: the zoom control's
+// `.hike-photo-zoom` in HikeGlobe.css and the dock's bottom strip (max-h-[40vh] + p-4) in HikePhotoDock.
 // If either target moves, move its callout with it.
 const STORAGE_KEY = 'hikeMapInstructionsSeen';
 
@@ -35,7 +35,7 @@ const STEPS = [
     title: 'Set how close the map flies in',
     body: 'The − and + buttons pick how far the camera sits from the photo’s location. Press them any time to re-frame the spot you are looking at.',
     // Sits just below the zoom control, pointer up toward it.
-    boxClassName: 'absolute left-3 top-20 max-w-xs',
+    boxClassName: 'absolute left-3 top-30 max-w-xs',
     pointerClassName: 'absolute -top-1.5 left-6 h-3 w-3 rotate-45',
   },
   {
