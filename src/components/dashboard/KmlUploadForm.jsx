@@ -5,15 +5,6 @@ import { measureKmlRoute } from '../../utils/routeElevations';
 const KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml';
 const initialFields = { name: '', region: '' };
 
-const inputClass =
-  'px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none';
-
-const fileInputClass =
-  'text-white text-sm cursor-pointer file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-neon-blue file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-neon-blue-bright hover:file:text-black';
-
-const submitButtonClass =
-  'px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed self-start';
-
 // Upload a .kml trail file as a map trip. Bytes go straight to S3 under kml/ via
 // the presigned PUT; saveKml records the trip in the manifest the map reads.
 export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
@@ -85,31 +76,35 @@ export default function KmlUploadForm({ token, onUploaded, onSessionExpired }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
+      className="admin-panel"
     >
-      <h3 className="text-neon-blue-bright font-display text-xl">Upload trail (KML)</h3>
+      <h3 className="admin-section-title">Upload trail (KML)</h3>
       <input
         type="file"
         accept=".kml"
         onChange={(event) => setFile(event.target.files[0] ?? null)}
-        className={fileInputClass}
+        className="admin-file-input"
       />
       <input
         type="text"
         value={fields.name}
         onChange={updateField('name')}
         placeholder="Trip name"
-        className={inputClass}
+        className="admin-input"
       />
       <input
         type="text"
         value={fields.region}
         onChange={updateField('region')}
         placeholder="Region (e.g. Cascades, WA)"
-        className={inputClass}
+        className="admin-input"
       />
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-      <button type="submit" disabled={uploading || !file} className={submitButtonClass}>
+      {error && <p className="admin-error">{error}</p>}
+      <button
+        type="submit"
+        disabled={uploading || !file}
+        className="admin-button admin-button-primary"
+      >
         {status === 'measuring' ? 'Measuring route…' : uploading ? 'Uploading…' : 'Upload trail'}
       </button>
     </form>
