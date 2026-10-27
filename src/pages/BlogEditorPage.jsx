@@ -20,6 +20,7 @@ import {
 import { useAdminToken, signIn, signOut } from '../hooks/adminSession';
 import { useBlogEditorStore } from '../stores/blogEditorStore';
 import { createDisplayImage } from '../utils/resizeImage';
+import '../styles/admin.css';
 import './BlogEditorPage.css';
 
 const ImagesBlockEditor = ({
@@ -98,7 +99,7 @@ const ImagesBlockEditor = ({
                   type="button"
                   onClick={() => moveImage(block.id, image.imageId, -1)}
                   disabled={disabled || imageIndex === 0}
-                  className="blog-editor-button"
+                  className="admin-button"
                 >
                   Move left
                 </button>
@@ -106,7 +107,7 @@ const ImagesBlockEditor = ({
                   type="button"
                   onClick={() => moveImage(block.id, image.imageId, 1)}
                   disabled={disabled || imageIndex === block.images.length - 1}
-                  className="blog-editor-button"
+                  className="admin-button"
                 >
                   Move right
                 </button>
@@ -114,7 +115,7 @@ const ImagesBlockEditor = ({
                   type="button"
                   onClick={() => removeImage(block.id, image.imageId)}
                   disabled={disabled}
-                  className="blog-editor-button blog-editor-remove-button"
+                  className="admin-button admin-button-danger"
                 >
                   Remove
                 </button>
@@ -239,7 +240,7 @@ const CoverEditor = ({
               type="button"
               onClick={handleRemove}
               disabled={isPickerDisabled || isPublished}
-              className="blog-editor-button blog-editor-remove-button"
+              className="admin-button admin-button-danger"
             >
               Remove cover
             </button>
@@ -445,10 +446,68 @@ const BlogEditorPage = () => {
       <div className="blog-editor-page">
         <Banner />
         <div className="blog-editor-content">
-          <Link to="/dashboard?tab=blog" className="blog-editor-back-link">
-            ← Dashboard
-          </Link>
-          <h1 className="blog-editor-heading">Edit post</h1>
+          <div className="admin-toolbar">
+            <div className="admin-toolbar-row">
+              <Link to="/dashboard?tab=blog" className="admin-nav-link">
+                ← Dashboard
+              </Link>
+              {token && status === 'ready' && (
+                <>
+                  <div className="admin-toggle">
+                    {['edit', 'preview'].map((viewOption) => (
+                      <button
+                        key={viewOption}
+                        type="button"
+                        onClick={() => setView(viewOption)}
+                        aria-pressed={view === viewOption}
+                        className={`admin-toggle-option ${view === viewOption ? 'admin-toggle-option-selected' : ''}`}
+                      >
+                        {viewOption === 'edit' ? 'Edit' : 'Preview'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="admin-toolbar-actions">
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isSaving || isUploading}
+                      className="admin-button admin-button-danger blog-editor-delete-button"
+                    >
+                      Delete post
+                    </button>
+                    {savedPost.publishedAt ? (
+                      <Link to={`/blog/${savedPost.slug}`} className="admin-button">
+                        View live post
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handlePublish}
+                        disabled={isSaving || isUploading}
+                        className="admin-button"
+                      >
+                        Publish
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      form="blog-editor-form"
+                      disabled={isSaving || isUploading}
+                      className="admin-button admin-button-primary"
+                    >
+                      {isUploading ? 'Uploading…' : isSaving ? 'Saving…' : 'Save'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            {token && status === 'ready' && saveMessage && (
+              <p className={saveMessage.isError ? 'blog-editor-error' : 'blog-editor-saved'}>
+                {saveMessage.text}
+              </p>
+            )}
+          </div>
+          <h1 className="admin-page-title">Edit post</h1>
 
           {sessionMessage && <p className="blog-editor-error">{sessionMessage}</p>}
 
@@ -459,7 +518,7 @@ const BlogEditorPage = () => {
           )}
 
           {token && status === 'ready' && (
-            <form onSubmit={handleSave} className="blog-editor-form">
+            <form id="blog-editor-form" onSubmit={handleSave} className="blog-editor-form">
               <input
                 type="text"
                 value={title}
@@ -501,20 +560,6 @@ const BlogEditorPage = () => {
                 onSessionExpired={handleSessionExpired}
               />
 
-              <div className="blog-editor-view-toggle">
-                {['edit', 'preview'].map((viewOption) => (
-                  <button
-                    key={viewOption}
-                    type="button"
-                    onClick={() => setView(viewOption)}
-                    aria-pressed={view === viewOption}
-                    className={`blog-editor-view-button ${view === viewOption ? 'blog-editor-view-button-selected' : ''}`}
-                  >
-                    {viewOption === 'edit' ? 'Edit' : 'Preview'}
-                  </button>
-                ))}
-              </div>
-
               {view === 'preview' && <BlogPostBody title={title} blocks={blocks} />}
 
               {view === 'edit' &&
@@ -548,7 +593,7 @@ const BlogEditorPage = () => {
                         type="button"
                         onClick={() => moveBlock(block.id, -1)}
                         disabled={isSaving || index === 0}
-                        className="blog-editor-button"
+                        className="admin-button"
                       >
                         Move up
                       </button>
@@ -556,7 +601,7 @@ const BlogEditorPage = () => {
                         type="button"
                         onClick={() => moveBlock(block.id, 1)}
                         disabled={isSaving || index === blocks.length - 1}
-                        className="blog-editor-button"
+                        className="admin-button"
                       >
                         Move down
                       </button>
@@ -564,7 +609,7 @@ const BlogEditorPage = () => {
                         type="button"
                         onClick={() => handleRemove(block)}
                         disabled={isSaving}
-                        className="blog-editor-button blog-editor-remove-button"
+                        className="admin-button admin-button-danger"
                       >
                         {block.type === 'images' ? 'Remove photo group' : 'Remove'}
                       </button>
@@ -578,7 +623,7 @@ const BlogEditorPage = () => {
                     type="button"
                     onClick={addTextBlock}
                     disabled={isSaving}
-                    className="blog-editor-button"
+                    className="admin-button"
                   >
                     Add text
                   </button>
@@ -586,49 +631,12 @@ const BlogEditorPage = () => {
                     type="button"
                     onClick={addImagesBlock}
                     disabled={isSaving}
-                    className="blog-editor-button"
+                    className="admin-button"
                   >
                     Add photos
                   </button>
                 </div>
               )}
-
-              {saveMessage && (
-                <p className={saveMessage.isError ? 'blog-editor-error' : 'blog-editor-saved'}>
-                  {saveMessage.text}
-                </p>
-              )}
-              <div className="blog-editor-actions">
-                <button
-                  type="submit"
-                  disabled={isSaving || isUploading}
-                  className="blog-editor-save-button"
-                >
-                  {isUploading ? 'Uploading…' : isSaving ? 'Saving…' : 'Save'}
-                </button>
-                {savedPost.publishedAt ? (
-                  <Link to={`/blog/${savedPost.slug}`} className="blog-editor-button">
-                    View live post
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={isSaving || isUploading}
-                    className="blog-editor-button"
-                  >
-                    Publish
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isSaving || isUploading}
-                  className="blog-editor-button blog-editor-remove-button blog-editor-delete-button"
-                >
-                  Delete post
-                </button>
-              </div>
             </form>
           )}
         </div>
@@ -636,31 +644,27 @@ const BlogEditorPage = () => {
 
       {confirmation && (
         <div
-          className="blog-editor-confirm-backdrop"
+          className="admin-confirm-backdrop"
           onClick={() => setConfirmation(null)}
           role="dialog"
           aria-modal="true"
           aria-label={confirmation.title}
         >
-          <div className="blog-editor-confirm" onClick={(event) => event.stopPropagation()}>
+          <div className="admin-confirm" onClick={(event) => event.stopPropagation()}>
             <h2
-              className={`blog-editor-confirm-title ${confirmation.isDanger ? 'blog-editor-confirm-title-danger' : ''}`}
+              className={`admin-confirm-title ${confirmation.isDanger ? 'admin-confirm-title-danger' : ''}`}
             >
               {confirmation.title}
             </h2>
-            <p className="blog-editor-confirm-message">{confirmation.message}</p>
-            <div className="blog-editor-confirm-actions">
-              <button
-                type="button"
-                onClick={() => setConfirmation(null)}
-                className="blog-editor-button"
-              >
+            <p className="admin-confirm-message">{confirmation.message}</p>
+            <div className="admin-confirm-actions">
+              <button type="button" onClick={() => setConfirmation(null)} className="admin-button">
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className={`blog-editor-button ${confirmation.isDanger ? 'blog-editor-remove-button' : ''}`}
+                className={`admin-button ${confirmation.isDanger ? 'admin-button-danger' : 'admin-button-primary'}`}
                 autoFocus
               >
                 {confirmation.confirmLabel}
