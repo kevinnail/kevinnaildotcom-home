@@ -1,0 +1,39 @@
+/* Cards wide enough for 1rem text and a row of full-size buttons. */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.photo-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.photo-card-detail {
+  margin: 0;
+  overflow: hidden;
+  color: #d4d4d4;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-card-coordinates {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.photo-card-coordinates .admin-input {
+  flex: 1;
+}
+
+.photo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
