@@ -23,6 +23,8 @@ import { createDisplayImage } from '../utils/resizeImage';
 import '../styles/admin.css';
 import './BlogEditorPage.css';
 
+const NEW_CATEGORY = 'new-category';
+
 const ImagesBlockEditor = ({
   token,
   postId,
@@ -233,7 +235,11 @@ const CoverEditor = ({
     <div className="blog-editor-block">
       {coverUrl ? (
         <>
-          <img src={coverUrl} alt="Cover for the blog list" className="blog-editor-cover-thumbnail" />
+          <img
+            src={coverUrl}
+            alt="Cover for the blog list"
+            className="blog-editor-cover-thumbnail"
+          />
           <div className="blog-editor-block-controls">
             {picker}
             <button
@@ -246,7 +252,9 @@ const CoverEditor = ({
             </button>
           </div>
           {isPublished && (
-            <p className="blog-editor-hint">A published post keeps its cover; replace it instead.</p>
+            <p className="blog-editor-hint">
+              A published post keeps its cover; replace it instead.
+            </p>
           )}
         </>
       ) : (
@@ -282,6 +290,8 @@ const BlogEditorPage = () => {
   // The post as the server last returned it, for its slug and publish date.
   const [savedPost, setSavedPost] = useState(null);
   const [existingCategories, setExistingCategories] = useState([]);
+  // True while "New category…" is picked and the category is typed instead.
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const [view, setView] = useState('edit'); // edit | preview
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
@@ -336,6 +346,12 @@ const BlogEditorPage = () => {
     };
   }, [token, id, loadPost, reset, handleSessionExpired]);
 
+  const handleCategoryChange = (event) => {
+    const isNew = event.target.value === NEW_CATEGORY;
+    setIsNewCategory(isNew);
+    setCategory(isNew ? '' : event.target.value);
+  };
+
   const hasRequiredFields = () => {
     if (title.trim() && category.trim() && summary.trim() && coverUrl) return true;
     setSaveMessage({
@@ -354,6 +370,9 @@ const BlogEditorPage = () => {
       if (afterSave) post = await afterSave();
       loadPost(post);
       setSavedPost(post);
+      // A new category is now an existing one, under the spelling the server kept.
+      setExistingCategories((categories) => [...new Set([...categories, post.category])].sort());
+      setIsNewCategory(false);
       setSaveMessage({ isError: false, text: successText });
     } catch (saveError) {
       if (saveError instanceof SessionExpiredError) {
@@ -528,21 +547,33 @@ const BlogEditorPage = () => {
                 disabled={isSaving}
                 className="blog-editor-input"
               />
-              <input
-                type="text"
-                list="blog-editor-category-options"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                placeholder="Category"
+              <select
+                value={isNewCategory ? NEW_CATEGORY : category}
+                onChange={handleCategoryChange}
                 aria-label="Category"
                 disabled={isSaving}
                 className="blog-editor-input"
-              />
-              <datalist id="blog-editor-category-options">
+              >
                 {existingCategories.map((existingCategory) => (
-                  <option key={existingCategory} value={existingCategory} />
+                  <option key={existingCategory} value={existingCategory}>
+                    {existingCategory}
+                  </option>
                 ))}
-              </datalist>
+                <option value={NEW_CATEGORY}>New category…</option>
+              </select>
+              {isNewCategory && (
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  placeholder="New category"
+                  aria-label="New category"
+                  autoComplete="off"
+                  autoFocus
+                  disabled={isSaving}
+                  className="blog-editor-input"
+                />
+              )}
               <textarea
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
