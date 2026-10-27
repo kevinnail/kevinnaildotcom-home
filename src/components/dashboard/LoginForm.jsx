@@ -30,7 +30,7 @@ export default function LoginForm({ onAuthenticated }) {
         );
         console.error(loginError.cause ?? loginError);
       } else {
-        setError('Login failed — the server returned an error. See the console for details.');
+        setError('Login failed: the server returned an error. See the console for details.');
         console.error(loginError);
       }
       return;
@@ -46,9 +46,10 @@ export default function LoginForm({ onAuthenticated }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-sm mx-auto mt-16 flex flex-col gap-4 bg-neutral-900 p-6 rounded-lg border border-neon-blue-50"
+      className="admin-panel"
+      style={{ maxWidth: '24rem', margin: '4rem auto 0' }}
     >
-      <h2 className="text-neon-blue-bright font-display text-2xl text-center">Admin Login</h2>
+      <h2 className="admin-section-title">Admin Login</h2>
       <input
         type="text"
         value={username}
@@ -56,7 +57,7 @@ export default function LoginForm({ onAuthenticated }) {
         placeholder="Username"
         autoComplete="username"
         autoFocus
-        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none"
+        className="admin-input"
       />
       <input
         type="password"
@@ -64,13 +65,13 @@ export default function LoginForm({ onAuthenticated }) {
         onChange={(event) => setPassword(event.target.value)}
         placeholder="Password"
         autoComplete="current-password"
-        className="px-3 py-2 rounded bg-black text-white border border-mid-gray focus:border-neon-blue-bright outline-none"
+        className="admin-input"
       />
-      {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+      {error && <p className="admin-error">{error}</p>}
       <button
         type="submit"
         disabled={busy || !username || !password}
-        className="px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed"
+        className="admin-button admin-button-primary"
       >
         {busy ? 'Signing in…' : 'Sign in'}
       </button>
