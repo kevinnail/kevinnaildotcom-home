@@ -78,40 +78,38 @@ export default function HikeTripList({
         {trips.map((trip) => {
           const count = photosByTripId.get(trip.id)?.length ?? 0;
           return (
-            <li
-              key={trip.id}
-              className="flex items-center justify-between rounded-lg border border-mid-gray bg-neutral-900 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <span className="block truncate font-display text-lg text-neon-blue-bright">
-                  {trip.name}
-                </span>
-                <span className="block truncate text-sm text-neutral-400">
-                  {trip.region || '—'} · {count} photo{count === 1 ? '' : 's'}
+            <li key={trip.id} className="trip-row">
+              <div className="trip-row-text">
+                <span className="trip-row-name">{trip.name}</span>
+                <span className="trip-row-details">
+                  {trip.region ? `${trip.region} · ` : ''}
+                  {count} photo{count === 1 ? '' : 's'}
                 </span>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="trip-row-actions">
                 {trip.stats === null && (
                   <button
                     type="button"
                     onClick={() => handleMeasure(trip)}
                     disabled={measuringTripId !== null}
-                    className="trip-measure-button"
+                    className="admin-button"
                   >
                     {measuringTripId === trip.id ? 'Measuring…' : 'Compute route stats'}
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setOpenTripId(trip.id)}
                   aria-label={`View photos for ${trip.name}`}
-                  className="cursor-pointer rounded bg-black/70 px-3 py-1 text-xs font-bold text-neon-blue-bright hover:bg-black"
+                  className="admin-button"
                 >
                   View photos
                 </button>
                 <button
+                  type="button"
                   onClick={() => setConfirmTrip(trip)}
                   aria-label={`Delete ${trip.name}`}
-                  className="cursor-pointer rounded bg-black/70 px-3 py-1 text-xs font-bold text-red-400 hover:bg-black"
+                  className="admin-button admin-button-danger"
                 >
                   Delete
                 </button>
@@ -133,22 +131,16 @@ export default function HikeTripList({
             className="my-8 w-full max-w-3xl rounded-lg border border-mid-gray bg-black p-5"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-2 flex items-center justify-between">
-              <div className="min-w-0">
-                <h2 className="truncate font-display text-2xl text-neon-blue-bright">
-                  {openTrip.name}
-                </h2>
-                <p className="truncate text-sm text-neutral-400">
-                  {openTrip.region || '—'} · {openTripPhotos.length} photo
-                  {openTripPhotos.length === 1 ? '' : 's'}
+            <div className="trip-photos-header">
+              <div className="trip-row-text">
+                <h2 className="admin-confirm-title">{openTrip.name}</h2>
+                <p className="trip-row-details">
+                  {openTrip.region ? `${openTrip.region} · ` : ''}
+                  {openTripPhotos.length} photo{openTripPhotos.length === 1 ? '' : 's'}
                 </p>
               </div>
-              <button
-                onClick={closeModal}
-                aria-label="Close"
-                className="shrink-0 cursor-pointer border-none bg-transparent px-2 text-3xl font-bold text-neutral-300 hover:text-white"
-              >
-                &times;
+              <button type="button" onClick={closeModal} className="admin-button">
+                Close
               </button>
             </div>
             <PhotoList
@@ -165,18 +157,15 @@ export default function HikeTripList({
 
       {confirmTrip && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          className="admin-confirm-backdrop"
           onClick={() => !deleting && setConfirmTrip(null)}
           role="dialog"
           aria-modal="true"
           aria-label={`Delete ${confirmTrip.name}?`}
         >
-          <div
-            className="w-full max-w-md rounded-lg border border-red-500/40 bg-black p-6"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 className="font-display text-2xl text-red-400">Delete trip?</h2>
-            <p className="mt-3 text-sm text-neutral-300">
+          <div className="admin-confirm" onClick={(event) => event.stopPropagation()}>
+            <h2 className="admin-confirm-title admin-confirm-title-danger">Delete trip?</h2>
+            <p className="admin-confirm-message">
               This permanently deletes <span className="font-bold">{confirmTrip.name}</span>
               {confirmPhotoCount > 0 ? (
                 <>
@@ -192,18 +181,20 @@ export default function HikeTripList({
               )}
               . This can&apos;t be undone.
             </p>
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="admin-confirm-actions">
               <button
+                type="button"
                 onClick={() => setConfirmTrip(null)}
                 disabled={deleting}
-                className="cursor-pointer rounded border border-mid-gray px-4 py-2 text-sm font-bold text-neutral-300 hover:text-white disabled:opacity-50"
+                className="admin-button"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="cursor-pointer rounded bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 disabled:opacity-50"
+                className="admin-button admin-button-danger"
               >
                 {deleting ? 'Deleting…' : 'Delete'}
               </button>

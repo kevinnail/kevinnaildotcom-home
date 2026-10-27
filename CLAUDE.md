@@ -169,6 +169,8 @@ This is static published data, a fourth tier beside the three above: it lives as
 
 **No new Tailwind. Write plain CSS.** Kevin has dropped Tailwind for this project: a spacing or size he wants to change should be one property in one obvious rule he can edit by hand, not a string of one-property utility classes. New components and new styling go in named classes in a CSS file (the way `.matrix-intro` and `.energize` are written in `src/index.css`), or an inline style for a one-off value. Existing Tailwind markup stays as it is; do not add utility classes to it, and do not convert it unless asked.
 
+The admin pages (dashboard and blog editor) share `src/styles/admin.css`: one size for every button, link, and view switch, with color showing importance (solid purple for the one main action, grey outline for other actions, red outline for deletes, plain grey text for links to other pages, a split grey box for switching views). New admin controls use those `admin-*` classes rather than new button styles.
+
 The existing markup uses Tailwind CSS v4 via the Vite plugin (`@tailwindcss/vite`). Custom theme in `src/index.css` under `@theme`:
 
 - Custom colors: `neon-blue`, `neon-blue-50`, `mid-gray`

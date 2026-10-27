@@ -23,6 +23,7 @@ import {
 } from '../api/mediaApi';
 import { measureKmlRoute } from '../utils/routeElevations';
 import { useAdminToken, signIn, signOut } from '../hooks/adminSession';
+import '../styles/admin.css';
 
 const GALLERY_TABS = [
   { id: 'astro', label: 'Astronomy', fetchPhotos: fetchAstroPhotos },
@@ -79,7 +80,7 @@ export default function DashboardPage() {
 
   // Stable identity, because BlogAdmin's load effect depends on it.
   const handleSessionExpired = useCallback(() => {
-    setError('Session expired — please log in again.');
+    setError('Session expired, please log in again.');
     signOut();
   }, []);
 
@@ -178,61 +179,50 @@ export default function DashboardPage() {
       <div className="bg-black min-h-screen">
         <Banner />
         <div className="max-w-3xl mx-auto p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-neon-blue-bright font-display text-3xl">Media Dashboard</h1>
-            {token && (
-              <div className="flex items-center gap-4">
-                {/* The galleries are where the uploads actually land, so jumping
-                    between them and here is the common admin loop. */}
-                <Link
-                  to="/astrophotography"
-                  className="text-sm text-neon-blue-bright hover:text-white underline"
-                >
-                  Astro gallery
-                </Link>
-                <Link
-                  to="/backpacking"
-                  className="text-sm text-neon-blue-bright hover:text-white underline"
-                >
-                  Hike map
-                </Link>
-                <Link
-                  to="/blog"
-                  className="text-sm text-neon-blue-bright hover:text-white underline"
-                >
-                  Blog
-                </Link>
-                <button
-                  onClick={signOut}
-                  className="text-sm text-neutral-400 hover:text-white underline cursor-pointer"
-                >
-                  Sign out
-                </button>
+          {token && (
+            <div className="admin-toolbar">
+              <div className="admin-toolbar-row">
+                <div className="admin-toggle" role="tablist" aria-label="Gallery">
+                  {GALLERY_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={gallery === tab.id}
+                      onClick={() => setSearchParams({ tab: tab.id }, { replace: true })}
+                      className={`admin-toggle-option ${gallery === tab.id ? 'admin-toggle-option-selected' : ''}`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="admin-toolbar-actions">
+                  {/* The galleries are where the uploads actually land, so jumping
+                      between them and here is the common admin loop. */}
+                  <Link to="/astrophotography" className="admin-nav-link">
+                    Astro gallery
+                  </Link>
+                  <Link to="/backpacking" className="admin-nav-link">
+                    Hike map
+                  </Link>
+                  <Link to="/blog" className="admin-nav-link">
+                    Blog page
+                  </Link>
+                  <button type="button" onClick={signOut} className="admin-button">
+                    Sign out
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          <h1 className="admin-page-title">Media Dashboard</h1>
 
-          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+          {error && <p className="admin-error" style={{ marginBottom: '1rem' }}>
+              {error}
+            </p>}
 
           {token ? (
             <>
-              <div className="flex gap-2 mb-4" role="tablist" aria-label="Gallery">
-                {GALLERY_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    role="tab"
-                    aria-selected={gallery === tab.id}
-                    onClick={() => setSearchParams({ tab: tab.id }, { replace: true })}
-                    className={`px-4 py-1.5 rounded-full text-sm font-bold cursor-pointer ${
-                      gallery === tab.id
-                        ? 'bg-neon-blue text-white'
-                        : 'bg-neutral-900 text-neutral-400 hover:text-white border border-mid-gray'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
               {gallery === 'blog' ? (
                 <BlogAdmin token={token} onSessionExpired={handleSessionExpired} />
               ) : gallery === 'hikes' ? (
@@ -259,9 +249,7 @@ export default function DashboardPage() {
                     onMeasureTrip={handleTripMeasure}
                   />
                   <section className="mt-8">
-                    <h2 className="font-display text-xl text-neon-blue-bright">
-                      Unassigned photos
-                    </h2>
+                    <h2 className="admin-section-title">Unassigned photos</h2>
                     <PhotoList
                       photos={unassignedPhotos}
                       gallery="hikes"

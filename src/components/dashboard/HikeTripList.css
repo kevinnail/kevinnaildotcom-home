@@ -1,20 +1,43 @@
-/* Shown on a trip uploaded before route stats existed, until it is measured. */
-.trip-measure-button {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--color-neon-blue-50);
-  border-radius: 4px;
-  background-color: rgb(0 0 0 / 0.7);
+.trip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-mid-gray);
+  border-radius: 0.5rem;
+  background-color: #171717;
+}
+
+.trip-row-text {
+  min-width: 0;
+}
+
+.trip-row-name {
+  display: block;
   color: var(--color-neon-blue-bright);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.trip-row-details {
+  display: block;
+  margin: 0;
+  color: #d4d4d4;
+  font-family: var(--font-body);
   font-size: 1rem;
-  line-height: 1.25;
-  cursor: pointer;
 }
 
-.trip-measure-button:hover {
-  background-color: #000000;
+.trip-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.trip-measure-button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.trip-photos-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }

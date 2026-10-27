@@ -62,8 +62,8 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="blog-draft-form">
-        <h3 className="blog-draft-form-title">New post</h3>
+      <form onSubmit={handleSubmit} className="admin-panel">
+        <h3 className="admin-section-title">New post</h3>
         <input
           type="text"
           value={title}
@@ -71,7 +71,7 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
           placeholder="Title"
           aria-label="Title"
           disabled={isCreating}
-          className="blog-draft-input"
+          className="admin-input"
         />
         <input
           type="text"
@@ -81,25 +81,25 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
           placeholder="Category"
           aria-label="Category"
           disabled={isCreating}
-          className="blog-draft-input"
+          className="admin-input"
         />
         <datalist id="blog-category-options">
           {existingCategories.map((existingCategory) => (
             <option key={existingCategory} value={existingCategory} />
           ))}
         </datalist>
-        {createError && <p className="blog-error">{createError}</p>}
-        <button type="submit" disabled={isCreating} className="blog-draft-submit">
+        {createError && <p className="admin-error">{createError}</p>}
+        <button type="submit" disabled={isCreating} className="admin-button admin-button-primary">
           {isCreating ? 'Creating…' : 'Create draft'}
         </button>
       </form>
 
       <section className="blog-posts">
-        <h2 className="blog-posts-title">Posts</h2>
-        {status === 'loading' && <p className="blog-posts-message">Loading posts…</p>}
-        {status === 'error' && <p className="blog-error">Could not load posts.</p>}
+        <h2 className="admin-section-title blog-posts-title">Posts</h2>
+        {status === 'loading' && <p className="admin-text">Loading posts…</p>}
+        {status === 'error' && <p className="admin-error">Could not load posts.</p>}
         {status === 'ready' && posts.length === 0 && (
-          <p className="blog-posts-message">No posts yet.</p>
+          <p className="admin-text">No posts yet.</p>
         )}
         {posts.length > 0 && (
           <table className="blog-posts-table">
@@ -119,7 +119,9 @@ const BlogAdmin = ({ token, onSessionExpired }) => {
                     </Link>
                   </td>
                   <td>{post.category}</td>
-                  <td>{post.publishedAt ? 'Published' : 'Draft'}</td>
+                  <td className={post.publishedAt ? undefined : 'blog-posts-draft'}>
+                    {post.publishedAt ? 'Published' : 'Draft'}
+                  </td>
                 </tr>
               ))}
             </tbody>
