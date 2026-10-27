@@ -19,12 +19,6 @@ const UPLOAD_CONCURRENCY = 5;
 const NO_TRIP_SELECTED = '';
 const UNASSIGNED = 'unassigned';
 
-const fileInputClass =
-  'text-white text-sm cursor-pointer file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-neon-blue file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-neon-blue-bright hover:file:text-black';
-
-const submitButtonClass =
-  'px-4 py-2 rounded bg-neon-blue text-white font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black disabled:bg-neutral-700 disabled:text-neutral-300 disabled:cursor-not-allowed self-start';
-
 export default function BulkUploadForm({ token, trips = [], onUploaded, onSessionExpired }) {
   const [files, setFiles] = useState([]);
   const [tripId, setTripId] = useState(NO_TRIP_SELECTED);
@@ -135,11 +129,11 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 bg-neutral-900 p-5 rounded-lg border border-neon-blue-50"
+      className="admin-panel"
     >
-      <h3 className="text-neon-blue-bright font-display text-xl">Upload backpacking photos</h3>
-      <p className="text-neutral-400 text-xs">
-        Select many at once — location and capture time are read from each photo. Add captions or
+      <h3 className="admin-section-title">Upload backpacking photos</h3>
+      <p className="admin-text">
+        Select many at once. Location and capture time are read from each photo; add captions or
         fix coordinates afterward by editing a photo.
       </p>
       <input
@@ -147,52 +141,50 @@ export default function BulkUploadForm({ token, trips = [], onUploaded, onSessio
         accept="image/*"
         multiple
         onChange={handleFilesChange}
-        className={fileInputClass}
+        className="admin-file-input"
       />
 
-      <label className="flex flex-col gap-1 text-neutral-400 text-xs">
-        Trip
-        <select
-          value={tripId}
-          onChange={(event) => setTripId(event.target.value)}
-          disabled={uploading}
-          className="rounded border border-mid-gray bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-neon-blue-bright disabled:cursor-not-allowed disabled:text-neutral-500"
-        >
-          <option value={NO_TRIP_SELECTED} disabled>
-            Choose a trip…
+      <select
+        value={tripId}
+        onChange={(event) => setTripId(event.target.value)}
+        disabled={uploading}
+        aria-label="Trip"
+        className="admin-input"
+      >
+        <option value={NO_TRIP_SELECTED} disabled>
+          Choose a trip…
+        </option>
+        <option value={UNASSIGNED}>Unassigned</option>
+        {trips.map((trip) => (
+          <option key={trip.id} value={trip.id}>
+            {trip.name}
+            {trip.region ? ` (${trip.region})` : ''}
           </option>
-          <option value={UNASSIGNED}>Unassigned</option>
-          {trips.map((trip) => (
-            <option key={trip.id} value={trip.id}>
-              {trip.name}
-              {trip.region ? ` — ${trip.region}` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
+        ))}
+      </select>
 
       {uploading && (
-        <p className="text-neutral-400 text-sm">
+        <p className="admin-text">
           Uploading {completed}/{files.length}…
         </p>
       )}
 
       {status === 'done' && (
-        <p className="text-sm text-neutral-400">
+        <p className="admin-text">
           Uploaded {savedCount}
           {failedNames.length > 0 && ` · failed ${failedNames.length}`}
         </p>
       )}
 
       {failedNames.length > 0 && (
-        <p className="text-red-400 text-xs break-words">Failed: {failedNames.join(', ')}</p>
+        <p className="admin-error">Failed: {failedNames.join(', ')}</p>
       )}
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="admin-error">{error}</p>}
 
       <button
         type="submit"
         disabled={uploading || files.length === 0 || tripId === NO_TRIP_SELECTED}
-        className={submitButtonClass}
+        className="admin-button admin-button-primary"
       >
         {uploading
           ? 'Uploading…'
