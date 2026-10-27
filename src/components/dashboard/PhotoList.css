@@ -6,6 +6,13 @@
   margin-top: 1.5rem;
 }
 
+/* The whole photo at its own proportions, never cropped. */
+.photo-card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .photo-card-body {
   display: flex;
   flex-direction: column;

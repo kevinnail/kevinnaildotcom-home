@@ -41,7 +41,7 @@ export default function Card({ card, index = 0 }) {
         decoding="async"
         aria-hidden="true"
         className={
-          'absolute inset-0 h-full w-full object-cover transition-[transform,opacity] ' +
+          'absolute inset-0 h-full w-full object-contain transition-[transform,opacity] ' +
           'duration-[600ms] ease-out motion-safe:group-hover:scale-[1.05] ' +
           (hoverBg ? 'group-hover:opacity-0' : '')
         }
@@ -58,7 +58,7 @@ export default function Card({ card, index = 0 }) {
           className={
             'absolute inset-0 h-full w-full opacity-0 transition-opacity duration-[600ms] ' +
             'ease-out group-hover:opacity-100 ' +
-            (hoverFit === 'contain' ? 'object-contain p-6' : 'object-cover')
+            (hoverFit === 'contain' ? 'object-contain p-6' : 'object-contain')
           }
         />
       )}

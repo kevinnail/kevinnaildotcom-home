@@ -170,7 +170,7 @@ export default function MapSidebar({
                         alt={photo.alt ?? ''}
                         loading="lazy"
                         decoding="async"
-                        className="aspect-square w-full object-cover"
+                        className="w-full"
                       />
                     </button>
                   </li>

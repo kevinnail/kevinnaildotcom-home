@@ -105,9 +105,7 @@
 .blog-editor-image-thumbnail {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  background-color: #000000;
+  height: auto;
 }
 
 /* The native file input stays in the page for the keyboard and screen readers,
@@ -182,7 +180,5 @@
   display: block;
   width: 100%;
   max-width: 30rem;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  background-color: #000000;
+  height: auto;
 }
