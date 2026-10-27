@@ -1,7 +1,5 @@
 import { useState } from 'react';
-
-const inputClass =
-  'px-2 py-1 rounded bg-black text-white text-xs border border-mid-gray focus:border-neon-blue-bright outline-none';
+import './PhotoList.css';
 
 // Parse a coordinate text input into a number, or null when blank/invalid.
 function parseCoordinate(value) {
@@ -80,7 +78,7 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+    <div className="photo-grid">
       {photos.map((photo) => {
         const isEditing = editingId === photo.id;
         const isDropTarget = dragOverId === photo.id && draggingId !== photo.id;
@@ -121,31 +119,31 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
             />
 
             {isEditing ? (
-              <div className="flex flex-col gap-2 p-2">
+              <div className="photo-card-body">
                 <input
                   type="text"
                   value={draft.alt}
                   onChange={updateDraft('alt')}
                   placeholder="Alt text"
-                  className={inputClass}
+                  className="admin-input"
                 />
                 <input
                   type="text"
                   value={draft.caption}
                   onChange={updateDraft('caption')}
                   placeholder="Caption"
-                  className={inputClass}
+                  className="admin-input"
                 />
                 {isHikes && (
                   <>
-                    <div className="flex gap-2">
+                    <div className="photo-card-coordinates">
                       <input
                         type="number"
                         step="any"
                         value={draft.lat}
                         onChange={updateDraft('lat')}
                         placeholder="Lat"
-                        className={`${inputClass} w-1/2`}
+                        className="admin-input"
                       />
                       <input
                         type="number"
@@ -153,13 +151,13 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
                         value={draft.lng}
                         onChange={updateDraft('lng')}
                         placeholder="Lng"
-                        className={`${inputClass} w-1/2`}
+                        className="admin-input"
                       />
                     </div>
                     <select
                       value={draft.tripId}
                       onChange={updateDraft('tripId')}
-                      className={inputClass}
+                      className="admin-input"
                       aria-label="Trip"
                     >
                       <option value="">Unassigned</option>
@@ -171,48 +169,48 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
                     </select>
                   </>
                 )}
-                <div className="flex gap-2">
+                <div className="photo-card-actions">
                   <button
+                    type="button"
                     onClick={() => saveEditing(photo.id)}
-                    className="bg-neon-blue text-white rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-neon-blue-bright hover:text-black"
+                    className="admin-button admin-button-primary"
                   >
                     Save
                   </button>
-                  <button
-                    onClick={cancelEditing}
-                    className="text-neutral-400 hover:text-white rounded px-2 py-0.5 text-xs cursor-pointer"
-                  >
+                  <button type="button" onClick={cancelEditing} className="admin-button">
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <>
-                <div className="p-2 text-xs text-neutral-400 truncate">{photo.caption || '—'}</div>
+              <div className="photo-card-body">
+                <p className="photo-card-detail">{photo.caption || 'No caption'}</p>
                 {isHikes && photo.lat != null && photo.lng != null && (
-                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
+                  <p className="photo-card-detail">
                     📍 {photo.lat}, {photo.lng}
-                  </div>
+                  </p>
                 )}
                 {isHikes && (
-                  <div className="px-2 pb-2 text-xs text-neutral-400 truncate">
+                  <p className="photo-card-detail">
                     🥾{' '}
                     {photo.tripId
                       ? (tripNameById.get(photo.tripId) ?? 'Unknown trip')
                       : 'Unassigned'}
-                  </div>
+                  </p>
                 )}
-                <div className="absolute top-1 right-1 flex gap-1">
+                <div className="photo-card-actions">
                   <button
+                    type="button"
                     onClick={() => startEditing(photo)}
-                    className="bg-black/70 text-neon-blue-bright rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
+                    className="admin-button"
                     aria-label={`Edit ${photo.alt || 'photo'}`}
                   >
                     Edit
                   </button>
                   <button
+                    type="button"
                     onClick={() => onDelete(photo.id)}
-                    className="bg-black/70 text-red-400 rounded px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-black"
+                    className="admin-button admin-button-danger"
                     aria-label={`Delete ${photo.alt || 'photo'}`}
                   >
                     Delete
@@ -223,7 +221,7 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
                     ⠿
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         );
