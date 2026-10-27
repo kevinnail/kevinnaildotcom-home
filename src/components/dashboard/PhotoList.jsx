@@ -115,7 +115,7 @@ export default function PhotoList({ photos, gallery, trips = [], onEdit, onReord
               alt={photo.alt}
               loading="lazy"
               decoding="async"
-              className="w-full h-32 object-cover"
+              className="photo-card-image"
             />
 
             {isEditing ? (

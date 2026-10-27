@@ -79,9 +79,10 @@ export default function ProjectCard({ project, index = 0, featured = false }) {
             ))}
           </div>
         ) : (
-          <div className="aspect-video w-full">
+          <div className="w-full">
             <img
-              className="w-full h-full object-cover transition-transform duration-[600ms] ease-out motion-safe:group-hover:scale-[1.05]"
+              style={{ display: 'block' }}
+              className="w-full transition-transform duration-[600ms] ease-out motion-safe:group-hover:scale-[1.05]"
               src={mediaSrc}
               alt={title}
               loading="lazy"
