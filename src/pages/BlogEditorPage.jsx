@@ -494,28 +494,30 @@ const BlogEditorPage = () => {
                     >
                       Delete{' '}
                     </button>
-                    {savedPost.publishedAt ? (
-                      <Link to={`/blog/${savedPost.slug}`} className="admin-button">
-                        View live post
-                      </Link>
-                    ) : (
+                    <div className="admin-toolbar-actions-view-save-wrapper">
+                      {savedPost.publishedAt ? (
+                        <Link to={`/blog/${savedPost.slug}`} className="admin-button">
+                          View live post
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handlePublish}
+                          disabled={isSaving || isUploading}
+                          className="admin-button"
+                        >
+                          Publish
+                        </button>
+                      )}
                       <button
-                        type="button"
-                        onClick={handlePublish}
+                        type="submit"
+                        form="blog-editor-form"
                         disabled={isSaving || isUploading}
-                        className="admin-button"
+                        className="admin-button admin-button-primary"
                       >
-                        Publish
+                        {isUploading ? 'Uploading…' : isSaving ? 'Saving…' : 'Save'}
                       </button>
-                    )}
-                    <button
-                      type="submit"
-                      form="blog-editor-form"
-                      disabled={isSaving || isUploading}
-                      className="admin-button admin-button-primary"
-                    >
-                      {isUploading ? 'Uploading…' : isSaving ? 'Saving…' : 'Save'}
-                    </button>
+                    </div>
                   </div>
                 </>
               )}

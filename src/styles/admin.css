@@ -32,10 +32,14 @@
 
 .admin-toolbar-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  margin-left: auto;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.admin-toolbar-actions-view-save-wrapper {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .admin-page-title {
