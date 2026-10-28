@@ -492,7 +492,7 @@ const BlogEditorPage = () => {
                       disabled={isSaving || isUploading}
                       className="admin-button admin-button-danger blog-editor-delete-button"
                     >
-                      Delete post
+                      Delete{' '}
                     </button>
                     {savedPost.publishedAt ? (
                       <Link to={`/blog/${savedPost.slug}`} className="admin-button">
