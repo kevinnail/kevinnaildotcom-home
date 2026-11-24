@@ -73,6 +73,7 @@ export const useBlogEditorStore = create((set) => ({
         ...uploadedImages.map((uploaded) => ({
           imageId: uploaded.id,
           url: uploaded.url,
+          posterUrl: uploaded.posterUrl,
           caption: '',
         })),
       ]),
