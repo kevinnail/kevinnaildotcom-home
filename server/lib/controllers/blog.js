@@ -120,6 +120,23 @@ export default Router()
       next(error.code === FOREIGN_KEY_VIOLATION ? notFound('Blog post not found') : error);
     }
   })
+  // The browser converted the video and captured its still frame, and uploaded
+  // both; one row records them together.
+  .post('/:id/videos', authenticate, async (req, res, next) => {
+    try {
+      const id = requireResourceId(req);
+      const { objectKey, posterObjectKey } = requiredText(req.body, {
+        objectKey: 'objectKey',
+        posterObjectKey: 'posterObjectKey',
+      });
+
+      const video = await BlogPost.insertVideo(id, mediaUrl(objectKey), mediaUrl(posterObjectKey));
+
+      res.status(201).json(video);
+    } catch (error) {
+      next(error.code === FOREIGN_KEY_VIOLATION ? notFound('Blog post not found') : error);
+    }
+  })
   .patch('/:id/publish', authenticate, async (req, res, next) => {
     try {
       const post = await BlogPost.publish(requireResourceId(req));
