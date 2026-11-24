@@ -9,7 +9,10 @@ const BlogPostBody = ({ title, blocks }) => {
   const [openPhotoIndex, setOpenPhotoIndex] = useState(null);
 
   // Every photo in the post, in order, so the viewer steps across images blocks.
-  const photos = blocks.flatMap((block) => (block.type === 'images' ? block.images : []));
+  // Videos play in place and are left out; a video is the one with a posterUrl.
+  const photos = blocks.flatMap((block) =>
+    block.type === 'images' ? block.images.filter((image) => !image.posterUrl) : [],
+  );
 
   return (
     <div className="blog-post-body">
@@ -23,19 +26,31 @@ const BlogPostBody = ({ title, blocks }) => {
             >
               {block.images.map((image) => (
                 <figure key={image.imageId} className="blog-post-body-figure">
-                  <button
-                    type="button"
-                    className="blog-post-body-image-button"
-                    onClick={() => setOpenPhotoIndex(photos.indexOf(image))}
-                    aria-label={`Enlarge ${image.caption || `${title} photo`}`}
-                  >
-                    <img
+                  {image.posterUrl ? (
+                    <video
                       src={image.url}
-                      alt={image.caption || `${title} photo`}
-                      loading="lazy"
+                      poster={image.posterUrl}
+                      controls
+                      playsInline
+                      preload="none"
+                      aria-label={image.caption || `${title} video`}
                       className="blog-post-body-image"
                     />
-                  </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="blog-post-body-image-button"
+                      onClick={() => setOpenPhotoIndex(photos.indexOf(image))}
+                      aria-label={`Enlarge ${image.caption || `${title} photo`}`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.caption || `${title} photo`}
+                        loading="lazy"
+                        className="blog-post-body-image"
+                      />
+                    </button>
+                  )}
                   {image.caption && (
                     <figcaption className="blog-post-body-caption">{image.caption}</figcaption>
                   )}
