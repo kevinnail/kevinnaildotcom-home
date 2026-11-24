@@ -265,6 +265,15 @@ export async function addBlogImages(token, id, objectKeys) {
   return response.json(); // [{ id, url }]
 }
 
+export async function addBlogVideo(token, id, objectKey, posterObjectKey) {
+  const response = await authorizedFetch(`/blog/${id}/videos`, token, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ objectKey, posterObjectKey }),
+  });
+  return response.json(); // { id, url, posterUrl }
+}
+
 export async function publishBlogPost(token, id) {
   const response = await authorizedFetch(`/blog/${id}/publish`, token, { method: 'PATCH' });
   return response.json(); // the post with its publishedAt
