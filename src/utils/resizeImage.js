@@ -84,21 +84,27 @@ export async function resizeImage(file, { maxEdge, quality, basename }) {
     context.imageSmoothingQuality = 'high';
     context.drawImage(bitmap, 0, 0, width, height);
 
-    const { mimeType, extension } = encodeFormat();
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (result) => (result ? resolve(result) : reject(new Error(`${basename} encode failed`))),
-        mimeType,
-        quality,
-      );
-    });
-
-    // The extension has to match the encode: the server derives the S3 object key's
-    // extension from this filename (`fileExtension` in server/lib/utils/s3.js).
-    return new File([blob], `${basename}.${extension}`, { type: mimeType });
+    return await encodeCanvas(canvas, { quality, basename });
   } finally {
     bitmap.close();
   }
+}
+
+// Encode a canvas as WebP (or the JPEG fallback) in a File named
+// `<basename>.<extension>`. Shared with video still frames (convertVideo.js).
+export async function encodeCanvas(canvas, { quality, basename }) {
+  const { mimeType, extension } = encodeFormat();
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (result) => (result ? resolve(result) : reject(new Error(`${basename} encode failed`))),
+      mimeType,
+      quality,
+    );
+  });
+
+  // The extension has to match the encode: the server derives the S3 object key's
+  // extension from this filename (`fileExtension` in server/lib/utils/s3.js).
+  return new File([blob], `${basename}.${extension}`, { type: mimeType });
 }
 
 export function createDisplayImage(file) {
