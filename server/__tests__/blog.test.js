@@ -500,6 +500,13 @@ describe('blog images', () => {
       .send({ objectKeys });
   }
 
+  async function addVideo(token, postId, body) {
+    return request(app)
+      .post(`/api/v1/blog/${postId}/videos`)
+      .set('authorization', `Bearer ${token}`)
+      .send(body);
+  }
+
   async function savePost(token, id, blocks) {
     return request(app)
       .put(`/api/v1/blog/${id}`)
@@ -649,15 +656,116 @@ describe('blog images', () => {
         id: 'block-b',
         type: 'images',
         images: [
-          { imageId: thirdImage.id, caption: 'Summit', url: thirdImage.url },
-          { imageId: firstImage.id, caption: '', url: firstImage.url },
+          { imageId: thirdImage.id, caption: 'Summit', url: thirdImage.url, posterUrl: null },
+          { imageId: firstImage.id, caption: '', url: firstImage.url, posterUrl: null },
         ],
       },
       {
         id: 'block-c',
         type: 'images',
-        images: [{ imageId: secondImage.id, caption: 'Camp', url: secondImage.url }],
+        images: [
+          { imageId: secondImage.id, caption: 'Camp', url: secondImage.url, posterUrl: null },
+        ],
       },
+    ]);
+  });
+
+  // Otherwise the post page has no video to play or no still frame to show before it plays.
+  it('records a video with its still frame in one row', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await addVideo(token, draft.id, {
+      objectKey: 'blog/clip.mp4',
+      posterObjectKey: 'blog/poster.webp',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      id: expect.any(String),
+      url: 'https://media.example.com/blog/clip.mp4',
+      posterUrl: 'https://media.example.com/blog/poster.webp',
+    });
+    expect(await imageRowsFor(draft.id)).toEqual([
+      { id: response.body.id, url: 'https://media.example.com/blog/clip.mp4' },
+    ]);
+  });
+
+  // Otherwise a video saves without a still frame and shows as an empty box on iPhones.
+  it('returns 400 for a video missing its still frame and records nothing', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+
+    const response = await addVideo(token, draft.id, { objectKey: 'blog/clip.mp4' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('posterObjectKey is required');
+    expect(await imageRowsFor(draft.id)).toEqual([]);
+  });
+
+  // Otherwise a video added to a deleted post shows a server error, or anyone can add one.
+  it('returns 404 for an unknown post and 401 without a token', async () => {
+    const token = await adminToken();
+    const body = { objectKey: 'blog/clip.mp4', posterObjectKey: 'blog/poster.webp' };
+
+    const unknown = await addVideo(token, unknownId, body);
+    const anonymous = await request(app).post(`/api/v1/blog/${unknownId}/videos`).send(body);
+
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.message).toBe('Blog post not found');
+    expect(anonymous.status).toBe(401);
+  });
+
+  // Otherwise the post page can't tell a video from a photo and draws the video as a broken image.
+  it('returns posterUrl for a video and null for a photo on the public post', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    const [photo] = (await addImages(token, draft.id, ['blog/ridge.webp'])).body;
+    const video = (
+      await addVideo(token, draft.id, {
+        objectKey: 'blog/clip.mp4',
+        posterObjectKey: 'blog/poster.webp',
+      })
+    ).body;
+    await savePost(token, draft.id, [
+      {
+        id: 'block-a',
+        type: 'images',
+        images: [
+          { imageId: photo.id, caption: '' },
+          { imageId: video.id, caption: 'Gathering' },
+        ],
+      },
+    ]);
+    await request(app)
+      .patch(`/api/v1/blog/${draft.id}/publish`)
+      .set('authorization', `Bearer ${token}`);
+
+    const response = await request(app).get('/api/v1/blog/ridge-hike');
+
+    expect(response.body.blocks[0].images).toEqual([
+      { imageId: photo.id, caption: '', url: photo.url, posterUrl: null },
+      { imageId: video.id, caption: 'Gathering', url: video.url, posterUrl: video.posterUrl },
+    ]);
+  });
+
+  // Otherwise every video removed in the editor leaves its still frame in S3 forever.
+  it('purges both the video and its still frame when a save drops it', async () => {
+    const token = await adminToken();
+    const draft = await createDraft(token);
+    await addVideo(token, draft.id, {
+      objectKey: 'blog/clip.mp4',
+      posterObjectKey: 'blog/poster.webp',
+    });
+
+    const response = await savePost(token, draft.id, []);
+
+    expect(response.status).toBe(200);
+    expect(await imageRowsFor(draft.id)).toEqual([]);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.lastCall[0].input.Delete.Objects).toEqual([
+      { Key: 'blog/clip.mp4' },
+      { Key: 'blog/poster.webp' },
     ]);
   });
 });
