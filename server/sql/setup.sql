@@ -70,12 +70,14 @@ CREATE TABLE blog_retired_slugs (
   slug TEXT PRIMARY KEY
 );
 
--- One row per photo uploaded to a post. The post's images blocks reference
--- these ids; a save drops the rows its blocks no longer use.
+-- One row per photo or video uploaded to a post. The post's images blocks
+-- reference these ids; a save drops the rows its blocks no longer use. A video
+-- has a poster_url (its still frame); a photo's is null.
 CREATE TABLE blog_images (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id    UUID NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
   url        TEXT NOT NULL,
+  poster_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
