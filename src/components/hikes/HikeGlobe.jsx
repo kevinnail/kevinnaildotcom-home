@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Viewer, KmlDataSource, Entity, ImageryLayer, ScreenSpaceCameraController } from 'resium';
 import {
+  createDefaultImageryProviderViewModels,
   createWorldTerrainAsync,
   Cartesian2,
   Cartesian3,
@@ -96,6 +97,14 @@ const USGS_TOPO_IMAGERY = new UrlTemplateImageryProvider({
   credit: 'USGS The National Map',
 });
 
+// The maps offered by the map picker in the globe's top-right corner, and the
+// one the globe opens on. The picker needs the same list the selected map came
+// from, or it can't show that map as the current choice.
+const IMAGERY_PROVIDER_VIEW_MODELS = createDefaultImageryProviderViewModels();
+const GOOGLE_SATELLITE_VIEW_MODEL = IMAGERY_PROVIDER_VIEW_MODELS.find(
+  (viewModel) => viewModel.name === 'Google Maps Satellite',
+);
+
 // The overview pin's label sits above its dot rather than on it.
 const PIN_LABEL_OFFSET = new Cartesian2(0, -16);
 
@@ -158,6 +167,35 @@ function visibleRouteLines(dataSource) {
       }),
     }))
     .filter((line) => line.points.length >= 2);
+}
+
+// Sets each ground-clamped KML point to the terrain height under it. Cesium's
+// own clamp takes the height from whatever terrain is loaded when the point is
+// created, and on a direct link that is the coarse whole-globe terrain, which
+// it does not reliably correct afterward. If the sample fails, the points keep
+// Cesium's clamp.
+function groundRoutePoints(dataSource, terrainProvider) {
+  const pointEntities = dataSource.entities.values.filter(
+    (entity) =>
+      entity.position &&
+      entity.billboard?.heightReference?.getValue() === HeightReference.CLAMP_TO_GROUND,
+  );
+  if (pointEntities.length === 0) return;
+  const cartographics = pointEntities.map((entity) =>
+    Cartographic.fromCartesian(entity.position.getValue()),
+  );
+  sampleTerrainMostDetailed(terrainProvider, cartographics, true)
+    .then((grounded) => {
+      pointEntities.forEach((entity, index) => {
+        const { longitude, latitude, height } = grounded[index];
+        entity.position = Cartesian3.fromRadians(longitude, latitude, height);
+        entity.billboard.heightReference = HeightReference.NONE;
+        entity.label.heightReference = HeightReference.NONE;
+      });
+    })
+    .catch((error) => {
+      console.error('Terrain height sample failed; KML points keep Cesium ground clamp', error);
+    });
 }
 
 // Whole miles without a trailing ".0", so the levels read 25 mi and 1.5 mi.
@@ -240,10 +278,15 @@ export default function HikeGlobe({
 
   // Resium keeps the onLoad from the render the KmlDataSource was created in, so
   // this must not read anything that can change after that, like the viewer.
-  const handleTripRouteLoad = useCallback((dataSource, tripId) => {
-    setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
-    setLoadedRoute({ tripId, dataSource, lines: visibleRouteLines(dataSource) });
-  }, []);
+  // The terrain provider is settled before the Viewer, and so the KML, mounts.
+  const handleTripRouteLoad = useCallback(
+    (dataSource, tripId) => {
+      setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
+      setLoadedRoute({ tripId, dataSource, lines: visibleRouteLines(dataSource) });
+      if (terrainProvider) groundRoutePoints(dataSource, terrainProvider);
+    },
+    [terrainProvider],
+  );
 
   // Frame the whole route once its KML finishes loading. Selecting a hike while
   // zoomed into a previous one otherwise leaves the camera pointed at unrelated
@@ -609,6 +652,8 @@ export default function HikeGlobe({
         ref={handleViewerRef}
         style={{ width: '100%', height: '100%' }}
         terrainProvider={terrainProvider ?? undefined}
+        imageryProviderViewModels={IMAGERY_PROVIDER_VIEW_MODELS}
+        selectedImageryProviderViewModel={GOOGLE_SATELLITE_VIEW_MODEL}
         timeline={false}
         animation={false}
         // Clicking a route selects the hike and nothing else — Cesium's default
@@ -622,17 +667,10 @@ export default function HikeGlobe({
         //
         // maximumRenderTimeChange is the escape hatch from that: a render is also
         // requested once the clock has advanced this many seconds since the last
-        // one. It is a HEARTBEAT, not a cap — HIGHER values render less, and
-        // Infinity disables it entirely (`difference > maximumRenderTimeChange` is
-        // never true). It was Infinity here, which broke the first hike on a cold
-        // load: the KML pushpin is a CLAMP_TO_GROUND billboard, and its clamp is
-        // resolved against whatever terrain happens to be loaded at that instant.
-        // On the opening fly-to that terrain is still streaming, so the pin lands
-        // near the ellipsoid — sea level, ~1,500 m under the plateau. Once the
-        // camera stopped, nothing re-rendered, so the clamp was never re-resolved
-        // and the pin sat at sea level swimming with parallax. Switching hikes hid
-        // it, because by the second fly-to the terrain was already cached.
-        // A finite value lets the scene settle after tiles land.
+        // one. It is a heartbeat, not a cap, so higher values render less. It is
+        // measured in the clock's time, not real time, and this clock stays
+        // stopped: a running clock plays through a KML's timestamps and shows
+        // every timestamped waypoint at once.
         requestRenderMode
         maximumRenderTimeChange={1}
       >
