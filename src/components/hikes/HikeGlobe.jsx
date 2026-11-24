@@ -204,8 +204,8 @@ export default function HikeGlobe({
   // overview, or on a hike elsewhere, the layer would be too small or too far
   // away to see, so the panel is only offered while such a hike is open.
   const [geologyMapTripId, setGeologyMapTripId] = useState(null);
-  // The route lines of the last trip whose KML loaded, kept with that trip's id
-  // so they are only used while that trip is open.
+  // The data source and route lines of the last trip whose KML loaded, kept with
+  // that trip's id so the lines are only used while that trip is open.
   const [loadedRoute, setLoadedRoute] = useState(null);
   // The trip and photo open when the fly-along started, or null when none is
   // playing.
@@ -238,23 +238,25 @@ export default function HikeGlobe({
     };
   }, []);
 
+  // Resium keeps the onLoad from the render the KmlDataSource was created in, so
+  // this must not read anything that can change after that, like the viewer.
+  const handleTripRouteLoad = useCallback((dataSource, tripId) => {
+    setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
+    setLoadedRoute({ tripId, dataSource, lines: visibleRouteLines(dataSource) });
+  }, []);
+
   // Frame the whole route once its KML finishes loading. Selecting a hike while
   // zoomed into a previous one otherwise leaves the camera pointed at unrelated
-  // terrain with no clue where the new trail went. Driven by onLoad rather than a
-  // selectedTrip effect because the entities don't exist — and so have no bounding
-  // sphere to fly to — until the KML resolves.
-  const handleTripRouteLoad = useCallback(
-    (dataSource, tripId) => {
-      setGeologyMapTripId(routeTouchesGeologyMapArea(dataSource) ? tripId : null);
-      setLoadedRoute({ tripId, lines: visibleRouteLines(dataSource) });
-      if (!viewer) return;
-      viewer.flyTo(dataSource, {
-        duration: TRIP_OVERVIEW_DURATION_SECONDS,
-        offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
-      });
-    },
-    [viewer],
-  );
+  // terrain with no clue where the new trail went. On a direct link to a hike the
+  // KML can finish before the viewer reaches this component, so whichever of the
+  // two arrives second triggers the flight, the same as the all hikes overview.
+  useEffect(() => {
+    if (!viewer || !loadedRoute) return;
+    viewer.flyTo(loadedRoute.dataSource, {
+      duration: TRIP_OVERVIEW_DURATION_SECONDS,
+      offset: new HeadingPitchRange(0, CesiumMath.toRadians(TRIP_OVERVIEW_PITCH_DEGREES), 0),
+    });
+  }, [loadedRoute, viewer]);
 
   // Overview mode reads one coordinate out of each trip's KML instead of loading
   // the files into the scene. This runs on mount now that the overview is the
