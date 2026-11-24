@@ -11,6 +11,7 @@ import {
   publishBlogPost,
   deleteBlogPost,
   addBlogImages,
+  addBlogVideo,
   setBlogCover,
   removeBlogCover,
   requestUpload,
@@ -35,13 +36,20 @@ const ImagesBlockEditor = ({
 }) => {
   const { addImages, removeImage, moveImage, updateCaption } = useBlogEditorStore();
   const [failedNames, setFailedNames] = useState([]);
-  // { done, total } while this group's photos upload.
+  // { done, total } while this group's files upload, plus convertedPercent while a
+  // video converts.
   const [progress, setProgress] = useState(null);
   const isEmpty = block.images.length === 0;
   const isPickerDisabled = disabled || progress !== null;
 
-  // One file at a time, so photos appear as each finishes and a failure only
-  // affects its own file.
+  const uploadFile = async (file) => {
+    const upload = await requestUpload(token, file, 'blog');
+    await uploadToS3(upload.uploadUrl, file, upload.cacheControl);
+    return upload.objectKey;
+  };
+
+  // One file at a time, so photos and videos appear as each finishes and a
+  // failure only affects its own file.
   const handleFilesChange = async (event) => {
     const files = [...event.target.files];
     event.target.value = '';
@@ -51,10 +59,26 @@ const ImagesBlockEditor = ({
       for (const [index, file] of files.entries()) {
         setProgress({ done: index, total: files.length });
         try {
-          const displayImage = await createDisplayImage(file);
-          const upload = await requestUpload(token, displayImage, 'blog');
-          await uploadToS3(upload.uploadUrl, displayImage, upload.cacheControl);
-          addImages(block.id, await addBlogImages(token, postId, [upload.objectKey]));
+          if (file.type.startsWith('video/')) {
+            // Loaded on first use: the converter is as big as the rest of the site
+            // combined, and only the editor ever needs it.
+            const { convertVideo } = await import('../utils/convertVideo');
+            const { video, poster } = await convertVideo(file, (fraction) =>
+              setProgress({
+                done: index,
+                total: files.length,
+                convertedPercent: Math.round(fraction * 100),
+              }),
+            );
+            setProgress({ done: index, total: files.length });
+            const videoKey = await uploadFile(video);
+            const posterKey = await uploadFile(poster);
+            addImages(block.id, [await addBlogVideo(token, postId, videoKey, posterKey)]);
+          } else {
+            const displayImage = await createDisplayImage(file);
+            const objectKey = await uploadFile(displayImage);
+            addImages(block.id, await addBlogImages(token, postId, [objectKey]));
+          }
         } catch (uploadError) {
           if (uploadError instanceof SessionExpiredError) {
             onSessionExpired();
@@ -71,10 +95,12 @@ const ImagesBlockEditor = ({
   };
 
   const pickerText = progress
-    ? `Uploading ${progress.done + 1} of ${progress.total}…`
+    ? progress.convertedPercent === undefined
+      ? `Uploading ${progress.done + 1} of ${progress.total}…`
+      : `Converting video ${progress.done + 1} of ${progress.total}… ${progress.convertedPercent}%`
     : isEmpty
-      ? 'Choose photos'
-      : 'Add more photos';
+      ? 'Choose photos or videos'
+      : 'Add more photos or videos';
 
   return (
     <>
@@ -83,7 +109,7 @@ const ImagesBlockEditor = ({
           {block.images.map((image, imageIndex) => (
             <div key={image.imageId} className="blog-editor-image">
               <img
-                src={image.url}
+                src={image.posterUrl ?? image.url}
                 alt={image.caption || `Photo ${imageIndex + 1}`}
                 className="blog-editor-image-thumbnail"
               />
@@ -131,7 +157,7 @@ const ImagesBlockEditor = ({
       >
         <input
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           multiple
           onChange={handleFilesChange}
           disabled={isPickerDisabled}
@@ -140,7 +166,7 @@ const ImagesBlockEditor = ({
         <span className="blog-editor-photo-picker-text">{pickerText}</span>
         {isEmpty && !progress && (
           <span className="blog-editor-photo-picker-hint">
-            Select one or several. One photo fills the width, two or more sit side by side.
+            Select one or several. One photo or video fills the width, two or more sit side by side.
           </span>
         )}
       </label>
