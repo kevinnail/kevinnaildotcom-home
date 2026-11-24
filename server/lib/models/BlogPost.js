@@ -41,20 +41,28 @@ const matchExistingCategory = async (category, excludedPostId = null) => {
   return rows[0]?.category ?? category;
 };
 
-// Images blocks store only each image's id; reads add its url beside it.
+// Images blocks store only each image's id; reads add its url beside it, and its
+// posterUrl (a video's still frame, null for a photo).
 const withImageUrls = async (post) => {
-  const { rows } = await pool.query('SELECT id, url FROM blog_images WHERE post_id = $1', [
-    post.id,
-  ]);
-  const urlsById = new Map(rows.map((row) => [row.id, row.url]));
+  const { rows } = await pool.query(
+    'SELECT id, url, poster_url FROM blog_images WHERE post_id = $1',
+    [post.id],
+  );
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
 
   post.blocks = post.blocks.map((block) => {
     if (block.type !== 'images') return block;
-    const images = block.images.map((image) => ({ ...image, url: urlsById.get(image.imageId) }));
+    const images = block.images.map((image) => {
+      const row = rowsById.get(image.imageId);
+      return { ...image, url: row.url, posterUrl: row.poster_url };
+    });
     return { ...block, images };
   });
   return post;
 };
+
+// A removed video takes its still frame with it.
+const urlsOf = (rows) => rows.flatMap((row) => [row.url, row.poster_url]);
 
 export default class BlogPost {
   constructor(row) {
@@ -118,6 +126,18 @@ export default class BlogPost {
     return rows;
   }
 
+  // A video and its still frame are both in S3 already; they share one row.
+  static async insertVideo(postId, url, posterUrl) {
+    const { rows } = await pool.query(
+      `INSERT INTO blog_images (post_id, url, poster_url)
+       VALUES ($1, $2, $3)
+       RETURNING id, url, poster_url AS "posterUrl"`,
+      [postId, url, posterUrl],
+    );
+
+    return rows[0];
+  }
+
   // The slug is left alone so links already shared keep working after a title edit.
   // Images the new blocks no longer use are deleted in the same transaction, and
   // their URLs are returned so the caller can purge them from S3 after commit.
@@ -144,7 +164,7 @@ export default class BlogPost {
       const { rows: removedRows } = await client.query(
         `DELETE FROM blog_images
          WHERE post_id = $1 AND NOT (id = ANY($2::uuid[]))
-         RETURNING url`,
+         RETURNING url, poster_url`,
         [id, keptImageIds],
       );
 
@@ -153,7 +173,7 @@ export default class BlogPost {
 
       return {
         post: await withImageUrls(new BlogPost(rows[0])),
-        removedUrls: removedRows.map((row) => row.url),
+        removedUrls: urlsOf(removedRows),
       };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -187,7 +207,7 @@ export default class BlogPost {
       await client.query('BEGIN');
 
       const { rows: imageRows } = await client.query(
-        'DELETE FROM blog_images WHERE post_id = $1 RETURNING url',
+        'DELETE FROM blog_images WHERE post_id = $1 RETURNING url, poster_url',
         [id],
       );
       const { rows } = await client.query(
@@ -202,7 +222,7 @@ export default class BlogPost {
 
       return {
         post: new BlogPost(rows[0]),
-        removedUrls: [...imageRows.map((row) => row.url), rows[0].cover_url],
+        removedUrls: [...urlsOf(imageRows), rows[0].cover_url],
       };
     } catch (error) {
       await client.query('ROLLBACK');
